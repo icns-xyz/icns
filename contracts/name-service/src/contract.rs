@@ -22,10 +22,10 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, StdError> {
+    let admin = deps.api.addr_validate(&msg.admins)?;
     let config_state = Config {
-        admins: msg.admins,
+        admins: vec![admin],
     };
-
     config(deps.storage).save(&config_state)?;
 
     Ok(Response::default())
