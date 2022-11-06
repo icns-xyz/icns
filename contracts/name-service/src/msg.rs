@@ -1,30 +1,40 @@
+use cosmwasm_std::{Addr, Uint128};
+use cw_utils::Duration;
 use cosmwasm_schema::{cw_serde, QueryResponses};
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+
 
 /// Message type for `instantiate` entry_point
-#[cw_serde]
-pub struct InstantiateMsg {}
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct InstantiateMsg {
+    pub admins: Vec<Addr>,
+}
 
-/// Message type for `execute` entry_point
-#[cw_serde]
-pub enum ExecuteMsg {}
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ExecuteMsg {
+    SetResolver {
+        name: String,
+        resolver_addr: String,
+    },
+}
 
-/// Message type for `migrate` entry_point
-#[cw_serde]
-pub enum MigrateMsg {}
-
-/// Message type for `query` entry_point
-#[cw_serde]
-#[derive(QueryResponses)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    // This example query variant indicates that any client can query the contract
-    // using `YourQuery` and it will return `YourQueryResponse`
-    // This `returns` information will be included in contract's schema
-    // which is used for client code generation.
-    //
-    // #[returns(YourQueryResponse)]
-    // YourQuery {},
+    // ResolveAddress returns the current address that the name resolves to
+    GetResolver { name: String },
+    Config {},
 }
 
 // We define a custom struct for each query response
-// #[cw_serde]
-// pub struct YourQueryResponse {}
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct ResolveRecordResponse {
+    pub address: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct ReverseResolveRecordResponse {
+    pub name: Option<String>,
+}

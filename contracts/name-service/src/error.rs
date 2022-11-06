@@ -9,8 +9,36 @@ pub enum ContractError {
     #[error("Unauthorized")]
     Unauthorized {},
 
-    #[error("Custom Error val: {val:?}")]
-    CustomError { val: String },
-    // Add any other custom errors you like here.
-    // Look at https://docs.rs/thiserror/1.0.21/thiserror/ for details.
+    #[error("Insufficient funds sent")]
+    InsufficientFundsSent {},
+
+    #[error("Invalid coin denomination, expected {expected} got {actual}")]
+    InvalidDenom { expected: String, actual: String },
+
+    #[error("Name does not exist (name {name})")]
+    NameNotExists { name: String },
+
+    #[error("No bids for name")]
+    NameNoBids,
+
+    #[error("Name has been taken (name {name})")]
+    NameTaken { name: String },
+
+    #[error("Name too short (length {length} min_length {min_length})")]
+    NameTooShort { length: u64, min_length: u64 },
+
+    #[error("Name too long (length {length} min_length {max_length})")]
+    NameTooLong { length: u64, max_length: u64 },
+
+    #[error("Name needs suffix {suffix}")]
+    NameNeedsSuffix { suffix: String },
+
+    #[error("Invalid character (char {c})")]
+    InvalidCharacter { c: char },
+
+    #[error("Years must be positive integer")]
+    YearsMustBePositive {},
+
+    #[error("Not implemented yet")]
+    NotImplemented {},
 }
