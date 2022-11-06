@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 /// Message type for `instantiate` entry_point
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
-    pub admins: String,
+    pub admins: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
