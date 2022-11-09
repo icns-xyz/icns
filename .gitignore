@@ -5,6 +5,12 @@
 debug/
 target/
 
+### macOS ###
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
+
 # Editor directories and files
 .idea
 

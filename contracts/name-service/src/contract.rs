@@ -22,13 +22,19 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, StdError> {
-    let mut admin_addr = Vec::new();
+    let mut admin_addrs = Vec::new();
     for admin in msg.admins {
-        admin_addr.push(deps.api.addr_validate(&admin)?);
+        admin_addrs.push(deps.api.addr_validate(&admin)?);
+    }
+
+    let mut registrar_addrs = Vec::new();
+    for registrar in msg.registrar_addresses {
+        registrar_addrs.push(deps.api.addr_validate(&registrar)?);
     }
 
     let config_state = Config {
-        admins: admin_addr,
+        admins: admin_addrs,
+        registrar_addresses: registrar_addrs,
     };
     config(deps.storage).save(&config_state)?;
 
@@ -105,12 +111,14 @@ mod tests {
 
     use super::*;
 
-    fn mock_init_with_admin(
+    fn mock_init(
         deps: DepsMut,
         admins: Vec<String>,
+        registrar_addrs: Vec<String>,
     ) {
         let msg = InstantiateMsg {
             admins: admins,
+            registrar_addresses: registrar_addrs,
         };
 
         let info = mock_info("creator", &coins(2, "token"));
@@ -162,14 +170,17 @@ mod tests {
         let mut deps = mock_dependencies();
 
         let admins = vec![String::from("test_admin")];
-        mock_init_with_admin(deps.as_mut(), admins);
+        let registrar_addrs = vec![];
+        mock_init(deps.as_mut(), admins, registrar_addrs);
+
+        let registrar_addrs = vec![];
 
         let admins = vec![String::from("test_admin")];
         let exp = change_admin_string_to_vec(deps.as_mut(), admins);
 
         assert_config_state(
             deps.as_ref(),
-            Config { admins: exp }
+            Config { admins: exp, registrar_addresses: registrar_addrs },
         );
 
         mock_register_resolver_for_alice(deps.as_mut(), &coins(2, "token"), String::from("test_resolver"));
