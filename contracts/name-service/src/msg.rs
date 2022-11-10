@@ -1,6 +1,10 @@
 use cosmwasm_std::{Addr, Uint128};
 use cw_utils::Duration;
 use cosmwasm_schema::{cw_serde, QueryResponses};
+use std::collections::HashMap;
+
+use cw_storage_plus::{Map};
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -15,9 +19,11 @@ pub struct InstantiateMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    SetResolver {
-        name: String,
-        resolver_addr: String,
+    SetRecord {
+        user_name: String,
+        owner: Addr,
+        // tuple of (cointype, address)
+        addresses: Vec<(i32, String)>,
     },
 }
 
@@ -25,7 +31,7 @@ pub enum ExecuteMsg {
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     // ResolveAddress returns the current address that the name resolves to
-    GetResolver { name: String },
+    GetRecord { name: String },
     Config {},
 }
 
@@ -33,9 +39,4 @@ pub enum QueryMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ResolveRecordResponse {
     pub address: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct ReverseResolveRecordResponse {
-    pub name: Option<String>,
 }

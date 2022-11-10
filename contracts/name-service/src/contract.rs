@@ -7,11 +7,11 @@ use cosmwasm_std::{
 
 use crate::error::ContractError;
 use crate::msg::{
-    ExecuteMsg, InstantiateMsg, QueryMsg, ResolveRecordResponse, ReverseResolveRecordResponse,
+    ExecuteMsg, InstantiateMsg, QueryMsg, ResolveRecordResponse,
 };
 use crate::state::{
     config, config_read, resolver, resolver_read,
-    Resolver, Config
+     Config, Record, OWNER, ADDRESSES
 };
 
 /// Handling contract instantiation
@@ -49,35 +49,33 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::SetResolver { name, resolver_addr } => execute_set_resolver(deps, env, info, name, resolver_addr),
+        ExecuteMsg::SetRecord { user_name, owner, addresses } => execute_set_record(deps, env, info, user_name, owner, addresses),
     }
 }
 
 
-pub fn execute_set_resolver(
+pub fn execute_set_record(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    name: String,
-    resolver_addr: String,
+    user_name: String,
+    owner: Addr,
+    addresses: Vec<(i32, String)>,
 ) -> Result<Response, ContractError> {
+    // Add admin check here
     let config_state = config(deps.storage).load()?;
 
-    let key = name.as_bytes();
-
-    let new_resolver = Resolver {
-        resolver: resolver_addr,
-    };
-
-    if let Some(existing_record) = resolver(deps.storage).may_load(key)? {
-        // name is already taken and expiry still not past
-        return Err(ContractError::NameTaken { name });
+    // check if the user_name is already registered
+    let existing = OWNER.may_load(deps.storage, user_name.clone())?;
+    match existing {
+        Some(_) => Err(ContractError::UserAlreadyRegistered { name: user_name }),
+        None => {
+            // save the new record
+          
+            OWNER.save(deps.storage, user_name.clone(), &owner)?;
+            Ok(Response::default())
+        }
     }
-
-    // name is available
-    resolver(deps.storage).save(key, &new_resolver)?;
-
-    Ok(Response::default())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

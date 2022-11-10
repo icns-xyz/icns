@@ -21,6 +21,9 @@ pub enum ContractError {
     #[error("No bids for name")]
     NameNoBids,
 
+    #[error("User Already Registered")]
+    UserAlreadyRegistered{ name: String },
+
     #[error("Name has been taken (name {name})")]
     NameTaken { name: String },
 
