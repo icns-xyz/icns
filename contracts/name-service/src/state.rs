@@ -23,7 +23,6 @@ use cw_storage_plus::{Item, Map};
 //     }
 // }
 
-pub static ADDRESS_RESOLVER_KEY: &[u8] = b"addressresolver";
 pub static CONFIG_KEY: &[u8] = b"config";
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -33,30 +32,8 @@ pub struct Config {
     pub registrar_addresses: Vec<Addr>,
 }
 
-pub fn config(storage: &mut dyn Storage) -> Singleton<Config> {
-    singleton(storage, CONFIG_KEY)
-}
-
-pub fn config_read(storage: &dyn Storage) -> ReadonlySingleton<Config> {
-    singleton_read(storage, CONFIG_KEY)
-}
-
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct Record {
-    pub user_name: String,
-    pub owner: Addr,
-    pub addresses: Vec<(i32, String)>,
-}
-
-pub fn resolver(storage: &mut dyn Storage) -> Bucket<Record> {
-    bucket(storage, ADDRESS_RESOLVER_KEY)
-}
-
-pub fn resolver_read(storage: &dyn Storage) -> ReadonlyBucket<Record> {
-    bucket_read(storage, ADDRESS_RESOLVER_KEY)
-}
+pub const CONFIG: Item<Config> = Item::new("config");
 
 // map of username -> owner address
 pub const OWNER: Map<String, Addr> = Map::new("owner");
-pub const ADDRESSES: Map<(String, i32), Addr> = Map::new("addresses");
+pub const ADDRESSES: Map<(String, i32), String> = Map::new("addresses");
