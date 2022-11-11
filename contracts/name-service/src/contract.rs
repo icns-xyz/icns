@@ -1,9 +1,9 @@
-use std::collections::BinaryHeap;
+use cw2::set_contract_version;
 
 use cosmwasm_std::Order::Ascending;
 use cosmwasm_std::{
-    coin, entry_point, to_binary, Addr, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response,
-    StdError, StdResult, Uint128,
+    entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response,
+    StdError, StdResult, 
 };
 
 use crate::error::ContractError;
@@ -14,6 +14,9 @@ use crate::state::{ Config,
      CONFIG, OWNER, ADDRESSES
 };
 
+const CONTRACT_NAME: &str = "crates.io:default-registrar";
+const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+
 /// Handling contract instantiation
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -22,6 +25,8 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, StdError> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
     let mut admin_addrs = Vec::new();
     for admin in msg.admins {
         admin_addrs.push(deps.api.addr_validate(&admin)?);
@@ -55,7 +60,7 @@ pub fn execute(
 
 pub fn execute_set_record(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     user_name: String,
     owner: Addr,
@@ -96,14 +101,14 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     }
 }
 
-fn query_owner(deps: Deps, env: Env, name: String) -> StdResult<GetOwnerResponse> {
+fn query_owner(deps: Deps, _env: Env, name: String) -> StdResult<GetOwnerResponse> {
     let owner = OWNER.may_load(deps.storage, name)?;
     let resp = GetOwnerResponse { owner };
 
     Ok(resp)
 }
 
-fn query_addresses(deps: Deps, env: Env, name: String) -> StdResult<GetAddressesResponse> {
+fn query_addresses(deps: Deps, _env: Env, name: String) -> StdResult<GetAddressesResponse> {
     let addresses = ADDRESSES
         .prefix(name)
         .range(deps.storage, None, None, Ascending)
@@ -113,7 +118,7 @@ fn query_addresses(deps: Deps, env: Env, name: String) -> StdResult<GetAddresses
     Ok(resp)
 }
 
-fn query_address(deps: Deps, env: Env, user_name: String, coin_type: i32) -> StdResult<GetAddressResponse> {
+fn query_address(deps: Deps, _env: Env, user_name: String, coin_type: i32) -> StdResult<GetAddressResponse> {
     let address = ADDRESSES.may_load(deps.storage, (user_name, coin_type))?;
     let resp = GetAddressResponse { address };
 
@@ -122,7 +127,7 @@ fn query_address(deps: Deps, env: Env, user_name: String, coin_type: i32) -> Std
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{testing::{mock_dependencies, mock_info, mock_env}, DepsMut, Addr, coins, from_binary};
+    use cosmwasm_std::{testing::{mock_dependencies, mock_info, mock_env}, DepsMut, Addr, coins, from_binary, Coin};
 
     use crate::msg::InstantiateMsg;
 
