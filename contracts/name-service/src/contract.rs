@@ -2,7 +2,7 @@ use cw2::set_contract_version;
 
 use cosmwasm_std::Order::Ascending;
 use cosmwasm_std::{
-    entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response,
+     to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response,
     StdError, StdResult, 
 };
 
