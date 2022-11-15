@@ -27,6 +27,7 @@ pub fn instantiate(
 ) -> Result<Response, StdError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
+    // TODO: add duplication check
     let mut admin_addrs = Vec::new();
     for admin in msg.admins {
         admin_addrs.push(deps.api.addr_validate(&admin)?);
@@ -58,6 +59,7 @@ pub fn execute(
     }
 }
 
+// TODO: add msg for adding admin and removing admin
 pub fn execute_set_record(
     deps: DepsMut,
     _env: Env,
@@ -69,6 +71,7 @@ pub fn execute_set_record(
     // check if the msg sender is a registrar or admin. If not, return err
     let cfg = CONFIG.load(deps.storage)?;
 
+    // TODO: make this into method
     let authorized = cfg.admins.iter().any(|a| a.as_ref() == info.sender.as_ref()) ||
         cfg.registrar_addresses.iter().any(|a| a.as_ref() == info.sender.as_ref());
 
@@ -77,6 +80,7 @@ pub fn execute_set_record(
     }
 
     // check if the user_name is already registered
+    // TODO: make only admin be able to override, error if registrar
     let existing = OWNER.may_load(deps.storage, user_name.clone())?;
     if let Some(_) = existing {
         return Err(ContractError::UserAlreadyRegistered { name: user_name });

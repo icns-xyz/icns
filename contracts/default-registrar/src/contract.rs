@@ -66,7 +66,7 @@ pub fn execute_register(
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
-    if info.sender != config.registry {
+    if info.sender != config.admin {
         return Err(ContractError::Unauthorized {});
     }
     

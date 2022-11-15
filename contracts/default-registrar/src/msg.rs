@@ -3,6 +3,7 @@ use cosmwasm_std::{Addr};
 use cosmwasm_schema::{cw_serde};
 
 /// Message type for `instantiate` entry_point
+// TODO: change this to array
 #[cw_serde]
 pub struct InstantiateMsg {
     pub registry: String,
