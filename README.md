@@ -25,6 +25,7 @@ Finally, the Registry contract saves the state of the user name.
 
 A user wanting to query an address for a specific coin type for a specified user name would send a query to the Registry contract. The Registry contract would send a query to the resolver contract to query the address for the given user name + coin type and return the results to the user. 
 
+<img width="730" alt="Screen Shot 2022-11-15 at 5 36 21 PM" src="https://user-images.githubusercontent.com/45252226/201870268-764d9c46-54e5-4f03-bdbb-fceb5bd41bb5.png">
 
 
 ## Resolver
