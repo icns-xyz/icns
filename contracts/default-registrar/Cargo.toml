@@ -48,7 +48,7 @@ cw2 = "0.13.2"
 schemars = "0.8.8"
 serde = { version = "1.0.137", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.31" }
-name-service =  {version = "0.1.0", path = "../name-service", features = ["library"]}
+registry =  {version = "0.1.0", path = "../registry", features = ["library"]}
 
 [dev-dependencies]
 cw-multi-test = "0.13.2"

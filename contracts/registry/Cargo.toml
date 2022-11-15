@@ -1,5 +1,5 @@
 [package]
-name = "name-service"
+name = "registry"
 version = "0.1.0"
 authors = ["mattverse <mattpark1028@gmail.com>"]
 edition = "2021"

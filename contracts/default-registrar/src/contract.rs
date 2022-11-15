@@ -6,7 +6,7 @@ use cw2::set_contract_version;
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg};
 
-use name_service::msg::{ExecuteMsg as NameServiceExecuteMsg};
+use registry::msg::{ExecuteMsg as NameServiceExecuteMsg};
 
 use crate::state::{ Config,
     CONFIG,
