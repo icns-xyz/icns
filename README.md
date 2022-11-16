@@ -10,7 +10,7 @@ ICNS is designed with three different contracts: The Resolver, Registry and the 
 
 ## User stories and Entry Points
 
-<img width="890" alt="Screen Shot 2022-11-16 at 5 36 52 PM" src="https://user-images.githubusercontent.com/45252226/202130022-60b7d29b-bad2-4488-ad4d-e24440992a6d.png">
+<img width="907" alt="Screen Shot 2022-11-16 at 5 42 13 PM" src="https://user-images.githubusercontent.com/45252226/202131161-2f3f6368-32a8-46f0-a214-5bce9d574812.png">
 
 
 ### User Registring a new ICNS
