@@ -5,10 +5,12 @@ use cosmwasm_std::{
      to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response,
     StdError, StdResult, 
 };
+use cosmwasm_std::entry_point;
+
 
 use crate::error::ContractError;
 use crate::msg::{
-    ExecuteMsg, InstantiateMsg, QueryMsg, GetOwnerResponse, GetAddressesResponse, GetAddressResponse,
+    ExecuteMsg, InstantiateMsg, QueryMsg, GetOwnerResponse, GetAddressesResponse, GetAddressResponse, IsAdminResponse
 };
 use crate::state::{ Config,
      CONFIG, OWNER, ADDRESSES
@@ -72,10 +74,10 @@ pub fn execute_set_record(
     let cfg = CONFIG.load(deps.storage)?;
 
     // TODO: make this into method
-    let authorized = cfg.admins.iter().any(|a| a.as_ref() == info.sender.as_ref()) ||
-        cfg.registrar_addresses.iter().any(|a| a.as_ref() == info.sender.as_ref());
+    let is_admin = is_admin(deps.as_ref(), info.sender.clone());
+    let is_registrar = is_registrar(deps.as_ref(), info.sender.clone());
 
-    if !authorized {
+    if !is_admin && !is_registrar {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -95,6 +97,16 @@ pub fn execute_set_record(
     Ok(Response::default())
 }
 
+pub fn is_admin(deps: Deps, addr: Addr) -> bool {
+    let cfg = CONFIG.load(deps.storage).unwrap();
+    cfg.admins.iter().any(|a| a.as_ref() == addr.as_ref())
+}
+
+pub fn is_registrar(deps: Deps, addr: Addr) -> bool {
+    let cfg = CONFIG.load(deps.storage).unwrap();
+    cfg.registrar_addresses.iter().any(|a| a.as_ref() == addr.as_ref())
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
@@ -102,6 +114,10 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::GetAddreses { user_name } => to_binary(&query_addresses(deps, env, user_name)?),
         QueryMsg::GetAddress { user_name, coin_type } => to_binary(&query_address(deps, env, user_name, coin_type)?),
         QueryMsg::Config {} => to_binary(&CONFIG.load(deps.storage)?),
+        QueryMsg::IsAdmin { address } => {
+            let addr = deps.api.addr_validate(&address)?;
+            to_binary(&IsAdminResponse { is_admin: is_admin(deps, addr)})
+        }
     }
 }
 
@@ -133,7 +149,7 @@ fn query_address(deps: Deps, _env: Env, user_name: String, coin_type: i32) -> St
 mod tests {
     use cosmwasm_std::{testing::{mock_dependencies, mock_info, mock_env}, DepsMut, Addr, coins, from_binary, Coin};
 
-    use crate::msg::InstantiateMsg;
+    use crate::msg::{InstantiateMsg, IsAdminResponse};
 
     use super::*;
 
@@ -192,6 +208,30 @@ mod tests {
             registrar_addresses: registrar_addrs,
         };
         assert_eq!(value, expected);
+    }
+
+    #[test]
+    fn test_is_admin() {
+        let mut deps = mock_dependencies();
+        let admin1 = String::from("test_admin1");
+        let admin2 = String::from("test_admin2");
+
+        let admins = vec![admin1.clone(), admin2.clone()];
+        let registrar_addrs = vec![];
+        mock_init(deps.as_mut(), admins, registrar_addrs);
+
+        // test valid admins
+        let res = query(deps.as_ref(), mock_env(), QueryMsg::IsAdmin { address: admin1.clone() }).unwrap();
+        let value: IsAdminResponse = from_binary(&res).unwrap();
+        assert_eq!(value.is_admin, true);
+        let res = query(deps.as_ref(), mock_env(), QueryMsg::IsAdmin { address: admin2.clone() }).unwrap();
+        let value: IsAdminResponse = from_binary(&res).unwrap();
+        assert_eq!(value.is_admin, true);
+
+        // test invalid admin
+        let res = query(deps.as_ref(), mock_env(), QueryMsg::IsAdmin { address: String::from("test_admin3") }).unwrap();
+        let value: IsAdminResponse = from_binary(&res).unwrap();
+        assert_eq!(value.is_admin, false);
     }
 
     #[test]

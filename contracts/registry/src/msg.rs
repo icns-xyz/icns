@@ -24,11 +24,11 @@ pub enum ExecuteMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    // ResolveAddress returns the current address that the name resolves to
     GetOwner { user_name: String },
     GetAddreses {user_name: String},
     GetAddress {user_name: String, coin_type: i32},
     Config {},
+    IsAdmin {address: String}, 
 }
 
 // We define a custom struct for each query response
@@ -45,4 +45,9 @@ pub struct GetAddressesResponse {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct GetAddressResponse {
     pub address: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct IsAdminResponse {
+    pub is_admin: bool,
 }
