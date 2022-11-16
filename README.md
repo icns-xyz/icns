@@ -10,6 +10,9 @@ ICNS is designed with three different contracts: The Resolver, Registry and the 
 
 ## User stories and Entry Points
 
+<img width="890" alt="Screen Shot 2022-11-16 at 5 36 52 PM" src="https://user-images.githubusercontent.com/45252226/202130022-60b7d29b-bad2-4488-ad4d-e24440992a6d.png">
+
+
 ### User Registring a new ICNS
 
 As a user registering a new ICNS, the user would be verifying their Twitter handle and then provide the address they would like to use for each bech32 prefix(ex. osmo -> osmo1.....,  juno -> juno1....). 
