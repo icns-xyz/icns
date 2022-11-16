@@ -7,7 +7,6 @@ pub static CONFIG_KEY: &[u8] = b"config";
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
-    pub admins: Vec<Addr>,
     pub registry_address: Addr,
 }
 

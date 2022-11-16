@@ -2,9 +2,10 @@ use cw2::set_contract_version;
 
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, QueryRequest, WasmQuery, to_binary, from_binary};
 // use cw2::set_contract_version;
 
+use registry::msg::{QueryMsg as QueryMsgRegistry, IsAdminResponse};
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{ Config,
@@ -25,16 +26,9 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-      // TODO: add duplication check
-      let mut admin_addrs = Vec::new();
-      for admin in msg.admins {
-          admin_addrs.push(deps.api.addr_validate(&admin)?);
-      }
-  
       let registry_addr = deps.api.addr_validate(&msg.registry_address)?;
   
       let cfg = Config {
-          admins: admin_addrs,
           registry_address: registry_addr,
       };
       CONFIG.save(deps.storage, &cfg)?;
@@ -52,6 +46,18 @@ pub fn execute(
     unimplemented!()
 }
 
+pub fn is_admin(deps: Deps, address: String) -> Result<bool, ContractError> {
+   let response = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+       contract_addr: CONFIG.load(deps.storage)?.registry_address.to_string(),
+       msg: to_binary(&QueryMsgRegistry::IsAdmin {address})?,
+   })).map(|res| from_binary(&res).unwrap());
+
+    match response {
+         Ok(IsAdminResponse {is_admin}) => Ok(is_admin),
+         Err(_) => Err(ContractError::Unauthorized {}),
+    }
+}
+
 pub fn execute_set_address(
     deps: DepsMut,
     _env: Env,
@@ -62,11 +68,10 @@ pub fn execute_set_address(
     // check if the msg sender is a registrar or admin. If not, return err
     let cfg = CONFIG.load(deps.storage)?;
 
-    // TODO: make this into method
-    let authorized = cfg.admins.iter().any(|a| a.as_ref() == info.sender.as_ref()) ||
-        cfg.registry_address == info.sender.as_ref();
+    let is_admin = is_admin(deps.as_ref(), info.sender.to_string())?;
 
-    if !authorized {
+    // if the sender is neither a registrar nor an admin, return error
+    if !is_admin || cfg.registry_address != info.sender.as_ref() {
         return Err(ContractError::Unauthorized {});
     }
 
