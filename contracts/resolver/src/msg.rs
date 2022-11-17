@@ -3,13 +3,13 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
-    pub registry_address: String,
+    pub registrar_address: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    SetAddress {
+    SetAddresses {
         user_name: String,
         // tuple of (bech32 prefix, address)
         addresses: Vec<(String, String)>,
@@ -18,4 +18,19 @@ pub enum ExecuteMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum QueryMsg {}
+pub enum QueryMsg {
+    Config {},
+    GetAddreses {user_name: String},
+    GetAddress {user_name: String, bec32_prefix: String},
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct GetAddressesResponse {
+    // tuple of (bech32 prefix, address)
+    pub addresses: Vec<(String, String)>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct GetAddressResponse {
+    pub address: Option<String>,
+}

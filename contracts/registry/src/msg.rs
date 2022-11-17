@@ -13,12 +13,6 @@ pub struct InstantiateMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    SetRecord {
-        user_name: String,
-        owner: Addr,
-        // tuple of (cointype, address)
-        addresses: Vec<(i32, String)>,
-    },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
