@@ -4,11 +4,23 @@ use cw721_base::msg::QueryMsg as Cw721QueryMsg;
 
 #[cw_serde]
 pub struct InstantiateMsg {
-    pub admin: String, // TODO: rename admin to registry? depeding on giving admin ability to do this sort of stuffs
+    pub admin: String,
     pub name: String,
     pub symbol: String,
     pub minter: String, // TODO: must only be registry contract
     pub transferable: bool,
+}
+
+#[cw_serde]
+#[serde(untagged)]
+pub enum ExecuteMsg {
+    CW721Base(cw721_base::ExecuteMsg<cw721_base::Extension, Empty>),
+    ICNSName(ICNSNameExecuteMsg),
+}
+
+#[cw_serde]
+pub enum ICNSNameExecuteMsg {
+    SetAdmin { admin: String },
 }
 
 #[cw_serde]
@@ -95,4 +107,37 @@ impl From<QueryMsg> for Cw721QueryMsg<Empty> {
 #[cw_serde]
 pub struct AdminResponse {
     pub admin: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use cosmwasm_std::{from_binary, to_binary, Binary};
+
+    use super::*;
+
+    #[test]
+    fn execute_msg_serde_should_conform_cw721_standard() {
+        let execute_msg_binary: Binary =
+            r#"{"transfer_nft":{"recipient":"recp","token_id":"name"}}"#
+                .as_bytes()
+                .into();
+        let execute_msg: ExecuteMsg = from_binary(&execute_msg_binary).unwrap();
+
+        assert_eq!(
+            std::str::from_utf8(to_binary(&execute_msg).unwrap().as_slice()),
+            std::str::from_utf8(execute_msg_binary.as_slice())
+        )
+    }
+
+    #[test]
+    fn execute_msg_serde_should_include_set_admin_extension() {
+        let execute_msg_binary: Binary =
+            r#"{"set_admin":{"admin":"admin_address"}}"#.as_bytes().into();
+        let execute_msg: ExecuteMsg = from_binary(&execute_msg_binary).unwrap();
+
+        assert_eq!(
+            std::str::from_utf8(to_binary(&execute_msg).unwrap().as_slice()),
+            std::str::from_utf8(execute_msg_binary.as_slice())
+        )
+    }
 }

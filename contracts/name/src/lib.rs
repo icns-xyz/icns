@@ -2,8 +2,8 @@ pub use crate::msg::{InstantiateMsg, QueryMsg};
 use cosmwasm_std::Empty;
 pub use cw721_base::{
     entry::{execute as _execute, query as _query},
-    ContractError, Cw721Contract, ExecuteMsg, Extension, InstantiateMsg as Cw721BaseInstantiateMsg,
-    MintMsg, MinterResponse,
+    ContractError, Cw721Contract, ExecuteMsg as CW721BaseExecuteMsg, Extension,
+    InstantiateMsg as Cw721BaseInstantiateMsg, MintMsg, MinterResponse,
 };
 
 pub mod msg;
@@ -19,6 +19,7 @@ pub type ICNSNameOwnership<'a> = Cw721Contract<'a, Extension, Empty, Empty, Empt
 #[cfg(not(feature = "library"))]
 pub mod entry {
     use super::*;
+    use crate::msg::ExecuteMsg;
     use crate::query::admin;
     use crate::state::{Config, CONFIG};
     use cosmwasm_std::{
@@ -66,13 +67,18 @@ pub mod entry {
         deps: DepsMut,
         env: Env,
         info: MessageInfo,
-        msg: ExecuteMsg<Extension, Empty>,
+        msg: ExecuteMsg,
     ) -> Result<Response, cw721_base::ContractError> {
         let config = CONFIG.load(deps.storage)?;
-        if config.admin == info.sender || config.transferable {
-            _execute(deps, env, info, msg)
-        } else {
-            Err(ContractError::Unauthorized {})
+        match msg {
+            ExecuteMsg::CW721Base(msg) => {
+                if config.admin == info.sender || config.transferable {
+                    _execute(deps, env, info, msg)
+                } else {
+                    Err(ContractError::Unauthorized {})
+                }
+            }
+            ExecuteMsg::ICNSName(_) => todo!(),
         }
     }
 
@@ -87,6 +93,8 @@ pub mod entry {
 
 #[cfg(test)]
 mod tests {
+    use crate::msg::ExecuteMsg;
+
     use super::*;
     use cosmwasm_std::Addr;
     use cw721::OwnerOfResponse;
@@ -128,12 +136,12 @@ mod tests {
         app.execute_contract(
             admin,
             contract_addr.clone(),
-            &ExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+            &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
                 token_id: icns_name.to_string(),
                 owner: name_owner.to_string(),
                 token_uri: None,
                 extension: None,
-            }),
+            })),
             &[],
         )
         .unwrap();
@@ -143,10 +151,10 @@ mod tests {
             .execute_contract(
                 name_owner,
                 contract_addr,
-                &ExecuteMsg::<Extension, Empty>::TransferNft {
+                &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::TransferNft {
                     recipient: recipient.to_string(),
                     token_id: icns_name.to_string(),
-                },
+                }),
                 &[],
             )
             .unwrap_err();
@@ -188,12 +196,12 @@ mod tests {
         app.execute_contract(
             admin,
             contract_addr.clone(),
-            &ExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+            &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
                 token_id: icns_name.to_string(),
                 owner: name_owner.to_string(),
                 token_uri: None,
                 extension: None,
-            }),
+            })),
             &[],
         )
         .unwrap();
@@ -202,10 +210,10 @@ mod tests {
         app.execute_contract(
             name_owner,
             contract_addr.clone(),
-            &ExecuteMsg::<Extension, Empty>::TransferNft {
+            &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::TransferNft {
                 recipient: recipient.to_string(),
                 token_id: icns_name.to_string(),
-            },
+            }),
             &[],
         )
         .unwrap();
