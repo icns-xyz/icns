@@ -78,7 +78,23 @@ pub mod entry {
                     Err(ContractError::Unauthorized {})
                 }
             }
-            ExecuteMsg::ICNSName(_) => todo!(),
+            ExecuteMsg::ICNSName(msg) => match msg {
+                msg::ICNSNameExecuteMsg::SetAdmin { admin } => {
+                    if config.admin == info.sender {
+                        CONFIG.update(deps.storage, |config| -> StdResult<_> {
+                            Ok(Config {
+                                admin: deps.api.addr_validate(&admin)?,
+                                ..config
+                            })
+                        })?;
+                        Ok(Response::new()
+                            .add_attribute("method", "set_admin")
+                            .add_attribute("admin", admin))
+                    } else {
+                        Err(ContractError::Unauthorized {})
+                    }
+                }
+            },
         }
     }
 
@@ -93,7 +109,7 @@ pub mod entry {
 
 #[cfg(test)]
 mod tests {
-    use crate::msg::ExecuteMsg;
+    use crate::msg::{AdminResponse, ExecuteMsg, ICNSNameExecuteMsg};
 
     use super::*;
     use cosmwasm_std::Addr;
@@ -231,5 +247,74 @@ mod tests {
             .unwrap();
 
         assert_eq!(res.owner, recipient.to_string());
+    }
+
+    #[test]
+    fn only_admin_can_set_new_admin() {
+        let mut app = BasicApp::default();
+        let code_id = app.store_code(name_ownership_contract());
+        let admin = Addr::unchecked("admin");
+        let new_admin = Addr::unchecked("new_admin");
+
+        // instantiate contract with transferable = false
+        let contract_addr = app
+            .instantiate_contract(
+                code_id,
+                admin.clone(),
+                &InstantiateMsg {
+                    admin: admin.to_string(),
+                    name: "icns-name-ownership".to_string(),
+                    symbol: "icns".to_string(),
+                    minter: admin.to_string(),
+                    transferable: false,
+                },
+                &[],
+                "name_ownership",
+                None,
+            )
+            .unwrap();
+
+        // set new admin by non admin should fail
+        let err = app
+            .execute_contract(
+                new_admin.clone(),
+                contract_addr.clone(),
+                &ExecuteMsg::ICNSName(ICNSNameExecuteMsg::SetAdmin {
+                    admin: new_admin.to_string(),
+                }),
+                &[],
+            )
+            .unwrap_err();
+
+        assert_eq!(
+            err.downcast_ref::<ContractError>().unwrap(),
+            &ContractError::Unauthorized {}
+        );
+
+        // admin should not be changed
+        let res: AdminResponse = app
+            .wrap()
+            .query_wasm_smart(contract_addr.clone(), &QueryMsg::Admin {})
+            .unwrap();
+
+        assert_eq!(res.admin, admin.to_string());
+
+        // set new admin by admin should succeed
+        app.execute_contract(
+            admin,
+            contract_addr.clone(),
+            &ExecuteMsg::ICNSName(ICNSNameExecuteMsg::SetAdmin {
+                admin: new_admin.to_string(),
+            }),
+            &[],
+        )
+        .unwrap();
+
+        let res: AdminResponse = app
+            .wrap()
+            .query_wasm_smart(contract_addr, &QueryMsg::Admin {})
+            .unwrap();
+
+        assert_eq!(res.admin, new_admin.to_string());
     }
 }
