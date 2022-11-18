@@ -2,124 +2,243 @@
 
 use crate::{
     msg::{ExecuteMsg, ICNSNameExecuteMsg, TransferrableResponse},
-    tests::helpers::{Env, EnvBuilder},
+    tests::helpers::{TestEnv, TestEnvBuilder},
     QueryMsg,
 };
 
+use cosmwasm_std::to_binary;
 use cosmwasm_std::{Addr, Empty};
 use cw721::OwnerOfResponse;
 use cw721_base::{ContractError, ExecuteMsg as CW721BaseExecuteMsg, Extension, MintMsg};
 use cw_multi_test::{BasicApp, Executor};
 
-#[test]
-fn transferrable_false_should_not_allow_transfer() {
-    let Env {
-        mut app,
-        contract_addr,
-        registry,
-        ..
-    } = EnvBuilder::default().with_transferrable(false).build();
+mod non_transferrable {
+    use super::*;
 
-    let name_owner = Addr::unchecked("name_owner");
-    let recipient = Addr::unchecked("recipient");
-    let name = "alice";
-
-    // registry mint test icns_name
-    app.execute_contract(
-        registry,
-        contract_addr.clone(),
-        &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
-            token_id: name.to_string(),
-            owner: name_owner.to_string(),
-            token_uri: None,
-            extension: None,
-        })),
-        &[],
-    )
-    .unwrap();
-
-    // transfer must be unauthorized
-    let err = app
-        .execute_contract(
-            name_owner,
+    #[test]
+    fn should_not_allow_transfer() {
+        let TestEnv {
+            mut app,
             contract_addr,
+            registry,
+            ..
+        } = TestEnvBuilder::default().with_transferrable(false).build();
+
+        let name_owner = Addr::unchecked("name_owner");
+        let recipient = Addr::unchecked("recipient");
+        let name = "alice";
+
+        // registry mint test icns_name
+        app.execute_contract(
+            registry,
+            contract_addr.clone(),
+            &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+                token_id: name.to_string(),
+                owner: name_owner.to_string(),
+                token_uri: None,
+                extension: None,
+            })),
+            &[],
+        )
+        .unwrap();
+
+        // transfer must be unauthorized
+        let err = app
+            .execute_contract(
+                name_owner,
+                contract_addr,
+                &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::TransferNft {
+                    recipient: recipient.to_string(),
+                    token_id: name.to_string(),
+                }),
+                &[],
+            )
+            .unwrap_err();
+
+        assert_eq!(
+            err.downcast_ref::<ContractError>().unwrap(),
+            &ContractError::Unauthorized {}
+        );
+    }
+
+    #[test]
+    fn should_not_allow_send() {
+        let TestEnv {
+            mut app,
+            contract_addr,
+            registry,
+            ..
+        } = TestEnvBuilder::default().with_transferrable(false).build();
+
+        let name_owner = Addr::unchecked("name_owner");
+        let recipient_contract = Addr::unchecked("recipient_contract");
+        let name = "alice";
+
+        // registry mint test icns_name
+        app.execute_contract(
+            registry,
+            contract_addr.clone(),
+            &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+                token_id: name.to_string(),
+                owner: name_owner.to_string(),
+                token_uri: None,
+                extension: None,
+            })),
+            &[],
+        )
+        .unwrap();
+
+        // send must be unauthorized
+        let err = app
+            .execute_contract(
+                name_owner,
+                contract_addr,
+                &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::SendNft {
+                    contract: recipient_contract.to_string(),
+                    token_id: name.to_string(),
+                    msg: to_binary("").unwrap(),
+                }),
+                &[],
+            )
+            .unwrap_err();
+
+        assert_eq!(
+            err.downcast_ref::<ContractError>().unwrap(),
+            &ContractError::Unauthorized {}
+        );
+    }
+}
+
+mod transferrable {
+    use crate::{tests::helpers::mock_reciever_contract, InstantiateMsg};
+
+    use super::*;
+
+    #[test]
+    fn should_allow_transfer() {
+        let TestEnv {
+            mut app,
+            contract_addr,
+            registry,
+            ..
+        } = TestEnvBuilder::default().with_transferrable(true).build();
+
+        let name_owner = Addr::unchecked("name_owner");
+        let recipient = Addr::unchecked("recipient");
+        let name = "alice";
+
+        // mint test name
+        app.execute_contract(
+            registry,
+            contract_addr.clone(),
+            &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+                token_id: name.to_string(),
+                owner: name_owner.to_string(),
+                token_uri: None,
+                extension: None,
+            })),
+            &[],
+        )
+        .unwrap();
+
+        // transfer to recipient should succeed
+        app.execute_contract(
+            name_owner,
+            contract_addr.clone(),
             &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::TransferNft {
                 recipient: recipient.to_string(),
                 token_id: name.to_string(),
             }),
             &[],
         )
-        .unwrap_err();
+        .unwrap();
 
-    assert_eq!(
-        err.downcast_ref::<ContractError>().unwrap(),
-        &ContractError::Unauthorized {}
-    );
-}
+        // name is now owned by recipient
+        let res: OwnerOfResponse = app
+            .wrap()
+            .query_wasm_smart(
+                contract_addr,
+                &QueryMsg::OwnerOf {
+                    token_id: name.to_string(),
+                    include_expired: None,
+                },
+            )
+            .unwrap();
 
-#[test]
-fn transferrable_true_should_allow_transfer() {
-    let Env {
-        mut app,
-        contract_addr,
-        registry,
-        ..
-    } = EnvBuilder::default().with_transferrable(true).build();
+        assert_eq!(res.owner, recipient.to_string());
+    }
 
-    let name_owner = Addr::unchecked("name_owner");
-    let recipient = Addr::unchecked("recipient");
-    let name = "alice";
-
-    // mint test name
-    app.execute_contract(
-        registry,
-        contract_addr.clone(),
-        &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
-            token_id: name.to_string(),
-            owner: name_owner.to_string(),
-            token_uri: None,
-            extension: None,
-        })),
-        &[],
-    )
-    .unwrap();
-
-    // transfer to recipient should succeed
-    app.execute_contract(
-        name_owner,
-        contract_addr.clone(),
-        &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::TransferNft {
-            recipient: recipient.to_string(),
-            token_id: name.to_string(),
-        }),
-        &[],
-    )
-    .unwrap();
-
-    // name is now owned by recipient
-    let res: OwnerOfResponse = app
-        .wrap()
-        .query_wasm_smart(
+    #[test]
+    fn should_allow_send() {
+        let TestEnv {
+            mut app,
             contract_addr,
-            &QueryMsg::OwnerOf {
+            registry,
+            admin,
+            ..
+        } = TestEnvBuilder::default().with_transferrable(true).build();
+
+        let name_owner = Addr::unchecked("name_owner");
+
+        let name = "alice";
+
+        // mint test name
+        app.execute_contract(
+            registry,
+            contract_addr.clone(),
+            &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
                 token_id: name.to_string(),
-                include_expired: None,
-            },
+                owner: name_owner.to_string(),
+                token_uri: None,
+                extension: None,
+            })),
+            &[],
         )
         .unwrap();
 
-    assert_eq!(res.owner, recipient.to_string());
+        let reciever_code_id = app.store_code(mock_reciever_contract());
+        let reciever_contract_addr = app
+            .instantiate_contract(reciever_code_id, admin, &(), &[], "name_clone", None)
+            .unwrap();
+
+        // send to recipient should succeed
+        app.execute_contract(
+            name_owner,
+            contract_addr.clone(),
+            &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::SendNft {
+                contract: reciever_contract_addr.to_string(),
+                token_id: name.to_string(),
+                msg: to_binary(&()).unwrap(),
+            }),
+            &[],
+        )
+        .unwrap();
+
+        // name is now owned by recipient
+        let res: OwnerOfResponse = app
+            .wrap()
+            .query_wasm_smart(
+                contract_addr,
+                &QueryMsg::OwnerOf {
+                    token_id: name.to_string(),
+                    include_expired: None,
+                },
+            )
+            .unwrap();
+
+        assert_eq!(res.owner, reciever_contract_addr.to_string());
+    }
 }
 
 #[test]
 fn only_admin_can_set_transferrable() {
-    let Env {
+    let TestEnv {
         mut app,
         contract_addr,
         registry,
         admin,
         ..
-    } = EnvBuilder::default().with_transferrable(false).build();
+    } = TestEnvBuilder::default().with_transferrable(false).build();
 
     let transferrable = |app: &BasicApp| {
         let TransferrableResponse { transferrable } = app

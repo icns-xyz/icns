@@ -2,7 +2,7 @@
 
 use crate::{
     msg::ExecuteMsg,
-    tests::helpers::{Env, EnvBuilder},
+    tests::helpers::{TestEnv, TestEnvBuilder},
     QueryMsg,
 };
 
@@ -13,13 +13,13 @@ use cw_multi_test::{BasicApp, Executor};
 
 #[test]
 fn only_registry_can_set_new_admin() {
-    let Env {
+    let TestEnv {
         mut app,
         admin,
         contract_addr,
         registry,
         ..
-    } = EnvBuilder::default().with_transferrable(false).build();
+    } = TestEnvBuilder::default().with_transferrable(false).build();
 
     let owner = |app: &BasicApp, name: String| -> StdResult<_> {
         let OwnerOfResponse { owner, .. } = app.wrap().query_wasm_smart(
@@ -94,12 +94,12 @@ fn only_registry_can_set_new_admin() {
 
 #[test]
 fn burning_is_not_allowed() {
-    let Env {
+    let TestEnv {
         mut app,
         admin,
         contract_addr,
         ..
-    } = EnvBuilder::default().with_transferrable(false).build();
+    } = TestEnvBuilder::default().with_transferrable(false).build();
 
     let err = app
         .execute_contract(

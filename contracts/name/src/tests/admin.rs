@@ -2,7 +2,7 @@
 
 use crate::{
     msg::{AdminResponse, ExecuteMsg, ICNSNameExecuteMsg},
-    tests::helpers::{Env, EnvBuilder},
+    tests::helpers::{TestEnv, TestEnvBuilder},
     QueryMsg,
 };
 
@@ -12,13 +12,13 @@ use cw_multi_test::{BasicApp, Executor};
 
 #[test]
 fn only_admin_can_set_new_admin() {
-    let Env {
+    let TestEnv {
         mut app,
         admin,
         contract_addr,
         registry,
         ..
-    } = EnvBuilder::default().with_transferrable(false).build();
+    } = TestEnvBuilder::default().with_transferrable(false).build();
 
     let get_admin = |app: &BasicApp| {
         let AdminResponse { admin } = app
