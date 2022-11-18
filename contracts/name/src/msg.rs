@@ -21,11 +21,13 @@ pub enum ExecuteMsg {
 #[cw_serde]
 pub enum ICNSNameExecuteMsg {
     SetAdmin { admin: String },
+    SetTransferrable { transferrable: bool },
 }
 
 #[cw_serde]
 pub enum QueryMsg {
     Admin {},
+    Transferrable {},
     OwnerOf {
         token_id: String,
         include_expired: Option<bool>,
@@ -107,6 +109,11 @@ impl From<QueryMsg> for Cw721QueryMsg<Empty> {
 #[cw_serde]
 pub struct AdminResponse {
     pub admin: String,
+}
+
+#[cw_serde]
+pub struct TransferrableResponse {
+    pub transferrable: bool,
 }
 
 #[cfg(test)]
