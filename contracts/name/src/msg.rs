@@ -4,9 +4,16 @@ use cw721_base::msg::QueryMsg as Cw721QueryMsg;
 
 #[cw_serde]
 pub struct InstantiateMsg {
-    pub admin: String,
-    pub minter: String,
+    /// `registry` contract address. It controls minting process of this NFT.
+    pub registry: String,
+
+    /// If set to `true`, this NFT will be able to transfer / send
+    /// not allowed to set to `false`.
     pub transferrable: bool,
+
+    /// Admin has ability to change config of this contract.
+    /// Namely the `admin` itself and `transferrable`
+    pub admin: String,
 }
 
 #[cw_serde]
