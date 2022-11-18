@@ -25,10 +25,10 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-      let registrar_address = deps.api.addr_validate(&msg.registrar_address)?;
+      let registry_address = deps.api.addr_validate(&msg.registry_address)?;
   
       let cfg = Config {
-          registrar_address: registrar_address,
+          registry_address: registry_address,
       };
       CONFIG.save(deps.storage, &cfg)?;
   
@@ -78,7 +78,7 @@ pub fn execute_set_addresses(
 
 pub fn is_admin(deps: Deps, address: String) -> Result<bool, ContractError> {
    let response = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-       contract_addr: CONFIG.load(deps.storage)?.registrar_address.to_string(),
+       contract_addr: CONFIG.load(deps.storage)?.registry_address.to_string(),
        msg: to_binary(&QueryMsgRegistry::IsAdmin {address})?,
    })).map(|res| from_binary(&res).unwrap());
 
@@ -90,7 +90,7 @@ pub fn is_admin(deps: Deps, address: String) -> Result<bool, ContractError> {
 }
 
 pub fn is_registrar(deps: Deps, address: String) -> Result<bool, ContractError> {
-    let registrar = CONFIG.load(deps.storage)?.registrar_address.to_string();
+    let registrar = CONFIG.load(deps.storage)?.registry_address.to_string();
     Ok(registrar == address)
 }
 
@@ -131,10 +131,10 @@ mod tests {
 
     fn mock_init(
         deps: DepsMut,
-        registrar_addr: String,
+        registry_addr: String,
     ) {
         let msg = InstantiateMsg {
-            registrar_address: registrar_addr.to_string(),
+            registry_address: registry_addr.to_string(),
         };
 
         let info = mock_info("creator", &coins(1, "token"));
@@ -163,7 +163,7 @@ mod tests {
         let res = query(deps.as_ref(), mock_env(), QueryMsg::Config {}).unwrap();
         let value: Config = from_binary(&res).unwrap();
         let expected = Config {
-            registrar_address: Addr::unchecked(registry_addr),
+            registry_address: Addr::unchecked(registry_addr),
         };
         assert_eq!(value, expected);
     }

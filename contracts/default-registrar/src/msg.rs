@@ -8,7 +8,7 @@ use cosmwasm_schema::{cw_serde};
 pub struct InstantiateMsg {
     pub registry: String,
     pub resolver: String,
-    pub admin_addr: String, 
+    pub operator_addrs: Vec<String>, 
 }
 
 /// Message type for `execute` entry_point
@@ -16,7 +16,7 @@ pub struct InstantiateMsg {
 pub enum ExecuteMsg {
     Register {
         user_name: String,
-        owner: Addr,
+        owner: String,
         // tuple of (bech32 prefix, address)
         addresses: Vec<(String, String)>,
     }

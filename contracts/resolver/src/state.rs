@@ -7,7 +7,7 @@ pub static CONFIG_KEY: &[u8] = b"config";
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
-    pub registrar_address: Addr,
+    pub registry_address: Addr,
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");

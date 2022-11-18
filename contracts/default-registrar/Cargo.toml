@@ -48,6 +48,7 @@ cw2 = "0.13.2"
 schemars = "0.8.8"
 serde = { version = "1.0.137", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.31" }
+subtle-encoding = { version = "0.5", features = ["bech32-preview"] }
 registry =  {version = "0.1.0", path = "../registry", features = ["library"]}
 resolver =  {version = "0.1.0", path = "../resolver", features = ["library"]}
 

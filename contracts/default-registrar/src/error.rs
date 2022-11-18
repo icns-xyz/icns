@@ -11,6 +11,13 @@ pub enum ContractError {
 
     #[error("Custom Error val: {val:?}")]
     CustomError { val: String },
-    // Add any other custom errors you like here.
-    // Look at https://docs.rs/thiserror/1.0.21/thiserror/ for details.
+   
+    #[error("Invalid user name: {user_name:?}")]
+    InvalidUserName { user_name: String },
+
+    #[error("Bech32 decoding failed for addr: {addr:?}")]
+    Bech32DecodingErr { addr: String },
+
+    #[error("Bech32 prefix mismatch between prefix: {prefix:?} and addr: {addr:?}")]
+    Bech32PrefixMismatch { prefix: String, addr: String },
 }

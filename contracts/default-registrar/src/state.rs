@@ -12,8 +12,8 @@ pub struct Config {
     pub registry: Addr,
     pub resolver: Addr,
 
-    // admin pub key defines the pub key of the admin who can call this contract
-    pub admin: Addr,
+    // operator defines the pub key of the operator who can call this contract
+    pub operators: Vec<Addr>,
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");
