@@ -10,6 +10,7 @@ pub static CONFIG_KEY: &[u8] = b"config";
 pub struct Config {
     // registry address to send msg to
     pub registry: Addr,
+    pub resolver: Addr,
 
     // admin pub key defines the pub key of the admin who can call this contract
     pub admin: Addr,

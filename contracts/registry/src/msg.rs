@@ -7,18 +7,22 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
     pub admins: Vec<String>,
-    pub registrar_addresses: Vec<String>,
+    pub registrar_address: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
+    SetResolverAddress {
+        user_name: String,
+        resolver_address: Addr,
+    },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    GetOwner { user_name: String },
+    GetResolverAddr { user_name: String },
     GetAddreses {user_name: String},
     GetAddress {user_name: String, coin_type: i32},
     Config {},
@@ -27,8 +31,8 @@ pub enum QueryMsg {
 
 // We define a custom struct for each query response
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct GetOwnerResponse {
-    pub owner: Option<Addr>,
+pub struct GetResolverAddrResponse {
+    pub resolver_addr: Option<Addr>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

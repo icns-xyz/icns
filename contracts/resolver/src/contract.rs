@@ -1,6 +1,4 @@
 use cw2::set_contract_version;
-
-#[cfg(not(feature = "library"))]
 use cosmwasm_std::Order::Ascending;
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, QueryRequest, WasmQuery, to_binary, from_binary};

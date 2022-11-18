@@ -6,7 +6,8 @@ use cw2::set_contract_version;
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg};
 
-use registry::msg::{ExecuteMsg as NameServiceExecuteMsg};
+use registry::msg::{ExecuteMsg as RegistryExecuteMsg};
+use resolver::msg::{ExecuteMsg as ResolverExecuteMsg};
 
 use crate::state::{ Config,
     CONFIG,
@@ -27,10 +28,12 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     let registry_addr = deps.api.addr_validate(&msg.registry)?;
+    let resolver_addr = deps.api.addr_validate(&msg.resolver)?;
     let admin_addr = deps.api.addr_validate(&msg.admin_addr)?;
 
     let config = Config {
         registry: registry_addr,
+        resolver: resolver_addr,
         admin: admin_addr,
     };
 
@@ -61,8 +64,8 @@ pub fn execute_register(
     _env: Env,
     info: MessageInfo,
     user_name: String,
-    owner: Addr,
-    addresses: Vec<(i32, String)>,
+    resolver: Addr,
+    addresses: Vec<(String, String)>,
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
@@ -72,9 +75,8 @@ pub fn execute_register(
     
     let set_record_msg = WasmMsg::Execute {
         contract_addr: config.registry.to_string(),
-        msg: to_binary(&NameServiceExecuteMsg::SetRecord {
+        msg: to_binary(&ResolverExecuteMsg::SetAddresses {
             user_name,
-            owner,
             addresses,
         })?,
         funds: vec![],

@@ -49,6 +49,7 @@ schemars = "0.8.8"
 serde = { version = "1.0.137", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.31" }
 registry =  {version = "0.1.0", path = "../registry", features = ["library"]}
+resolver =  {version = "0.1.0", path = "../resolver", features = ["library"]}
 
 [dev-dependencies]
 cw-multi-test = "0.13.2"

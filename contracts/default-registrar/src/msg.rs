@@ -7,6 +7,7 @@ use cosmwasm_schema::{cw_serde};
 #[cw_serde]
 pub struct InstantiateMsg {
     pub registry: String,
+    pub resolver: String,
     pub admin_addr: String, 
 }
 
@@ -16,7 +17,7 @@ pub enum ExecuteMsg {
     Register {
         user_name: String,
         owner: Addr,
-        // tuple of (cointype, address)
-        addresses: Vec<(i32, String)>,
+        // tuple of (bech32 prefix, address)
+        addresses: Vec<(String, String)>,
     }
 }
