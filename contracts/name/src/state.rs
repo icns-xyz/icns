@@ -5,7 +5,7 @@ use cw_storage_plus::Item;
 #[cw_serde]
 pub struct Config {
     pub admin: Addr,
-    pub transferable: bool,
+    pub transferrable: bool,
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");

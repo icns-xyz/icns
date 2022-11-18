@@ -12,13 +12,13 @@ use cw721_base::{ContractError, ExecuteMsg as CW721BaseExecuteMsg, Extension, Mi
 use cw_multi_test::{BasicApp, Executor};
 
 #[test]
-fn transferable_false_should_not_allow_transfer() {
+fn transferrable_false_should_not_allow_transfer() {
     let Env {
         mut app,
         contract_addr,
         registry,
         ..
-    } = EnvBuilder::default().with_transferable(false).build();
+    } = EnvBuilder::default().with_transferrable(false).build();
 
     let name_owner = Addr::unchecked("name_owner");
     let recipient = Addr::unchecked("recipient");
@@ -58,13 +58,13 @@ fn transferable_false_should_not_allow_transfer() {
 }
 
 #[test]
-fn transferable_true_should_allow_transfer() {
+fn transferrable_true_should_allow_transfer() {
     let Env {
         mut app,
         contract_addr,
         registry,
         ..
-    } = EnvBuilder::default().with_transferable(true).build();
+    } = EnvBuilder::default().with_transferrable(true).build();
 
     let name_owner = Addr::unchecked("name_owner");
     let recipient = Addr::unchecked("recipient");
@@ -112,14 +112,14 @@ fn transferable_true_should_allow_transfer() {
 }
 
 #[test]
-fn only_admin_can_set_transferable() {
+fn only_admin_can_set_transferrable() {
     let Env {
         mut app,
         contract_addr,
         registry,
         admin,
         ..
-    } = EnvBuilder::default().with_transferable(false).build();
+    } = EnvBuilder::default().with_transferrable(false).build();
 
     let transferrable = |app: &BasicApp| {
         let TransferrableResponse { transferrable } = app

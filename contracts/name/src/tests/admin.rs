@@ -18,7 +18,7 @@ fn only_admin_can_set_new_admin() {
         contract_addr,
         registry,
         ..
-    } = EnvBuilder::default().with_transferable(false).build();
+    } = EnvBuilder::default().with_transferrable(false).build();
 
     let get_admin = |app: &BasicApp| {
         let AdminResponse { admin } = app

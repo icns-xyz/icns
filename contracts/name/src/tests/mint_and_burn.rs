@@ -19,7 +19,7 @@ fn only_registry_can_set_new_admin() {
         contract_addr,
         registry,
         ..
-    } = EnvBuilder::default().with_transferable(false).build();
+    } = EnvBuilder::default().with_transferrable(false).build();
 
     let owner = |app: &BasicApp, name: String| -> StdResult<_> {
         let OwnerOfResponse { owner, .. } = app.wrap().query_wasm_smart(
@@ -99,7 +99,7 @@ fn burning_is_not_allowed() {
         admin,
         contract_addr,
         ..
-    } = EnvBuilder::default().with_transferable(false).build();
+    } = EnvBuilder::default().with_transferrable(false).build();
 
     let err = app
         .execute_contract(

@@ -19,7 +19,7 @@ pub struct Env {
 pub struct EnvBuilder {
     pub admin: Addr,
     pub registry: Addr,
-    pub transferable: bool,
+    pub transferrable: bool,
 }
 
 impl Default for EnvBuilder {
@@ -27,15 +27,15 @@ impl Default for EnvBuilder {
         Self {
             admin: Addr::unchecked("admin"),
             registry: Addr::unchecked("registry"),
-            transferable: false,
+            transferrable: false,
         }
     }
 }
 
 impl EnvBuilder {
-    pub fn with_transferable(self, transferable: bool) -> Self {
+    pub fn with_transferrable(self, transferrable: bool) -> Self {
         Self {
-            transferable,
+            transferrable,
             ..self
         }
     }
@@ -53,7 +53,7 @@ impl EnvBuilder {
                     name: "icns-name".to_string(),
                     symbol: "icns".to_string(),
                     minter: self.registry.to_string(),
-                    transferable: self.transferable,
+                    transferrable: self.transferrable,
                 },
                 &[],
                 "name_ownership",

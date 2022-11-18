@@ -20,7 +20,7 @@ pub type ICNSNameContract<'a> = Cw721Contract<'a, Extension, Empty, Empty, Empty
 pub mod entry {
     use super::*;
     use crate::msg::ExecuteMsg;
-    use crate::query::{admin, transferable};
+    use crate::query::{admin, transferrable};
     use crate::state::{Config, CONFIG};
     use cosmwasm_std::{
         entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
@@ -37,7 +37,7 @@ pub mod entry {
 
         let config = Config {
             admin: admin_addr,
-            transferable: msg.transferable,
+            transferrable: msg.transferrable,
         };
 
         CONFIG.save(deps.storage, &config)?;
@@ -76,7 +76,7 @@ pub mod entry {
                     // TransferNft and SendNft are supported only if transferrable is set to true
                     msg @ CW721BaseExecuteMsg::TransferNft { .. }
                     | msg @ CW721BaseExecuteMsg::SendNft { .. } => {
-                        if config.transferable {
+                        if config.transferrable {
                             _execute(deps, env, info, msg)
                         } else {
                             Err(ContractError::Unauthorized {})
@@ -115,19 +115,17 @@ pub mod entry {
                         Err(ContractError::Unauthorized {})
                     }
                 }
-                msg::ICNSNameExecuteMsg::SetTransferrable {
-                    transferrable: transferable,
-                } => {
+                msg::ICNSNameExecuteMsg::SetTransferrable { transferrable } => {
                     if config.admin == info.sender {
                         CONFIG.update(deps.storage, |config| -> StdResult<_> {
                             Ok(Config {
-                                transferable,
+                                transferrable,
                                 ..config
                             })
                         })?;
                         Ok(Response::new()
                             .add_attribute("method", "set_transferrable")
-                            .add_attribute("transferrable", transferable.to_string()))
+                            .add_attribute("transferrable", transferrable.to_string()))
                     } else {
                         Err(ContractError::Unauthorized {})
                     }
@@ -140,7 +138,7 @@ pub mod entry {
     pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         match msg {
             QueryMsg::Admin {} => to_binary(&admin(deps)?),
-            QueryMsg::Transferrable {} => to_binary(&transferable(deps)?),
+            QueryMsg::Transferrable {} => to_binary(&transferrable(deps)?),
             _ => _query(deps, env, msg.into()),
         }
     }

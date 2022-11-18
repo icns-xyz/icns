@@ -8,7 +8,7 @@ pub struct InstantiateMsg {
     pub name: String,
     pub symbol: String,
     pub minter: String, // TODO: must only be registry contract
-    pub transferable: bool,
+    pub transferrable: bool,
 }
 
 #[cw_serde]

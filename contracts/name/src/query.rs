@@ -11,9 +11,9 @@ pub fn admin(deps: Deps) -> StdResult<AdminResponse> {
     })
 }
 
-pub fn transferable(deps: Deps) -> StdResult<TransferrableResponse> {
+pub fn transferrable(deps: Deps) -> StdResult<TransferrableResponse> {
     let config = CONFIG.load(deps.storage)?;
     Ok(TransferrableResponse {
-        transferrable: config.transferable,
+        transferrable: config.transferrable,
     })
 }
