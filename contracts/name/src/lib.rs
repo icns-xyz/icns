@@ -26,6 +26,9 @@ pub mod entry {
         entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
     };
 
+    const NAME: &str = "icns-name";
+    const SYMBOL: &str = "icns";
+
     #[entry_point]
     pub fn instantiate(
         mut deps: DepsMut,
@@ -43,8 +46,8 @@ pub mod entry {
         CONFIG.save(deps.storage, &config)?;
 
         let cw721_base_instantiate_msg = Cw721BaseInstantiateMsg {
-            name: msg.name,
-            symbol: msg.symbol,
+            name: NAME.to_string(),
+            symbol: SYMBOL.to_string(),
             minter: msg.minter,
         };
 

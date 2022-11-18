@@ -5,9 +5,7 @@ use cw721_base::msg::QueryMsg as Cw721QueryMsg;
 #[cw_serde]
 pub struct InstantiateMsg {
     pub admin: String,
-    pub name: String,
-    pub symbol: String,
-    pub minter: String, // TODO: must only be registry contract
+    pub minter: String,
     pub transferrable: bool,
 }
 
