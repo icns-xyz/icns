@@ -72,14 +72,31 @@ pub mod entry {
         let config = CONFIG.load(deps.storage)?;
         match msg {
             ExecuteMsg::CW721Base(msg) => {
-                let MinterResponse { minter } =
-                    ICNSNameContract::default().minter(deps.as_ref())?;
+                match msg {
+                    // TransferNft and SendNft are supported only if transferrable is set to true
+                    msg @ CW721BaseExecuteMsg::TransferNft { .. }
+                    | msg @ CW721BaseExecuteMsg::SendNft { .. } => {
+                        if config.transferable {
+                            _execute(deps, env, info, msg)
+                        } else {
+                            Err(ContractError::Unauthorized {})
+                        }
+                    }
 
-                // TODO: do finer-grained control by calling each execute function directly.
-                if config.admin == info.sender || minter == info.sender || config.transferable {
-                    _execute(deps, env, info, msg)
-                } else {
-                    Err(ContractError::Unauthorized {})
+                    // approval related msgs are allowed as is
+                    msg @ CW721BaseExecuteMsg::Approve { .. }
+                    | msg @ CW721BaseExecuteMsg::Revoke { .. }
+                    | msg @ CW721BaseExecuteMsg::ApproveAll { .. }
+                    | msg @ CW721BaseExecuteMsg::RevokeAll { .. } => _execute(deps, env, info, msg),
+
+                    // minting is allowed as is
+                    msg @ CW721BaseExecuteMsg::Mint(_) => _execute(deps, env, info, msg),
+
+                    // buring is disabled
+                    CW721BaseExecuteMsg::Burn { .. } => Err(ContractError::Unauthorized {}),
+
+                    // cw721_base extension is not being used
+                    CW721BaseExecuteMsg::Extension { .. } => unimplemented!(),
                 }
             }
             ExecuteMsg::ICNSName(msg) => match msg {

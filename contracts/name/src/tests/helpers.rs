@@ -50,7 +50,7 @@ impl EnvBuilder {
                 self.admin.clone(),
                 &InstantiateMsg {
                     admin: self.admin.to_string(),
-                    name: "icns-name-ownership".to_string(),
+                    name: "icns-name".to_string(),
                     symbol: "icns".to_string(),
                     minter: self.registry.to_string(),
                     transferable: self.transferable,
