@@ -110,7 +110,7 @@ mod non_transferrable {
 }
 
 mod transferrable {
-    use crate::{tests::helpers::mock_reciever_contract, InstantiateMsg};
+    use crate::tests::helpers::mock_reciever_contract;
 
     use super::*;
 

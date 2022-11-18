@@ -6,6 +6,7 @@ pub use cw721_base::{
     InstantiateMsg as Cw721BaseInstantiateMsg, MintMsg, MinterResponse,
 };
 
+pub mod execute;
 pub mod msg;
 pub mod query;
 pub mod state;
@@ -19,6 +20,7 @@ pub type ICNSNameContract<'a> = Cw721Contract<'a, Extension, Empty, Empty, Empty
 #[cfg(not(feature = "library"))]
 pub mod entry {
     use super::*;
+    use crate::execute::{set_admin, set_transferrable};
     use crate::msg::ExecuteMsg;
     use crate::query::{admin, transferrable};
     use crate::state::{Config, CONFIG};
@@ -103,35 +105,9 @@ pub mod entry {
                 }
             }
             ExecuteMsg::ICNSName(msg) => match msg {
-                msg::ICNSNameExecuteMsg::SetAdmin { admin } => {
-                    if config.admin == info.sender {
-                        CONFIG.update(deps.storage, |config| -> StdResult<_> {
-                            Ok(Config {
-                                admin: deps.api.addr_validate(&admin)?,
-                                ..config
-                            })
-                        })?;
-                        Ok(Response::new()
-                            .add_attribute("method", "set_admin")
-                            .add_attribute("admin", admin))
-                    } else {
-                        Err(ContractError::Unauthorized {})
-                    }
-                }
+                msg::ICNSNameExecuteMsg::SetAdmin { admin } => set_admin(&admin, deps, info),
                 msg::ICNSNameExecuteMsg::SetTransferrable { transferrable } => {
-                    if config.admin == info.sender {
-                        CONFIG.update(deps.storage, |config| -> StdResult<_> {
-                            Ok(Config {
-                                transferrable,
-                                ..config
-                            })
-                        })?;
-                        Ok(Response::new()
-                            .add_attribute("method", "set_transferrable")
-                            .add_attribute("transferrable", transferrable.to_string()))
-                    } else {
-                        Err(ContractError::Unauthorized {})
-                    }
+                    set_transferrable(transferrable, deps, info)
                 }
             },
         }
