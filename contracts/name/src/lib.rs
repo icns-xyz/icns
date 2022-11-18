@@ -23,7 +23,8 @@ pub mod entry {
     use crate::query::admin;
     use crate::state::{Config, CONFIG};
     use cosmwasm_std::{
-        entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+        entry_point, from_binary, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo,
+        Response, StdResult,
     };
 
     #[entry_point]
@@ -72,7 +73,13 @@ pub mod entry {
         let config = CONFIG.load(deps.storage)?;
         match msg {
             ExecuteMsg::CW721Base(msg) => {
-                if config.admin == info.sender || config.transferable {
+                let MinterResponse { minter } = from_binary(&_query(
+                    deps.as_ref(),
+                    env.clone(),
+                    cw721_base::QueryMsg::Minter {},
+                )?)?;
+
+                if config.admin == info.sender || minter == info.sender || config.transferable {
                     _execute(deps, env, info, msg)
                 } else {
                     Err(ContractError::Unauthorized {})
@@ -116,44 +123,93 @@ mod tests {
     use cw721::OwnerOfResponse;
     use cw_multi_test::{BasicApp, Contract, ContractWrapper, Executor};
 
-    pub fn name_ownership_contract() -> Box<dyn Contract<Empty>> {
+    pub fn name_contract() -> Box<dyn Contract<Empty>> {
         let contract = ContractWrapper::new(entry::execute, entry::instantiate, entry::query);
         Box::new(contract)
     }
 
+    pub struct Env {
+        pub app: BasicApp,
+        pub code_id: u64,
+        pub contract_addr: Addr,
+        pub admin: Addr,
+        pub registry: Addr,
+    }
+
+    pub struct EnvBuilder {
+        pub admin: Addr,
+        pub registry: Addr,
+        pub transferable: bool,
+    }
+
+    impl Default for EnvBuilder {
+        fn default() -> Self {
+            Self {
+                admin: Addr::unchecked("admin"),
+                registry: Addr::unchecked("registry"),
+                transferable: false,
+            }
+        }
+    }
+
+    impl EnvBuilder {
+        pub fn with_transferable(self, transferable: bool) -> Self {
+            Self {
+                transferable,
+                ..self
+            }
+        }
+
+        pub fn build(self) -> Env {
+            let mut app = BasicApp::default();
+            let code_id = app.store_code(name_contract());
+
+            let contract_addr = app
+                .instantiate_contract(
+                    code_id,
+                    self.admin.clone(),
+                    &InstantiateMsg {
+                        admin: self.admin.to_string(),
+                        name: "icns-name-ownership".to_string(),
+                        symbol: "icns".to_string(),
+                        minter: self.registry.to_string(),
+                        transferable: self.transferable,
+                    },
+                    &[],
+                    "name_ownership",
+                    None,
+                )
+                .unwrap();
+
+            Env {
+                app,
+                code_id,
+                contract_addr,
+                admin: self.admin,
+                registry: self.registry,
+            }
+        }
+    }
+
     #[test]
-    fn non_transferable_name_ownership() {
-        let mut app = BasicApp::default();
-        let code_id = app.store_code(name_ownership_contract());
-        let admin = Addr::unchecked("admin");
+    fn non_transferable_name() {
         let name_owner = Addr::unchecked("name_owner");
         let recipient = Addr::unchecked("recipient");
-        let icns_name = "mock_name";
+        let name = "alice";
 
-        // instantiate contract with transferable = false
-        let contract_addr = app
-            .instantiate_contract(
-                code_id,
-                admin.clone(),
-                &InstantiateMsg {
-                    admin: admin.to_string(),
-                    name: "icns-name-ownership".to_string(),
-                    symbol: "icns".to_string(),
-                    minter: admin.to_string(),
-                    transferable: false,
-                },
-                &[],
-                "name_ownership",
-                None,
-            )
-            .unwrap();
+        let Env {
+            mut app,
+            contract_addr,
+            registry,
+            ..
+        } = EnvBuilder::default().with_transferable(false).build();
 
-        // mint test icns_name
+        // registry mint test icns_name
         app.execute_contract(
-            admin,
+            registry,
             contract_addr.clone(),
             &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
-                token_id: icns_name.to_string(),
+                token_id: name.to_string(),
                 owner: name_owner.to_string(),
                 token_uri: None,
                 extension: None,
@@ -169,7 +225,7 @@ mod tests {
                 contract_addr,
                 &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::TransferNft {
                     recipient: recipient.to_string(),
-                    token_id: icns_name.to_string(),
+                    token_id: name.to_string(),
                 }),
                 &[],
             )
@@ -182,38 +238,24 @@ mod tests {
     }
 
     #[test]
-    fn transferable_name_ownership() {
-        let mut app = BasicApp::default();
-        let code_id = app.store_code(name_ownership_contract());
-        let admin = Addr::unchecked("admin");
+    fn transferable_name() {
+        let Env {
+            mut app,
+            contract_addr,
+            registry,
+            ..
+        } = EnvBuilder::default().with_transferable(true).build();
+
         let name_owner = Addr::unchecked("name_owner");
         let recipient = Addr::unchecked("recipient");
-        let icns_name = "mock_name";
+        let name = "alice";
 
-        // instantiate contract with transferable = true
-        let contract_addr = app
-            .instantiate_contract(
-                code_id,
-                admin.clone(),
-                &InstantiateMsg {
-                    admin: admin.to_string(),
-                    name: "icns-name-ownership".to_string(),
-                    symbol: "icns".to_string(),
-                    minter: admin.to_string(),
-                    transferable: true,
-                },
-                &[],
-                "name_ownership",
-                None,
-            )
-            .unwrap();
-
-        // mint test icns_name
+        // mint test name
         app.execute_contract(
-            admin,
+            registry,
             contract_addr.clone(),
             &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
-                token_id: icns_name.to_string(),
+                token_id: name.to_string(),
                 owner: name_owner.to_string(),
                 token_uri: None,
                 extension: None,
@@ -228,7 +270,7 @@ mod tests {
             contract_addr.clone(),
             &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::TransferNft {
                 recipient: recipient.to_string(),
-                token_id: icns_name.to_string(),
+                token_id: name.to_string(),
             }),
             &[],
         )
@@ -240,7 +282,7 @@ mod tests {
             .query_wasm_smart(
                 contract_addr,
                 &QueryMsg::OwnerOf {
-                    token_id: icns_name.to_string(),
+                    token_id: name.to_string(),
                     include_expired: None,
                 },
             )
@@ -252,7 +294,7 @@ mod tests {
     #[test]
     fn only_admin_can_set_new_admin() {
         let mut app = BasicApp::default();
-        let code_id = app.store_code(name_ownership_contract());
+        let code_id = app.store_code(name_contract());
         let admin = Addr::unchecked("admin");
         let new_admin = Addr::unchecked("new_admin");
 
