@@ -15,9 +15,9 @@ pub enum ContractError {
     #[error("Invalid user name: {user_name:?}")]
     InvalidUserName { user_name: String },
 
-    #[error("Bech32 decoding failed for addr: {addr:?}")]
-    Bech32DecodingErr { addr: String },
+    #[error("Operator already exists")]
+    OperatorAlreadyExists {},
 
-    #[error("Bech32 prefix mismatch between prefix: {prefix:?} and addr: {addr:?}")]
-    Bech32PrefixMismatch { prefix: String, addr: String },
+    #[error("Operator does not exist")]
+    OperatorDoesNotExist{},
 }

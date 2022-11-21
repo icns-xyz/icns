@@ -13,4 +13,10 @@ pub enum ContractError {
 
     #[error("User Already Registered")]
     UserAlreadyRegistered{ name: String },
+
+    #[error("Bech32 decoding failed for addr: {addr:?}")]
+    Bech32DecodingErr { addr: String },
+
+    #[error("Bech32 prefix mismatch between prefix: {prefix:?} and addr: {addr:?}")]
+    Bech32PrefixMismatch { prefix: String, addr: String },
 }

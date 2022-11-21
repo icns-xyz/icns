@@ -1,4 +1,5 @@
 use cw2::set_contract_version;
+use subtle_encoding::bech32;
 use cosmwasm_std::Order::Ascending;
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, QueryRequest, WasmQuery, to_binary, from_binary};
@@ -62,6 +63,18 @@ pub fn execute_set_addresses(
      if !is_admin && !is_registrar {
          return Err(ContractError::Unauthorized {});
      }
+
+    // do a sanity check on the given addresses for the different bech32 prefixes
+    // We do two checks here:
+    // 1. Check that the given addresses are valid bech32 addresses
+    // 2. Check if they match the given prefixes
+    // if the sanity check fails, we return an error
+    for (prefix, address) in addresses.iter() {
+        let prefix_decoded = bech32::decode(address).map_err(|_| ContractError::Bech32DecodingErr { addr: address.to_string() })?.0;
+        if !prefix.eq(&prefix_decoded) {
+            return Err(ContractError::Bech32PrefixMismatch { prefix: prefix.to_string(), addr: address.to_string() });
+        }
+    }
 
      // check if the user_name is already registered
     let user_name_exists = query_addresses(deps.as_ref(), env, user_name.clone())?;
@@ -207,13 +220,14 @@ mod tests {
     #[test]
     fn set_duplicate_username() {
         let mut deps = mock_dependencies();
-        let registrar_addr = String::from("registrar");
-        mock_init(deps.as_mut(), registrar_addr.clone());
+        let registry_addr = String::from("registrar");
+        mock_init(deps.as_mut(), registry_addr.clone());
 
-        set_alice_default_addresses(deps.as_mut(), &coins(1, "token"), registrar_addr.clone());
+        set_alice_default_addresses(deps.as_mut(), &coins(1, "token"), registry_addr.clone());
+
 
         // try setting record again, it should fail
-        let info = mock_info( &registrar_addr, &coins(1, "token"));
+        let info = mock_info( &registry_addr, &coins(1, "token"));
         let msg = ExecuteMsg::SetAddresses {
             user_name: "alice".to_string(),
             addresses: vec![("eth".to_string(), "0x1234".to_string()), ("cosmos".to_string(), "cosmos1".to_string())],
@@ -222,6 +236,44 @@ mod tests {
         // check that duplicate user name returns error
         let res = execute(deps.as_mut(), mock_env(), info, msg).is_err();
         assert_eq!(res, true);
+    }
+
+    #[test]
+    fn test_address_verification() {
+        let mut deps = mock_dependencies();
+
+        let registry = String::from("registry");
+
+        mock_init(deps.as_mut(), registry.clone());
+
+        // first try testing with invalid bech 32 address
+        let info = mock_info(&registry, &coins(1, "token"));
+        let msg = ExecuteMsg::SetAddresses {
+            user_name: String::from("user_name"),
+            addresses: vec![(String::from("cosmos"), String::from("cosmos1dsfsfasdfknsfkndfknskdfns"))],
+        };
+
+        let res = execute(deps.as_mut(), mock_env(), info, msg).is_err();
+        assert_eq!(res, true);
+
+        // try testing with unmatching bech32 prefix and address
+        // this should fail
+        let info = mock_info(&registry, &coins(1, "token"));
+        let msg = ExecuteMsg::SetAddresses {
+            user_name: String::from("user_name"),
+            addresses: vec![(String::from("cosmos"), String::from("osmo19clxjvtgn8es8ylytgztalsw2fygh6etyd9hq7")), (String::from("juno"), String::from("juno1kn27c8fu9qjmcn9hqytdzlml55mcs7dl2wu2ts"))],
+        };
+        let res = execute(deps.as_mut(), mock_env(), info, msg).is_err();
+        assert_eq!(res, true);
+
+        // try testing with valid bech32 address and prefix
+        let info = mock_info(&registry, &coins(1, "token"));
+        let msg = ExecuteMsg::SetAddresses {
+            user_name: String::from("user_name"),
+            addresses: vec![(String::from("juno"), String::from("juno1kn27c8fu9qjmcn9hqytdzlml55mcs7dl2wu2ts"))],
+        };
+        let res = execute(deps.as_mut(), mock_env(), info, msg).is_err();
+        assert_eq!(res, false);
     }
 
     #[test]

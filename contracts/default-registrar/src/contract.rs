@@ -2,7 +2,6 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{to_binary,  DepsMut, Env, MessageInfo, Response, Addr, WasmMsg, Deps, QueryRequest, from_binary, WasmQuery};
 use cw2::set_contract_version;
-use subtle_encoding::bech32;
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg};
@@ -59,7 +58,9 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Register { user_name, owner, addresses } => execute_register(deps, env, info, user_name, owner, addresses)
+        ExecuteMsg::Register { user_name, owner, addresses } => execute_register(deps, env, info, user_name, owner, addresses),
+        ExecuteMsg::AddOperator { operator_addr } => execute_add_operator(deps, env, info, operator_addr),
+        ExecuteMsg::RemoveOperator { operator_addr } => execute_remove_operator(deps, env, info, operator_addr),
     }
 }
 
@@ -90,18 +91,6 @@ pub fn execute_register(
         return Err(ContractError::InvalidUserName {user_name});
     }
 
-    // do a sanity check on the given addresses for the different bech32 prefixes
-    // We do two checks here:
-    // 1. Check that the given addresses are valid bech32 addresses
-    // 2. Check if they match the given prefixes
-    // if the sanity check fails, we return an error
-    for (prefix, address) in addresses.iter() {
-        let prefix_decoded = bech32::decode(address).map_err(|_| ContractError::Bech32DecodingErr { addr: address.to_string() })?.0;
-        if !prefix.eq(&prefix_decoded) {
-            return Err(ContractError::Bech32PrefixMismatch { prefix: prefix.to_string(), addr: address.to_string() });
-        }
-    }
-
     // call resolver and set given addresses
     let set_addresses_msg = WasmMsg::Execute {
         contract_addr: config.registry.to_string(),
@@ -128,6 +117,80 @@ pub fn execute_register(
     Ok(Response::new()
         .add_message(set_addresses_msg)
         .add_message(set_resolver_msg)
+    )
+}
+
+// execute_add_operator adds an operator to the list of operators
+pub fn execute_add_operator(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    operator_addr: String,
+) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+
+    let is_admin = is_admin(deps.as_ref(), info.sender.to_string())?;
+    if !is_admin {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    let operator_addr = deps.api.addr_validate(&operator_addr)?;
+
+    // check that the operator is not already in the list of operators
+    if config.operators.contains(&operator_addr) {
+        return Err(ContractError::OperatorAlreadyExists {});
+    }
+
+    let mut operators = config.operators;
+    operators.push(operator_addr);
+
+    let config = Config {
+        registry: config.registry,
+        resolver: config.resolver,
+        operators,
+    };
+
+    CONFIG.save(deps.storage, &config)?;
+
+    Ok(Response::new()
+        .add_attribute("method", "add_operator")
+    )
+}
+
+pub fn execute_remove_operator(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    operator_addr: String,
+) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+
+    let is_admin = is_admin(deps.as_ref(), info.sender.to_string())?;
+    if !is_admin {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    let operator_addr = deps.api.addr_validate(&operator_addr)?;
+
+    // check that the operator is in the list of operators
+    if !config.operators.contains(&operator_addr) {
+        return Err(ContractError::OperatorDoesNotExist {});
+    }
+
+    let mut operators = config.operators;
+    operators.retain(|addr| addr != &operator_addr);
+
+    let config = Config {
+        registry: config.registry,
+        resolver: config.resolver,
+        operators,
+    };
+
+    CONFIG.save(deps.storage, &config)?;
+
+    Ok(Response::new()
+        .add_attribute("method", "remove_operator")
+        .add_attribute("operator", operator_addr)
     )
 }
 
@@ -172,48 +235,5 @@ mod tests {
         let info = mock_info("creator", &coins(1, "token"));
         let _res = instantiate(deps, mock_env(), info, msg)
         .expect("contract successfully handles InstantiateMsg");
-    }
-
-    #[test]
-    fn test_address_verification() {
-        let mut deps = mock_dependencies();
-
-        let registry = String::from("registry");
-        let resolver = String::from("resolver");
-        let operator_addrs = vec![String::from("operator")];
-
-        mock_init(deps.as_mut(), registry, resolver, operator_addrs);
-
-        // first try testing with invalid bech 32 address
-        let info = mock_info("operator", &coins(1, "token"));
-        let msg = ExecuteMsg::Register {
-            user_name: String::from("user_name"),
-            owner: String::from("owner"),
-            addresses: vec![(String::from("cosmos"), String::from("cosmos1dsfsfasdfknsfkndfknskdfns"))],
-        };
-
-        let res = execute(deps.as_mut(), mock_env(), info, msg).is_err();
-        assert_eq!(res, true);
-
-        // try testing with unmatching bech32 prefix and address
-        // this should fail
-        let info = mock_info("operator", &coins(1, "token"));
-        let msg = ExecuteMsg::Register {
-            user_name: String::from("user_name"),
-            owner: String::from("owner"),
-            addresses: vec![(String::from("cosmos"), String::from("osmo19clxjvtgn8es8ylytgztalsw2fygh6etyd9hq7")), (String::from("juno"), String::from("juno1kn27c8fu9qjmcn9hqytdzlml55mcs7dl2wu2ts"))],
-        };
-        let res = execute(deps.as_mut(), mock_env(), info, msg).is_err();
-        assert_eq!(res, true);
-
-        // try testing with valid bech32 address and prefix
-        let info = mock_info("operator", &coins(1, "token"));
-        let msg = ExecuteMsg::Register {
-            user_name: String::from("user_name"),
-            owner: String::from("owner"),
-            addresses: vec![(String::from("juno"), String::from("juno1kn27c8fu9qjmcn9hqytdzlml55mcs7dl2wu2ts"))],
-        };
-        let res = execute(deps.as_mut(), mock_env(), info, msg).is_err();
-        assert_eq!(res, false);
     }
 }

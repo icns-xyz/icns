@@ -18,5 +18,11 @@ pub enum ExecuteMsg {
         owner: String,
         // tuple of (bech32 prefix, address)
         addresses: Vec<(String, String)>,
-    }
+    },
+    AddOperator {
+        operator_addr: String,
+    },
+    RemoveOperator {
+        operator_addr: String,
+    },
 }
