@@ -15,6 +15,9 @@ pub enum ContractError {
     #[error("Invalid coin denomination, expected {expected} got {actual}")]
     InvalidDenom { expected: String, actual: String },
 
+    #[error("Admin already exists")]
+    AdminAlreadyExists {},
+
     #[error("Name does not exist (name {name})")]
     NameNotExists { name: String },
 

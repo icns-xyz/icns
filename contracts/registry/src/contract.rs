@@ -58,6 +58,10 @@ pub fn execute(
             user_name,
             resolver_address,
         } => execute_set_resolver_address(_deps, _env, _info, user_name, resolver_address),
+        ExecuteMsg::RemoveAdmin { admin_address } => {
+            execute_remove_admin(_deps, _env, _info, admin_address)
+        },
+        ExecuteMsg::AddAdmin { admin_address } => execute_add_admin(_deps, _env, _info, admin_address),
     }
 }
 
@@ -84,6 +88,60 @@ pub fn execute_set_resolver_address(
     }
 
     RESOLVER.save(deps.storage, user_name, &resolver_addr)?;
+
+    Ok(Response::default())
+}
+
+pub fn execute_remove_admin(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    admin_address: String,
+) -> Result<Response, ContractError> {
+    // if the sender is not admin return err
+    let is_existing_admin = is_admin(deps.as_ref(), info.sender.clone());
+    if !is_existing_admin {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    let admin_addr = deps.api.addr_validate(&admin_address)?;
+
+    // check that the given admin_address is an existing admin
+    let existing_admin = is_admin(deps.as_ref(), admin_addr.clone());
+    if !existing_admin {
+        return Err(ContractError::AdminAlreadyExists {});
+    }
+
+    let mut cfg = CONFIG.load(deps.storage)?;
+    cfg.admins.retain(|x| x != &admin_addr);
+    CONFIG.save(deps.storage, &cfg)?;
+
+    Ok(Response::default())
+}
+
+pub fn execute_add_admin(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    admin_address: String,
+) -> Result<Response, ContractError> {
+    // if not admin return err
+    let sender_is_admin = is_admin(deps.as_ref(), info.sender.clone());
+    if !sender_is_admin {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    let admin_addr = deps.api.addr_validate(&admin_address)?;
+
+    // check that the admin_address is not already an admin
+    let existing_admin = is_admin(deps.as_ref(), admin_addr.clone());
+    if existing_admin {
+        return Err(ContractError::AdminAlreadyExists {});
+    }
+
+    let mut cfg = CONFIG.load(deps.storage)?;
+    cfg.admins.push(admin_addr);
+    CONFIG.save(deps.storage, &cfg)?;
 
     Ok(Response::default())
 }
@@ -319,4 +377,76 @@ mod tests {
         let value: GetResolverAddrResponse = from_binary(&query_res).unwrap();
         assert_eq!(value.resolver_addr, None);
     }
+
+    #[test]
+    fn test_add_and_remove_admin() {
+        let mut deps = mock_dependencies();
+
+        let admin = String::from("test_admin");
+        let admins = vec![admin.clone()];
+        let registrar_addr = String::from("test_registrar");
+        let name_addr = String::from("name");
+        mock_init(deps.as_mut(), admins, registrar_addr.clone(), name_addr);
+
+        let new_admin1 = String::from("test_admin1");
+        let new_admin2 = String::from("test_admin2");
+        let non_admin = String::from("non_admin");
+
+        // try adding admin with non admin, it should error
+        let info = mock_info(&non_admin, &coins(1, "token"));
+        let msg = ExecuteMsg::AddAdmin {
+            admin_address: new_admin1.clone(),
+        };
+        let res_is_error = execute(deps.as_mut(), mock_env(), info, msg).is_err();
+        assert!(res_is_error);
+
+        // try adding new admin with admin, and then query to confirm if it was added correctly
+        let info = mock_info(admin.as_str(), &coins(1, "token"));
+        let msg = ExecuteMsg::AddAdmin {
+            admin_address: new_admin1.clone(),
+        };
+        let _res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
+        let res = query(
+            deps.as_ref(),
+            mock_env(),
+            QueryMsg::IsAdmin { address: new_admin1.clone() },
+        )
+        .unwrap();
+        let value: IsAdminResponse = from_binary(&res).unwrap();
+        assert!(value.is_admin);
+
+
+        // try adding admin that already exists, it should error
+        let info = mock_info(admin.as_str(), &coins(1, "token"));
+        let msg = ExecuteMsg::AddAdmin {
+            admin_address: new_admin1.clone(),
+        };
+        let res_is_error = execute(deps.as_mut(), mock_env(), info, msg).is_err();
+        assert!(res_is_error);
+
+        // try removing admin with non admin, it should error
+        let info = mock_info(&non_admin, &coins(1, "token"));
+        let msg = ExecuteMsg::RemoveAdmin {
+            admin_address: new_admin1.clone(),
+        };
+        let res_is_error = execute(deps.as_mut(), mock_env(), info, msg).is_err();
+        assert!(res_is_error);
+
+        // try removing admin with admin
+        let info = mock_info(admin.as_str(), &coins(1, "token"));
+        let msg = ExecuteMsg::RemoveAdmin {
+            admin_address: new_admin1.clone(),
+        };
+        let _res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
+
+        // try removing admin that does not exist, it should error
+        let info = mock_info(admin.as_str(), &coins(1, "token"));
+        let msg = ExecuteMsg::RemoveAdmin {
+            admin_address: new_admin2.clone(),
+        };
+        let res_is_error = execute(deps.as_mut(), mock_env(), info, msg).is_err();
+        assert!(res_is_error);
+        
+    }
+        // try removing admin that does not exist, it should error
 }

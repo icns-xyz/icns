@@ -23,6 +23,12 @@ pub enum ExecuteMsg {
         user_name: String,
         resolver_address: Addr,
     },
+    RemoveAdmin {
+        admin_address: String,
+    },
+    AddAdmin {
+        admin_address: String,
+    },
 }
 
 #[cw_serde]
@@ -45,22 +51,22 @@ pub enum QueryMsg {
 }
 
 // We define a custom struct for each query response
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[cw_serde]
 pub struct GetResolverAddrResponse {
     pub resolver_addr: Option<Addr>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[cw_serde]
 pub struct GetAddressesResponse {
     pub addresses: Vec<(i32, String)>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[cw_serde]
 pub struct GetAddressResponse {
     pub address: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[cw_serde]
 pub struct IsAdminResponse {
     pub is_admin: bool,
 }
