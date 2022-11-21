@@ -1,9 +1,13 @@
+use cosmwasm_schema::{cw_serde, QueryResponses};
+
 use cosmwasm_std::Addr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use crate::state::{Config};
+
 
 /// Message type for `instantiate` entry_point
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[cw_serde]
 pub struct InstantiateMsg {
     pub admins: Vec<String>,
     pub registrar_address: String,
@@ -12,8 +16,8 @@ pub struct InstantiateMsg {
     pub name_address: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
+#[serde(untagged)]
 pub enum ExecuteMsg {
     SetResolverAddress {
         user_name: String,
@@ -21,13 +25,22 @@ pub enum ExecuteMsg {
     },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
+    #[returns(GetResolverAddrResponse)]
     GetResolverAddr { user_name: String },
+
+    #[returns(GetAddressesResponse)]
     GetAddreses { user_name: String },
+
+    #[returns(GetAddressResponse)]
     GetAddress { user_name: String, coin_type: i32 },
+
+    #[returns(Config)]
     Config {},
+
+    #[returns(IsAdminResponse)]
     IsAdmin { address: String },
 }
 
