@@ -12,10 +12,10 @@ pub mod query;
 pub mod state;
 
 // version info for migration info
-const CONTRACT_NAME: &str = "crates.io:icns-name-ownership";
+const CONTRACT_NAME: &str = "crates.io:icns-name-nft";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-pub type ICNSNameContract<'a> = Cw721Contract<'a, Extension, Empty, Empty, Empty>;
+pub type ICNSNameNFTContract<'a> = Cw721Contract<'a, Extension, Empty, Empty, Empty>;
 
 #[cfg(not(feature = "library"))]
 pub mod entry {
@@ -53,7 +53,7 @@ pub mod entry {
             minter: msg.registrar,
         };
 
-        ICNSNameContract::default().instantiate(
+        ICNSNameNFTContract::default().instantiate(
             deps.branch(),
             env,
             info,
@@ -95,10 +95,7 @@ pub mod entry {
                     | msg @ CW721BaseExecuteMsg::RevokeAll { .. } => _execute(deps, env, info, msg),
 
                     // minting is allowed as is
-                    msg @ CW721BaseExecuteMsg::Mint(_) =>{
-
-                        
-                    }_execute(deps, env, info, msg)
+                    msg @ CW721BaseExecuteMsg::Mint(_) => _execute(deps, env, info, msg),
 
                     // buring is disabled
                     CW721BaseExecuteMsg::Burn { .. } => Err(ContractError::Unauthorized {}),
