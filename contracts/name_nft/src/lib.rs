@@ -23,9 +23,9 @@ pub mod entry {
     use crate::checks::{
         check_send_from_admin, check_send_from_registrar, check_transferrable, pass_any,
     };
-    use crate::execute::{set_admin, set_transferrable};
+    use crate::execute::{set_admin, set_transferrable, update_resolvers};
     use crate::msg::ExecuteMsg;
-    use crate::query::{admin, transferrable};
+    use crate::query::{admin, resolvers, transferrable};
     use crate::state::{Config, CONFIG};
     use cosmwasm_std::{
         entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
@@ -118,6 +118,13 @@ pub mod entry {
                     check_send_from_admin(deps.as_ref(), &info.sender)?;
                     set_transferrable(transferrable, deps)
                 }
+                msg::ICNSNameExecuteMsg::UpdateResolvers { add, remove } => {
+                    check_send_from_admin(deps.as_ref(), &info.sender)?;
+                    let add = validate_addresses(deps.as_ref(), &add)?;
+                    let remove = validate_addresses(deps.as_ref(), &remove)?;
+
+                    update_resolvers(add, remove, deps)
+                }
             },
         }
     }
@@ -127,8 +134,16 @@ pub mod entry {
         match msg {
             QueryMsg::Admin {} => to_binary(&admin(deps)?),
             QueryMsg::Transferrable {} => to_binary(&transferrable(deps)?),
+            QueryMsg::Resolvers {} => to_binary(&resolvers(deps)?),
             _ => _query(deps, env, msg.into()),
         }
+    }
+
+    fn validate_addresses(deps: Deps, addrs: &[String]) -> StdResult<Vec<Addr>> {
+        addrs
+            .iter()
+            .map(|addr| deps.api.addr_validate(addr))
+            .collect()
     }
 }
 
