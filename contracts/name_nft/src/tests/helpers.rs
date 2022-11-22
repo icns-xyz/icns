@@ -59,12 +59,12 @@ pub struct TestEnv {
     pub code_id: u64,
     pub contract_addr: Addr,
     pub admin: Addr,
-    pub registry: Addr,
+    pub registrar: Addr,
 }
 
 pub struct TestEnvBuilder {
     pub admin: Addr,
-    pub registry: Addr,
+    pub registrar: Addr,
     pub transferrable: bool,
 }
 
@@ -72,7 +72,7 @@ impl Default for TestEnvBuilder {
     fn default() -> Self {
         Self {
             admin: Addr::unchecked("admin"),
-            registry: Addr::unchecked("registry"),
+            registrar: Addr::unchecked("registrar"),
             transferrable: false,
         }
     }
@@ -96,7 +96,7 @@ impl TestEnvBuilder {
                 self.admin.clone(),
                 &InstantiateMsg {
                     admin: self.admin.to_string(),
-                    registry: self.registry.to_string(),
+                    registrar: self.registrar.to_string(),
                     transferrable: self.transferrable,
                 },
                 &[],
@@ -110,7 +110,7 @@ impl TestEnvBuilder {
             code_id,
             contract_addr,
             admin: self.admin,
-            registry: self.registry,
+            registrar: self.registrar,
         }
     }
 }

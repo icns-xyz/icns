@@ -1,5 +1,5 @@
 {
-  "contract_name": "icns-name",
+  "contract_name": "icns-name-nft",
   "contract_version": "0.1.0",
   "idl_version": "1.0.0",
   "instantiate": {
@@ -8,7 +8,7 @@
     "type": "object",
     "required": [
       "admin",
-      "registry",
+      "registrar",
       "transferrable"
     ],
     "properties": {
@@ -16,8 +16,8 @@
         "description": "Admin has ability to change config of this contract. Namely the `admin` itself and `transferrable`",
         "type": "string"
       },
-      "registry": {
-        "description": "`registry` contract address. It controls minting process of this NFT.",
+      "registrar": {
+        "description": "`registrar` contract address. It controls minting process of this NFT.",
         "type": "string"
       },
       "transferrable": {

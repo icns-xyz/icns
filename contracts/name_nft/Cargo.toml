@@ -2,7 +2,7 @@
 authors = ["Supanat Potiwarakorn <boss@osmosis.team>"]
 description = "CosmWasm contract that represents ownership of ICNS name"
 edition = {workspace = true}
-name = "icns-name"
+name = "icns-name-nft"
 # repository = {workspace = true}
 version = {workspace = true}
 

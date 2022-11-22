@@ -20,7 +20,7 @@ mod non_transferrable {
         let TestEnv {
             mut app,
             contract_addr,
-            registry,
+            registrar,
             ..
         } = TestEnvBuilder::default().with_transferrable(false).build();
 
@@ -28,9 +28,9 @@ mod non_transferrable {
         let recipient = Addr::unchecked("recipient");
         let name = "alice";
 
-        // registry mint test icns_name
+        // registrar mint test icns_name
         app.execute_contract(
-            registry,
+            registrar,
             contract_addr.clone(),
             &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
                 token_id: name.to_string(),
@@ -66,7 +66,7 @@ mod non_transferrable {
         let TestEnv {
             mut app,
             contract_addr,
-            registry,
+            registrar,
             ..
         } = TestEnvBuilder::default().with_transferrable(false).build();
 
@@ -74,9 +74,9 @@ mod non_transferrable {
         let recipient_contract = Addr::unchecked("recipient_contract");
         let name = "alice";
 
-        // registry mint test icns_name
+        // registrar mint test icns_name
         app.execute_contract(
-            registry,
+            registrar,
             contract_addr.clone(),
             &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
                 token_id: name.to_string(),
@@ -107,6 +107,60 @@ mod non_transferrable {
             &ContractError::Unauthorized {}
         );
     }
+
+    #[test]
+    /// This tests mimics the actual registration process.
+    fn should_allow_only_registrar_to_transfer() {
+        let TestEnv {
+            mut app,
+            contract_addr,
+            registrar,
+            ..
+        } = TestEnvBuilder::default().with_transferrable(false).build();
+
+        let name_owner = Addr::unchecked("name_owner");
+        let name = "alice";
+
+        // registrar mint test name
+        app.execute_contract(
+            registrar.clone(),
+            contract_addr.clone(),
+            &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+                token_id: name.to_string(),
+                owner: registrar.to_string(),
+                token_uri: None,
+                extension: None,
+            })),
+            &[],
+        )
+        .unwrap();
+
+        // transfer must be unauthorized
+        app.execute_contract(
+            registrar,
+            contract_addr.clone(),
+            &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::TransferNft {
+                recipient: name_owner.to_string(),
+                token_id: name.to_string(),
+            }),
+            &[],
+        )
+        .unwrap();
+
+        // name is now owned by name_owner
+        let res: OwnerOfResponse = app
+            .wrap()
+            .query_wasm_smart(
+                contract_addr,
+                &QueryMsg::OwnerOf {
+                    token_id: name.to_string(),
+                    include_expired: None,
+                },
+            )
+            .unwrap();
+
+        assert_eq!(res.owner, name_owner.to_string());
+    }
 }
 
 mod transferrable {
@@ -119,7 +173,7 @@ mod transferrable {
         let TestEnv {
             mut app,
             contract_addr,
-            registry,
+            registrar,
             ..
         } = TestEnvBuilder::default().with_transferrable(true).build();
 
@@ -129,7 +183,7 @@ mod transferrable {
 
         // mint test name
         app.execute_contract(
-            registry,
+            registrar,
             contract_addr.clone(),
             &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
                 token_id: name.to_string(),
@@ -173,7 +227,7 @@ mod transferrable {
         let TestEnv {
             mut app,
             contract_addr,
-            registry,
+            registrar,
             admin,
             ..
         } = TestEnvBuilder::default().with_transferrable(true).build();
@@ -184,7 +238,7 @@ mod transferrable {
 
         // mint test name
         app.execute_contract(
-            registry,
+            registrar,
             contract_addr.clone(),
             &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
                 token_id: name.to_string(),
@@ -235,7 +289,7 @@ fn only_admin_can_set_transferrable() {
     let TestEnv {
         mut app,
         contract_addr,
-        registry,
+        registrar,
         admin,
         ..
     } = TestEnvBuilder::default().with_transferrable(false).build();
@@ -267,8 +321,8 @@ fn only_admin_can_set_transferrable() {
     );
     assert!(!transferrable(&app));
 
-    // transferrable can't be set by registry
-    let err = set_transferrable(&mut app, registry, true).unwrap_err();
+    // transferrable can't be set by registrar
+    let err = set_transferrable(&mut app, registrar, true).unwrap_err();
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
         &ContractError::Unauthorized {}
