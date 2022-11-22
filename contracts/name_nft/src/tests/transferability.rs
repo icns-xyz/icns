@@ -107,6 +107,60 @@ mod non_transferrable {
             &ContractError::Unauthorized {}
         );
     }
+
+    #[test]
+    /// This tests mimics the actual registration process.
+    fn should_allow_only_registrar_to_transfer() {
+        let TestEnv {
+            mut app,
+            contract_addr,
+            registrar,
+            ..
+        } = TestEnvBuilder::default().with_transferrable(false).build();
+
+        let name_owner = Addr::unchecked("name_owner");
+        let name = "alice";
+
+        // registrar mint test name
+        app.execute_contract(
+            registrar.clone(),
+            contract_addr.clone(),
+            &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+                token_id: name.to_string(),
+                owner: registrar.to_string(),
+                token_uri: None,
+                extension: None,
+            })),
+            &[],
+        )
+        .unwrap();
+
+        // transfer must be unauthorized
+        app.execute_contract(
+            registrar,
+            contract_addr.clone(),
+            &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::TransferNft {
+                recipient: name_owner.to_string(),
+                token_id: name.to_string(),
+            }),
+            &[],
+        )
+        .unwrap();
+
+        // name is now owned by name_owner
+        let res: OwnerOfResponse = app
+            .wrap()
+            .query_wasm_smart(
+                contract_addr,
+                &QueryMsg::OwnerOf {
+                    token_id: name.to_string(),
+                    include_expired: None,
+                },
+            )
+            .unwrap();
+
+        assert_eq!(res.owner, name_owner.to_string());
+    }
 }
 
 mod transferrable {
