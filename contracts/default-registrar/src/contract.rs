@@ -94,7 +94,7 @@ pub fn execute_register(
     // call resolver and set given addresses
     let set_addresses_msg = WasmMsg::Execute {
         contract_addr: config.registry.to_string(),
-        msg: to_binary(&ResolverExecuteMsg::SetAddresses {
+        msg: to_binary(&ResolverExecuteMsg::SetRecord {
             user_name: user_name.clone(),
             addresses,
         })?,

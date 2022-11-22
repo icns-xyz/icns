@@ -44,7 +44,7 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::SetAddresses { user_name, addresses } => execute_set_addresses(deps, env, info, user_name, addresses),
+        ExecuteMsg::SetRecord { user_name, addresses } => execute_set_addresses(deps, env, info, user_name, addresses),
     }
 }
 
@@ -158,7 +158,7 @@ mod tests {
     fn set_alice_default_addresses(deps: DepsMut, sent: &[Coin], registrar_addr: String) {
         // alice can register an available name
         let info = mock_info(&registrar_addr, sent);
-        let msg = ExecuteMsg::SetAddresses {
+        let msg = ExecuteMsg::SetRecord {
             user_name: "alice".to_string(),
             addresses: vec![("eth".to_string(), "0x1234".to_string()), ("cosmos".to_string(), "cosmos1".to_string())],
         };
@@ -228,7 +228,7 @@ mod tests {
 
         // try setting record again, it should fail
         let info = mock_info( &registry_addr, &coins(1, "token"));
-        let msg = ExecuteMsg::SetAddresses {
+        let msg = ExecuteMsg::SetRecord {
             user_name: "alice".to_string(),
             addresses: vec![("eth".to_string(), "0x1234".to_string()), ("cosmos".to_string(), "cosmos1".to_string())],
         };
@@ -248,7 +248,7 @@ mod tests {
 
         // first try testing with invalid bech 32 address
         let info = mock_info(&registry, &coins(1, "token"));
-        let msg = ExecuteMsg::SetAddresses {
+        let msg = ExecuteMsg::SetRecord {
             user_name: String::from("user_name"),
             addresses: vec![(String::from("cosmos"), String::from("cosmos1dsfsfasdfknsfkndfknskdfns"))],
         };
@@ -259,7 +259,7 @@ mod tests {
         // try testing with unmatching bech32 prefix and address
         // this should fail
         let info = mock_info(&registry, &coins(1, "token"));
-        let msg = ExecuteMsg::SetAddresses {
+        let msg = ExecuteMsg::SetRecord {
             user_name: String::from("user_name"),
             addresses: vec![(String::from("cosmos"), String::from("osmo19clxjvtgn8es8ylytgztalsw2fygh6etyd9hq7")), (String::from("juno"), String::from("juno1kn27c8fu9qjmcn9hqytdzlml55mcs7dl2wu2ts"))],
         };
@@ -268,7 +268,7 @@ mod tests {
 
         // try testing with valid bech32 address and prefix
         let info = mock_info(&registry, &coins(1, "token"));
-        let msg = ExecuteMsg::SetAddresses {
+        let msg = ExecuteMsg::SetRecord {
             user_name: String::from("user_name"),
             addresses: vec![(String::from("juno"), String::from("juno1kn27c8fu9qjmcn9hqytdzlml55mcs7dl2wu2ts"))],
         };
@@ -286,7 +286,7 @@ mod tests {
 
         // also set record for Bob
         let info = mock_info(&registrar_addr.clone(), &coins(1, "token"));
-        let msg = ExecuteMsg::SetAddresses {
+        let msg = ExecuteMsg::SetRecord {
             user_name: "bob".to_string(),
             addresses: vec![("eth".to_string(), "0x5678".to_string()), ("osmo".to_string(), "osmo1".to_string())],
         };
@@ -325,7 +325,7 @@ mod tests {
 
         // test with valid registrar
         let info = mock_info(&registrar_addr, &coins(1, "token"));
-        let msg = ExecuteMsg::SetAddresses {
+        let msg = ExecuteMsg::SetRecord {
             user_name: "bob".to_string(),
             addresses: vec![("eth".to_string(), "0x5678".to_string()), ("osmo".to_string(), "osmo1".to_string())],
         };
@@ -334,7 +334,7 @@ mod tests {
 
         // test with invalid address: should fail
         let info = mock_info(&unregistered_registrar_addr, &coins(1, "token"));
-        let msg = ExecuteMsg::SetAddresses {
+        let msg = ExecuteMsg::SetRecord {
             user_name: "alice".to_string(),
             addresses: vec![("eth".to_string(), "0x5678".to_string()), ("osmo".to_string(), "osmo1".to_string())],
         };

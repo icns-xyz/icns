@@ -95,7 +95,10 @@ pub mod entry {
                     | msg @ CW721BaseExecuteMsg::RevokeAll { .. } => _execute(deps, env, info, msg),
 
                     // minting is allowed as is
-                    msg @ CW721BaseExecuteMsg::Mint(_) => _execute(deps, env, info, msg),
+                    msg @ CW721BaseExecuteMsg::Mint(_) =>{
+
+                        
+                    }_execute(deps, env, info, msg)
 
                     // buring is disabled
                     CW721BaseExecuteMsg::Burn { .. } => Err(ContractError::Unauthorized {}),

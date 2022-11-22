@@ -9,7 +9,7 @@ pub struct InstantiateMsg {
 #[cw_serde]
 #[serde(untagged)]
 pub enum ExecuteMsg {
-    SetAddresses {
+    SetRecord {
         user_name: String,
         // tuple of (bech32 prefix, address)
         addresses: Vec<(String, String)>,
