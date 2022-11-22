@@ -12,12 +12,12 @@ use cw721_base::{ContractError, ExecuteMsg as CW721BaseExecuteMsg, Extension, Mi
 use cw_multi_test::{BasicApp, Executor};
 
 #[test]
-fn only_registry_can_set_new_admin() {
+fn only_registrar_can_mint() {
     let TestEnv {
         mut app,
         admin,
         contract_addr,
-        registry,
+        registrar,
         ..
     } = TestEnvBuilder::default().with_transferrable(false).build();
 
@@ -78,10 +78,10 @@ fn only_registry_can_set_new_admin() {
 
     assert_eq!(owner(&app, name.to_string()).unwrap_err(), not_found_err);
 
-    // mint by registry should be allowed
+    // mint by registarar should be allowed
     mint(
         &mut app,
-        registry,
+        registrar,
         name.to_string(),
         random_person.to_string(),
     )

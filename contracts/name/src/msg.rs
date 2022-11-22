@@ -8,8 +8,8 @@ use cw721_base::msg::QueryMsg as Cw721QueryMsg;
 use cw721_base::{Extension, MinterResponse};
 #[cw_serde]
 pub struct InstantiateMsg {
-    /// `registry` contract address. It controls minting process of this NFT.
-    pub registry: String,
+    /// `registrar` contract address. It controls minting process of this NFT.
+    pub registrar: String,
 
     /// If set to `true`, this NFT will be able to transfer / send
     /// not allowed to set to `false`.

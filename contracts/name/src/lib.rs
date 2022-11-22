@@ -50,7 +50,7 @@ pub mod entry {
         let cw721_base_instantiate_msg = Cw721BaseInstantiateMsg {
             name: NAME.to_string(),
             symbol: SYMBOL.to_string(),
-            minter: msg.registry,
+            minter: msg.registrar,
         };
 
         ICNSNameContract::default().instantiate(

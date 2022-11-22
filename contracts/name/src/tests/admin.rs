@@ -16,7 +16,7 @@ fn only_admin_can_set_new_admin() {
         mut app,
         admin,
         contract_addr,
-        registry,
+        registrar,
         ..
     } = TestEnvBuilder::default().with_transferrable(false).build();
 
@@ -48,8 +48,8 @@ fn only_admin_can_set_new_admin() {
     );
     assert_eq!(get_admin(&app), admin.to_string());
 
-    // set admin by registry should fail
-    let err = set_admin(&mut app, registry, new_admin.to_string()).unwrap_err();
+    // set admin by registrar should fail
+    let err = set_admin(&mut app, registrar, new_admin.to_string()).unwrap_err();
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
         &ContractError::Unauthorized {}

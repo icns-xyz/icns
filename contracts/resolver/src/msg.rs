@@ -1,6 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 
-use crate::state::{ Config };
+use crate::state::Config;
 #[cw_serde]
 pub struct InstantiateMsg {
     pub registry_address: String,
@@ -23,10 +23,13 @@ pub enum QueryMsg {
     Config {},
 
     #[returns(GetAddressesResponse)]
-    GetAddreses {user_name: String},
+    GetAddreses { user_name: String },
 
     #[returns(GetAddressResponse)]
-    GetAddress {user_name: String, bec32_prefix: String},
+    GetAddress {
+        user_name: String,
+        bec32_prefix: String,
+    },
 }
 
 #[cw_serde]
