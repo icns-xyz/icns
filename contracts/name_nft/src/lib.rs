@@ -136,7 +136,7 @@ pub mod entry {
 
     fn check_send_from_registrar(deps: Deps, sender: &Addr) -> Result<(), ContractError> {
         let MinterResponse { minter } = ICNSNameNFTContract::default().minter(deps)?;
-        if sender.to_string() != minter {
+        if *sender != minter {
             return Err(ContractError::Unauthorized {});
         }
 
