@@ -6,6 +6,7 @@ pub use cw721_base::{
     InstantiateMsg as Cw721BaseInstantiateMsg, MintMsg, MinterResponse,
 };
 
+mod checks;
 pub mod execute;
 pub mod msg;
 pub mod query;
@@ -19,6 +20,9 @@ pub type ICNSNameNFTContract<'a> = Cw721Contract<'a, Extension, Empty, Empty, Em
 
 pub mod entry {
     use super::*;
+    use crate::checks::{
+        check_send_from_admin, check_send_from_registrar, check_transferrable, pass_any,
+    };
     use crate::execute::{set_admin, set_transferrable};
     use crate::msg::ExecuteMsg;
     use crate::query::{admin, transferrable};
@@ -106,9 +110,13 @@ pub mod entry {
                 }
             }
             ExecuteMsg::ICNSName(msg) => match msg {
-                msg::ICNSNameExecuteMsg::SetAdmin { admin } => set_admin(&admin, deps, info),
+                msg::ICNSNameExecuteMsg::SetAdmin { admin } => {
+                    check_send_from_admin(deps.as_ref(), &info.sender)?;
+                    set_admin(&admin, deps)
+                }
                 msg::ICNSNameExecuteMsg::SetTransferrable { transferrable } => {
-                    set_transferrable(transferrable, deps, info)
+                    check_send_from_admin(deps.as_ref(), &info.sender)?;
+                    set_transferrable(transferrable, deps)
                 }
             },
         }
@@ -121,33 +129,6 @@ pub mod entry {
             QueryMsg::Transferrable {} => to_binary(&transferrable(deps)?),
             _ => _query(deps, env, msg.into()),
         }
-    }
-
-    fn check_transferrable(deps: Deps) -> Result<(), ContractError> {
-        let config = CONFIG.load(deps.storage)?;
-
-        if !config.transferrable {
-            return Err(ContractError::Unauthorized {});
-        }
-
-        Ok(())
-    }
-
-    fn check_send_from_registrar(deps: Deps, sender: &Addr) -> Result<(), ContractError> {
-        let MinterResponse { minter } = ICNSNameNFTContract::default().minter(deps)?;
-        if *sender != minter {
-            return Err(ContractError::Unauthorized {});
-        }
-
-        Ok(())
-    }
-
-    fn pass_any(checks: &[Result<(), ContractError>]) -> Result<(), ContractError> {
-        if !checks.iter().any(|check| check.is_ok()) {
-            return Err(ContractError::Unauthorized {});
-        }
-
-        Ok(())
     }
 }
 
