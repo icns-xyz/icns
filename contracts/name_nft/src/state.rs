@@ -9,5 +9,3 @@ pub struct Config {
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");
-
-pub const RESOLVERS: Item<Vec<Addr>> = Item::new("resolvers");

@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Empty};
+use cosmwasm_std::Empty;
 use cw721::{
     AllNftInfoResponse, ApprovalResponse, ApprovalsResponse, ContractInfoResponse, NftInfoResponse,
     NumTokensResponse, OperatorsResponse, OwnerOfResponse, TokensResponse,
@@ -29,16 +29,8 @@ pub enum ExecuteMsg {
 
 #[cw_serde]
 pub enum ICNSNameExecuteMsg {
-    SetAdmin {
-        admin: String,
-    },
-    SetTransferrable {
-        transferrable: bool,
-    },
-    UpdateResolvers {
-        add: Vec<String>,
-        remove: Vec<String>,
-    },
+    SetAdmin { admin: String },
+    SetTransferrable { transferrable: bool },
 }
 
 #[cw_serde]
@@ -49,9 +41,6 @@ pub enum QueryMsg {
 
     #[returns(TransferrableResponse)]
     Transferrable {},
-
-    #[returns(ResolversResponse)]
-    Resolvers {},
 
     #[returns(OwnerOfResponse)]
     OwnerOf {
@@ -158,11 +147,6 @@ pub struct AdminResponse {
 #[cw_serde]
 pub struct TransferrableResponse {
     pub transferrable: bool,
-}
-
-#[cw_serde]
-pub struct ResolversResponse {
-    pub resolvers: Vec<Addr>,
 }
 
 #[cfg(test)]

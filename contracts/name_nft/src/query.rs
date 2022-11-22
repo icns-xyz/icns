@@ -1,6 +1,6 @@
 use crate::{
-    msg::{AdminResponse, ResolversResponse, TransferrableResponse},
-    state::{CONFIG, RESOLVERS},
+    msg::{AdminResponse, TransferrableResponse},
+    state::CONFIG,
 };
 use cosmwasm_std::{Deps, StdResult};
 
@@ -16,9 +16,4 @@ pub fn transferrable(deps: Deps) -> StdResult<TransferrableResponse> {
     Ok(TransferrableResponse {
         transferrable: config.transferrable,
     })
-}
-
-pub fn resolvers(deps: Deps) -> StdResult<ResolversResponse> {
-    let resolvers = RESOLVERS.may_load(deps.storage)?.unwrap_or_default();
-    Ok(ResolversResponse { resolvers })
 }
