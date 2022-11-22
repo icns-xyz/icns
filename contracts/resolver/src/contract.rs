@@ -6,6 +6,8 @@ use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
 // use cw2::set_contract_version;
 
 use registry::msg::{QueryMsg as QueryMsgRegistry, IsAdminResponse};
+use icns_name::msg::{QueryMsg as QueryMsgName, OwnerOfResponse};
+use cw721::OwnerOfResponse;
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, GetAddressesResponse, GetAddressResponse};
 use crate::state::{ Config,
@@ -26,10 +28,10 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-      let registry_address = deps.api.addr_validate(&msg.registry_address)?;
+      let registry_address = deps.api.addr_validate(&msg.name_address)?;
   
       let cfg = Config {
-          registry_address: registry_address,
+          name_address: registry_address,
       };
       CONFIG.save(deps.storage, &cfg)?;
   
@@ -44,11 +46,11 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::SetRecord { user_name, addresses } => execute_set_addresses(deps, env, info, user_name, addresses),
+        ExecuteMsg::SetRecord { user_name, addresses } => execute_set_record(deps, env, info, user_name, addresses),
     }
 }
 
-pub fn execute_set_addresses(
+pub fn execute_set_record(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -57,10 +59,10 @@ pub fn execute_set_addresses(
 ) -> Result<Response, ContractError> {
      // check if the msg sender is a registrar or admin. If not, return err
      let is_admin = is_admin(deps.as_ref(), info.sender.to_string())?;
-     let is_registrar = is_registrar(deps.as_ref(), info.sender.to_string())?;
+     let is_owner_nft = is_owner(deps.as_ref(), user_name.clone(), info.sender.to_string())?;
 
      // if the sender is neither a registrar nor an admin, return error
-     if !is_admin && !is_registrar {
+     if !is_admin && !is_owner_nft {
          return Err(ContractError::Unauthorized {});
      }
 
@@ -91,7 +93,7 @@ pub fn execute_set_addresses(
 
 pub fn is_admin(deps: Deps, address: String) -> Result<bool, ContractError> {
    let response = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-       contract_addr: CONFIG.load(deps.storage)?.registry_address.to_string(),
+       contract_addr: CONFIG.load(deps.storage)?.name_address.to_string(),
        msg: to_binary(&QueryMsgRegistry::IsAdmin {address})?,
    })).map(|res| from_binary(&res).unwrap());
 
@@ -102,10 +104,18 @@ pub fn is_admin(deps: Deps, address: String) -> Result<bool, ContractError> {
     }
 }
 
-pub fn is_registrar(deps: Deps, address: String) -> Result<bool, ContractError> {
-    let registrar = CONFIG.load(deps.storage)?.registry_address.to_string();
-    Ok(registrar == address)
+pub fn is_owner(deps: Deps, username: String, sender: String) -> Result<bool, ContractError> {
+    let response = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+         contract_addr: CONFIG.load(deps.storage)?.name_address.to_string(),
+         msg: to_binary(&QueryMsgName::OwnerOf {token_id: username, include_expired: None})?,
+    })).map(|res| from_binary(&res).unwrap());
+
+    match response {
+         Ok(OwnerOfResponse {owner, ..}) => Ok(owner.eq(&sender)),
+         Err(_) => Ok(false),
+    }
 }
+
 
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -144,10 +154,10 @@ mod tests {
 
     fn mock_init(
         deps: DepsMut,
-        registry_addr: String,
+        name_addr: String,
     ) {
         let msg = InstantiateMsg {
-            registry_address: registry_addr.to_string(),
+            name_address: name_addr.to_string(),
         };
 
         let info = mock_info("creator", &coins(1, "token"));
@@ -170,13 +180,13 @@ mod tests {
     fn proper_instantiate() {
         let mut deps = mock_dependencies();
 
-        let registry_addr = String::from("registry");
-        mock_init(deps.as_mut(), registry_addr.clone());
+        let name_addr = String::from("name");
+        mock_init(deps.as_mut(), name_addr.clone());
 
         let res = query(deps.as_ref(), mock_env(), QueryMsg::Config {}).unwrap();
         let value: Config = from_binary(&res).unwrap();
         let expected = Config {
-            registry_address: Addr::unchecked(registry_addr),
+            name_address: Addr::unchecked(name_addr),
         };
         assert_eq!(value, expected);
     }
@@ -242,12 +252,12 @@ mod tests {
     fn test_address_verification() {
         let mut deps = mock_dependencies();
 
-        let registry = String::from("registry");
+        let name_addr = String::from("name");
 
-        mock_init(deps.as_mut(), registry.clone());
+        mock_init(deps.as_mut(), name_addr.clone());
 
         // first try testing with invalid bech 32 address
-        let info = mock_info(&registry, &coins(1, "token"));
+        let info = mock_info(&name_addr, &coins(1, "token"));
         let msg = ExecuteMsg::SetRecord {
             user_name: String::from("user_name"),
             addresses: vec![(String::from("cosmos"), String::from("cosmos1dsfsfasdfknsfkndfknskdfns"))],
@@ -258,7 +268,7 @@ mod tests {
 
         // try testing with unmatching bech32 prefix and address
         // this should fail
-        let info = mock_info(&registry, &coins(1, "token"));
+        let info = mock_info(&name_addr, &coins(1, "token"));
         let msg = ExecuteMsg::SetRecord {
             user_name: String::from("user_name"),
             addresses: vec![(String::from("cosmos"), String::from("osmo19clxjvtgn8es8ylytgztalsw2fygh6etyd9hq7")), (String::from("juno"), String::from("juno1kn27c8fu9qjmcn9hqytdzlml55mcs7dl2wu2ts"))],
@@ -267,7 +277,7 @@ mod tests {
         assert_eq!(res, true);
 
         // try testing with valid bech32 address and prefix
-        let info = mock_info(&registry, &coins(1, "token"));
+        let info = mock_info(&name_addr, &coins(1, "token"));
         let msg = ExecuteMsg::SetRecord {
             user_name: String::from("user_name"),
             addresses: vec![(String::from("juno"), String::from("juno1kn27c8fu9qjmcn9hqytdzlml55mcs7dl2wu2ts"))],
@@ -279,13 +289,13 @@ mod tests {
     #[test]
     fn set_get_multiple_records() {
         let mut deps = mock_dependencies();
-        let registrar_addr = String::from("registrar");
-        mock_init(deps.as_mut(), registrar_addr.clone());
+        let name_addr = String::from("name");
+        mock_init(deps.as_mut(), name_addr.clone());
 
-        set_alice_default_addresses(deps.as_mut(), &coins(1, "token"), registrar_addr.clone());
+        set_alice_default_addresses(deps.as_mut(), &coins(1, "token"), name_addr.clone());
 
         // also set record for Bob
-        let info = mock_info(&registrar_addr.clone(), &coins(1, "token"));
+        let info = mock_info(&name_addr.clone(), &coins(1, "token"));
         let msg = ExecuteMsg::SetRecord {
             user_name: "bob".to_string(),
             addresses: vec![("eth".to_string(), "0x5678".to_string()), ("osmo".to_string(), "osmo1".to_string())],
@@ -319,12 +329,12 @@ mod tests {
     fn set_with_invalid_registrar() {
         let mut deps = mock_dependencies();
 
-        let registrar_addr = String::from("registrar");
+        let name_addr = String::from("name");
         let unregistered_registrar_addr = String::from("unregistered_registrar");
-        mock_init(deps.as_mut(), registrar_addr.clone());
+        mock_init(deps.as_mut(), name_addr.clone());
 
         // test with valid registrar
-        let info = mock_info(&registrar_addr, &coins(1, "token"));
+        let info = mock_info(&name_addr, &coins(1, "token"));
         let msg = ExecuteMsg::SetRecord {
             user_name: "bob".to_string(),
             addresses: vec![("eth".to_string(), "0x5678".to_string()), ("osmo".to_string(), "osmo1".to_string())],
