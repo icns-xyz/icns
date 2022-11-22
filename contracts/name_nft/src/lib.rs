@@ -23,7 +23,7 @@ pub mod entry {
     use crate::checks::{
         check_send_from_admin, check_send_from_registrar, check_transferrable, pass_any,
     };
-    use crate::execute::{set_admin, set_transferrable};
+    use crate::execute::{add_admin, remove_admin, set_transferrable};
     use crate::msg::ExecuteMsg;
     use crate::query::{admin, transferrable};
     use crate::state::{Config, CONFIG};
@@ -41,10 +41,14 @@ pub mod entry {
         info: MessageInfo,
         msg: InstantiateMsg,
     ) -> Result<Response, ContractError> {
-        let admin_addr: Addr = deps.api.addr_validate(&msg.admin)?;
+        // let admin_addr: Addr = deps.api.addr_validate(&msg.admin)?;
+        let mut admin_addrs = Vec::new();
+        for admin in msg.admins {
+            admin_addrs.push(deps.api.addr_validate(&admin)?);
+        }
 
         let config = Config {
-            admin: admin_addr,
+            admins: admin_addrs,
             transferrable: msg.transferrable,
         };
 
@@ -110,9 +114,13 @@ pub mod entry {
                 }
             }
             ExecuteMsg::ICNSName(msg) => match msg {
-                msg::ICNSNameExecuteMsg::SetAdmin { admin } => {
+                msg::ICNSNameExecuteMsg::AddAdmin { admin_address } => {
                     check_send_from_admin(deps.as_ref(), &info.sender)?;
-                    set_admin(&admin, deps)
+                    add_admin(&admin_address, deps)
+                }
+                msg::ICNSNameExecuteMsg::RemoveAdmin { admin_address } => {
+                    check_send_from_admin(deps.as_ref(), &info.sender)?;
+                    remove_admin(&admin_address, deps)
                 }
                 msg::ICNSNameExecuteMsg::SetTransferrable { transferrable } => {
                     check_send_from_admin(deps.as_ref(), &info.sender)?;

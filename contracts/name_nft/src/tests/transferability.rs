@@ -228,7 +228,7 @@ mod transferrable {
             mut app,
             contract_addr,
             registrar,
-            admin,
+            admins,
             ..
         } = TestEnvBuilder::default().with_transferrable(true).build();
 
@@ -252,7 +252,7 @@ mod transferrable {
 
         let reciever_code_id = app.store_code(mock_reciever_contract());
         let reciever_contract_addr = app
-            .instantiate_contract(reciever_code_id, admin, &(), &[], "name_clone", None)
+            .instantiate_contract(reciever_code_id, admins[0].clone(), &(), &[], "name_clone", None)
             .unwrap();
 
         // send to recipient should succeed
@@ -290,7 +290,7 @@ fn only_admin_can_set_transferrable() {
         mut app,
         contract_addr,
         registrar,
-        admin,
+        admins,
         ..
     } = TestEnvBuilder::default().with_transferrable(false).build();
 
@@ -330,9 +330,9 @@ fn only_admin_can_set_transferrable() {
     assert!(!transferrable(&app));
 
     // transferrable can only be set by admin
-    set_transferrable(&mut app, admin.clone(), true).unwrap();
+    set_transferrable(&mut app, admins[0].clone(), true).unwrap();
     assert!(transferrable(&app));
 
-    set_transferrable(&mut app, admin, false).unwrap();
+    set_transferrable(&mut app, admins[0].clone(), false).unwrap();
     assert!(!transferrable(&app));
 }

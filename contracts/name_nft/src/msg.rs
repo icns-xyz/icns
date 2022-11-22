@@ -17,7 +17,7 @@ pub struct InstantiateMsg {
 
     /// Admin has ability to change config of this contract.
     /// Namely the `admin` itself and `transferrable`
-    pub admin: String,
+    pub admins: Vec<String>,
 }
 
 #[cw_serde]
@@ -29,8 +29,9 @@ pub enum ExecuteMsg {
 
 #[cw_serde]
 pub enum ICNSNameExecuteMsg {
-    SetAdmin { admin: String },
     SetTransferrable { transferrable: bool },
+    RemoveAdmin { admin_address: String},
+    AddAdmin { admin_address: String },
 }
 
 #[cw_serde]
@@ -141,7 +142,7 @@ impl From<QueryMsg> for Cw721QueryMsg<Empty> {
 
 #[cw_serde]
 pub struct AdminResponse {
-    pub admin: String,
+    pub admins: Vec<String>,
 }
 
 #[cw_serde]

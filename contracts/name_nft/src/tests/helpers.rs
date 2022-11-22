@@ -58,12 +58,12 @@ pub struct TestEnv {
     pub app: BasicApp,
     pub code_id: u64,
     pub contract_addr: Addr,
-    pub admin: Addr,
+    pub admins: Vec<Addr>,
     pub registrar: Addr,
 }
 
 pub struct TestEnvBuilder {
-    pub admin: Addr,
+    pub admins: Vec<Addr>,
     pub registrar: Addr,
     pub transferrable: bool,
 }
@@ -71,7 +71,7 @@ pub struct TestEnvBuilder {
 impl Default for TestEnvBuilder {
     fn default() -> Self {
         Self {
-            admin: Addr::unchecked("admin"),
+            admins: vec![Addr::unchecked("admin")],
             registrar: Addr::unchecked("registrar"),
             transferrable: false,
         }
@@ -90,12 +90,18 @@ impl TestEnvBuilder {
         let mut app = BasicApp::default();
         let code_id = app.store_code(name_contract());
 
+        // change addr vec to string vec
+        let mut admins = Vec::new();
+        for admin in self.admins {
+            admins.push(admin.to_string());
+        }
+
         let contract_addr = app
             .instantiate_contract(
                 code_id,
-                self.admin.clone(),
+                self.admins[0].clone(),
                 &InstantiateMsg {
-                    admin: self.admin.to_string(),
+                    admins: admins,
                     registrar: self.registrar.to_string(),
                     transferrable: self.transferrable,
                 },
@@ -109,7 +115,7 @@ impl TestEnvBuilder {
             app,
             code_id,
             contract_addr,
-            admin: self.admin,
+            admins: self.admins,
             registrar: self.registrar,
         }
     }

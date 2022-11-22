@@ -4,7 +4,7 @@ use cw_storage_plus::Item;
 
 #[cw_serde]
 pub struct Config {
-    pub admin: Addr,
+    pub admins: Vec<Addr>,
     pub transferrable: bool,
 }
 

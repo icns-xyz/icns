@@ -23,11 +23,14 @@ pub fn check_send_from_registrar(deps: Deps, sender: &Addr) -> Result<(), Contra
 }
 pub fn check_send_from_admin(deps: Deps, sender: &Addr) -> Result<(), cw721_base::ContractError> {
     let config = CONFIG.load(deps.storage)?;
-    if *sender != config.admin {
-        Err(ContractError::Unauthorized {})
-    } else {
-        Ok(())
-    }
+
+    for admin in config.admins {
+        if admin == *sender {
+            return Ok(());
+        }
+    }   
+    
+    Err(cw721_base::ContractError::Unauthorized {})
 }
 
 pub fn pass_any(checks: &[Result<(), ContractError>]) -> Result<(), ContractError> {

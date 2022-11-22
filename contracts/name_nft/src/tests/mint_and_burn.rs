@@ -15,7 +15,7 @@ use cw_multi_test::{BasicApp, Executor};
 fn only_registrar_can_mint() {
     let TestEnv {
         mut app,
-        admin,
+        admins,
         contract_addr,
         registrar,
         ..
@@ -70,7 +70,7 @@ fn only_registrar_can_mint() {
     assert_eq!(owner(&app, name.to_string()).unwrap_err(), not_found_err);
 
     // mint by admin should fail
-    let err = mint(&mut app, admin, name.to_string(), random_person.to_string()).unwrap_err();
+    let err = mint(&mut app, admins[0].clone(), name.to_string(), random_person.to_string()).unwrap_err();
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
         &ContractError::Unauthorized {}
@@ -96,14 +96,14 @@ fn only_registrar_can_mint() {
 fn burning_is_not_allowed() {
     let TestEnv {
         mut app,
-        admin,
+        admins,
         contract_addr,
         ..
     } = TestEnvBuilder::default().with_transferrable(false).build();
 
     let err = app
         .execute_contract(
-            admin,
+            admins[0].clone(),
             contract_addr,
             &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Burn {
                 token_id: "name".to_string(),
