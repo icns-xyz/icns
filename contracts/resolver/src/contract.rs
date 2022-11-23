@@ -10,11 +10,11 @@ use cw2::set_contract_version;
 use subtle_encoding::bech32;
 // use cw2::set_contract_version;
 
-use icns_name_nft::msg::{QueryMsg as QueryMsgName};
-use cw721::OwnerOfResponse;
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, GetAddressResponse, GetAddressesResponse, InstantiateMsg, QueryMsg};
 use crate::state::{Config, ADDRESSES, CONFIG};
+use cw721::OwnerOfResponse;
+use icns_name_nft::msg::QueryMsg as QueryMsgName;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:resolver";
@@ -29,14 +29,12 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-      let name_address = deps.api.addr_validate(&msg.name_address)?;
-  
-      let cfg = Config {
-          name_address: name_address,
-      };
-      CONFIG.save(deps.storage, &cfg)?;
-  
-      Ok(Response::default())
+    let name_address = deps.api.addr_validate(&msg.name_address)?;
+
+    let cfg = Config { name_address };
+    CONFIG.save(deps.storage, &cfg)?;
+
+    Ok(Response::default())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -47,7 +45,10 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::SetRecord { user_name, addresses } => execute_set_record(deps, env, info, user_name, addresses),
+        ExecuteMsg::SetRecord {
+            user_name,
+            addresses,
+        } => execute_set_record(deps, env, info, user_name, addresses),
     }
 }
 
@@ -58,14 +59,14 @@ pub fn execute_set_record(
     user_name: String,
     addresses: Vec<(String, String)>,
 ) -> Result<Response, ContractError> {
-     // check if the msg sender is a registrar or admin. If not, return err
-     let is_admin = is_admin(deps.as_ref(), info.sender.to_string())?;
-     let is_owner_nft = is_owner(deps.as_ref(), user_name.clone(), info.sender.to_string())?;
+    // check if the msg sender is a registrar or admin. If not, return err
+    let is_admin = is_admin(deps.as_ref(), info.sender.to_string())?;
+    let is_owner_nft = is_owner(deps.as_ref(), user_name.clone(), info.sender.to_string())?;
 
-     // if the sender is neither a registrar nor an admin, return error
-     if !is_admin && !is_owner_nft {
-         return Err(ContractError::Unauthorized {});
-     }
+    // if the sender is neither a registrar nor an admin, return error
+    if !is_admin && !is_owner_nft {
+        return Err(ContractError::Unauthorized {});
+    }
 
     // do a sanity check on the given addresses for the different bech32 prefixes
     // We do two checks here:
@@ -118,18 +119,22 @@ pub fn is_admin(deps: Deps, address: String) -> Result<bool, ContractError> {
 }
 
 pub fn is_owner(deps: Deps, username: String, sender: String) -> Result<bool, ContractError> {
-    let response = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-         contract_addr: CONFIG.load(deps.storage)?.name_address.to_string(),
-         msg: to_binary(&QueryMsgName::OwnerOf {token_id: username, include_expired: None})?,
-    })).map(|res| from_binary(&res).unwrap());
+    let response = deps
+        .querier
+        .query(&QueryRequest::Wasm(WasmQuery::Smart {
+            contract_addr: CONFIG.load(deps.storage)?.name_address.to_string(),
+            msg: to_binary(&QueryMsgName::OwnerOf {
+                token_id: username,
+                include_expired: None,
+            })?,
+        }))
+        .map(|res| from_binary(&res).unwrap());
 
     match response {
-         Ok(OwnerOfResponse {owner, ..}) => Ok(owner.eq(&sender)),
-         Err(_) => Ok(false),
+        Ok(OwnerOfResponse { owner, .. }) => Ok(owner.eq(&sender)),
+        Err(_) => Ok(false),
     }
 }
-
-
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
@@ -148,9 +153,7 @@ fn query_addresses(deps: Deps, _env: Env, name: String) -> StdResult<GetAddresse
         .prefix(name)
         .range(deps.storage, None, None, Ascending)
         .collect::<StdResult<Vec<_>>>()?;
-    let resp = GetAddressesResponse {
-        addresses: addresses,
-    };
+    let resp = GetAddressesResponse { addresses };
 
     Ok(resp)
 }
@@ -179,12 +182,9 @@ mod tests {
 
     use super::*;
 
-    fn mock_init(
-        deps: DepsMut,
-        name_addr: String,
-    ) {
+    fn mock_init(deps: DepsMut, name_addr: String) {
         let msg = InstantiateMsg {
-            name_address: name_addr.to_string(),
+            name_address: name_addr,
         };
 
         let info = mock_info("creator", &coins(1, "token"));

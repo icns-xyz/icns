@@ -1,5 +1,5 @@
 use crate::{
-    msg::{AdminResponse, TransferrableResponse, IsAdminResponse},
+    msg::{AdminResponse, IsAdminResponse, TransferrableResponse},
     state::CONFIG,
 };
 use cosmwasm_std::{Deps, StdResult};
@@ -21,7 +21,7 @@ pub fn is_admin(deps: Deps, addr: String) -> StdResult<IsAdminResponse> {
     // iterate over admins and convert to string vector
     let mut is_admin = false;
     for admin in admins {
-        if admin.to_string() == addr {
+        if admin == addr {
             is_admin = true;
             break;
         }
