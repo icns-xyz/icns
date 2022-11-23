@@ -1,17 +1,12 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    from_binary, to_binary, Addr, Deps, DepsMut, Env, MessageInfo, QueryRequest, Response, WasmMsg,
-    WasmQuery,
-};
+use cosmwasm_std::{to_binary, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg};
 use cw2::set_contract_version;
 
+use crate::checks::check_send_from_admin;
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg};
 
-use registry::msg::{
-    ExecuteMsg as RegistryExecuteMsg, IsAdminResponse, QueryMsg as QueryMsgRegistry,
-};
 use resolver::msg::ExecuteMsg as ResolverExecuteMsg;
 
 use crate::state::{Config, CONFIG};
@@ -30,22 +25,20 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    let registry_addr = deps.api.addr_validate(&msg.registry)?;
-    let resolver_addr = deps.api.addr_validate(&msg.resolver)?;
+    let name_nft_addr = deps.api.addr_validate(&msg.name_nft_addr)?;
+    let verifier_addrs = msg
+        .verifier_addrs
+        .into_iter()
+        .map(|addr| deps.api.addr_validate(&addr))
+        .collect::<StdResult<_>>()?;
 
-    let mut verifier_addrs = Vec::new();
-    for verifier in msg.verifier_addrs {
-        let verifier_addr = deps.api.addr_validate(&verifier)?;
-        verifier_addrs.push(verifier_addr);
-    }
-
-    let config = Config {
-        registry: registry_addr,
-        resolver: resolver_addr,
-        verifiers: verifier_addrs,
-    };
-
-    CONFIG.save(deps.storage, &config)?;
+    CONFIG.save(
+        deps.storage,
+        &Config {
+            name_nft: name_nft_addr,
+            verifiers: verifier_addrs,
+        },
+    )?;
 
     Ok(Response::new()
         .add_attribute("method", "instantiate")
@@ -62,7 +55,7 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::Register {
-            user_name,
+            name: user_name,
             owner,
             addresses,
         } => execute_register(deps, env, info, user_name, owner, addresses),
@@ -75,8 +68,8 @@ pub fn execute(
     }
 }
 
-// execute_register calls two contracts: the registry and the resolver
-// the registry contract is called to mint nft of the name service, then save the resolver address for the user_name
+// execute_register calls two contracts: the name_nft and the resolver
+// the name_nft contract is called to mint nft of the name service, then save the resolver address for the user_name
 // the resolver contract is called to save the addresses for the user_name
 pub fn execute_register(
     deps: DepsMut,
@@ -88,46 +81,23 @@ pub fn execute_register(
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
-    let is_admin = is_admin(deps.as_ref(), info.sender.to_string())?;
-    let is_verifier = is_verifier(deps.as_ref(), info.sender.clone());
-
-    // if the sender is neither a registrar nor an admin, return error
-    if !is_admin && !is_verifier {
-        return Err(ContractError::Unauthorized {});
-    }
-
     // do a sanity check on the user name
     // they cannot use "." in the user name
-    if user_name.contains(".") {
+    if user_name.contains('.') {
         return Err(ContractError::InvalidUserName { user_name });
     }
 
     // call resolver and set given addresses
-    let set_addresses_msg = WasmMsg::Execute {
-        contract_addr: config.registry.to_string(),
+    let set_record_msg = WasmMsg::Execute {
+        contract_addr: config.name_nft.to_string(),
         msg: to_binary(&ResolverExecuteMsg::SetRecord {
-            user_name: user_name.clone(),
+            user_name,
             addresses,
         })?,
         funds: vec![],
     };
 
-    let resolver_addr = deps.api.addr_validate(&resolver)?;
-    // call registry and set resolver address
-    let set_resolver_msg = WasmMsg::Execute {
-        contract_addr: config.registry.to_string(),
-        msg: to_binary(&RegistryExecuteMsg::SetResolverAddress {
-            user_name: user_name.clone(),
-            resolver_address: resolver_addr,
-        })?,
-        funds: vec![],
-    };
-
-    // TODO: add message call for minting nft
-
-    Ok(Response::new()
-        .add_message(set_addresses_msg)
-        .add_message(set_resolver_msg))
+    Ok(Response::new().add_message(set_record_msg))
 }
 
 // execute_add_verifier adds an verifier to the list of verifiers
@@ -137,30 +107,15 @@ pub fn execute_add_verifier(
     info: MessageInfo,
     verifier_addr: String,
 ) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
+    check_send_from_admin(deps.as_ref(), &info.sender)?;
+    let adding_verifier = deps.api.addr_validate(&verifier_addr)?;
 
-    let is_admin = is_admin(deps.as_ref(), info.sender.to_string())?;
-    if !is_admin {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    let verifier_addr = deps.api.addr_validate(&verifier_addr)?;
-
-    // check that the verifier is not already in the list of verifiers
-    if config.verifiers.contains(&verifier_addr) {
-        return Err(ContractError::VerifierAlreadyExists {});
-    }
-
-    let mut verifiers = config.verifiers;
-    verifiers.push(verifier_addr);
-
-    let config = Config {
-        registry: config.registry,
-        resolver: config.resolver,
-        verifiers,
-    };
-
-    CONFIG.save(deps.storage, &config)?;
+    CONFIG.update(deps.storage, |config| -> StdResult<_> {
+        Ok(Config {
+            verifiers: vec![config.verifiers, vec![adding_verifier]].concat(),
+            ..config
+        })
+    })?;
 
     Ok(Response::new().add_attribute("method", "add_verifier"))
 }
@@ -171,55 +126,23 @@ pub fn execute_remove_verifier(
     info: MessageInfo,
     verifier_addr: String,
 ) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
+    check_send_from_admin(deps.as_ref(), &info.sender)?;
+    let removing_verifier = deps.api.addr_validate(&verifier_addr)?;
 
-    let is_admin = is_admin(deps.as_ref(), info.sender.to_string())?;
-    if !is_admin {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    let verifier_addr = deps.api.addr_validate(&verifier_addr)?;
-
-    // check that the verifier is in the list of verifiers
-    if !config.verifiers.contains(&verifier_addr) {
-        return Err(ContractError::VerifierDoesNotExist {});
-    }
-
-    let mut verifiers = config.verifiers;
-    verifiers.retain(|addr| addr != &verifier_addr);
-
-    let config = Config {
-        registry: config.registry,
-        resolver: config.resolver,
-        verifiers,
-    };
-
-    CONFIG.save(deps.storage, &config)?;
+    CONFIG.update(deps.storage, |config| -> StdResult<_> {
+        Ok(Config {
+            verifiers: config
+                .verifiers
+                .into_iter()
+                .filter(|v| *v != removing_verifier)
+                .collect(),
+            ..config
+        })
+    })?;
 
     Ok(Response::new()
         .add_attribute("method", "remove_verifier")
         .add_attribute("verifier", verifier_addr))
-}
-
-pub fn is_admin(deps: Deps, address: String) -> Result<bool, ContractError> {
-    let response = deps
-        .querier
-        .query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: CONFIG.load(deps.storage)?.registry.to_string(),
-            msg: to_binary(&QueryMsgRegistry::IsAdmin { address })?,
-        }))
-        .map(|res| from_binary(&res).unwrap());
-
-    // TODO: come back and decide and change how we handle the contract error here
-    match response {
-        Ok(IsAdminResponse { is_admin }) => Ok(is_admin),
-        Err(_) => Ok(false),
-    }
-}
-
-pub fn is_verifier(deps: Deps, addr: Addr) -> bool {
-    let config = CONFIG.load(deps.storage).unwrap();
-    config.verifiers.iter().any(|a| a.as_ref() == addr.as_ref())
 }
 
 #[cfg(test)]
@@ -234,10 +157,9 @@ mod tests {
 
     use super::*;
 
-    fn mock_init(deps: DepsMut, registry: String, resolver: String, verifier_addrs: Vec<String>) {
+    fn mock_init(deps: DepsMut, name_nft: String, resolver: String, verifier_addrs: Vec<String>) {
         let msg = InstantiateMsg {
-            registry,
-            resolver,
+            name_nft_addr: name_nft,
             verifier_addrs,
         };
 
