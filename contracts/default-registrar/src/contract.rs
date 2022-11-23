@@ -1,14 +1,18 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg};
+use cosmwasm_std::{
+    from_slice, to_binary, Binary, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
+};
 use cw2::set_contract_version;
+use icns_name_nft::MintMsg;
 
-use crate::checks::check_send_from_admin;
+use crate::checks::{
+    check_send_from_admin, check_verification_pass_threshold, check_verifying_key,
+};
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, VerifyingMsg};
 
-use icns_name_nft::msg::{ QueryMsg as QueryMsgNameNft, IsAdminResponse};
-use resolver::msg::{ExecuteMsg as ResolverExecuteMsg};
+use icns_name_nft::msg::ExecuteMsg as NameNFTExecuteMsg;
 
 use crate::state::{Config, CONFIG};
 
@@ -30,14 +34,21 @@ pub fn instantiate(
     let verifier_addrs = msg
         .verifier_addrs
         .into_iter()
-        .map(|addr| deps.api.addr_validate(&addr))
-        .collect::<StdResult<_>>()?;
+        .map(|verifier_pubkey| {
+            Ok(
+                check_verifying_key(Binary::from_base64(&verifier_pubkey)?.as_slice())?
+                    .to_bytes()
+                    .to_vec(),
+            )
+        })
+        .collect::<Result<_, ContractError>>()?;
 
     CONFIG.save(
         deps.storage,
         &Config {
             name_nft: name_nft_addr,
             verifiers: verifier_addrs,
+            verification_threshold: msg.verification_threshold,
         },
     )?;
 
@@ -55,11 +66,11 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Register {
-            name: user_name,
-            owner,
-            addresses,
-        } => execute_register(deps, env, info, user_name, owner, addresses),
+        ExecuteMsg::Claim {
+            name,
+            verifying_msg,
+            verifications,
+        } => execute_claim(deps, info, name, verifying_msg, verifications),
         ExecuteMsg::AddVerifier { verifier_addr } => {
             execute_add_verifier(deps, env, info, verifier_addr)
         }
@@ -69,36 +80,51 @@ pub fn execute(
     }
 }
 
-// execute_register calls two contracts: the name_nft and the resolver
-// the name_nft contract is called to mint nft of the name service, then save the resolver address for the user_name
-// the resolver contract is called to save the addresses for the user_name
-pub fn execute_register(
+pub fn execute_claim(
     deps: DepsMut,
-    _env: Env,
     info: MessageInfo,
-    user_name: String,
-    resolver: String,
-    addresses: Vec<(String, String)>,
+    verifying_msg_str: String,
+    name: String,
+    verifications: Vec<String>,
 ) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
-
-    // do a sanity check on the user name
-    // they cannot use "." in the user name
-    if user_name.contains('.') {
-        return Err(ContractError::InvalidUserName { user_name });
+    // check if verifying msg has matched name, claimer
+    let verifying_msg: VerifyingMsg = from_slice(verifying_msg_str.as_bytes())?;
+    if verifying_msg.name != name {
+        return Err(ContractError::NameMismatched {});
+    }
+    if verifying_msg.claimer != info.sender {
+        return Err(ContractError::ClaimerMismatched {});
     }
 
-    // call resolver and set given addresses
-    let set_record_msg = WasmMsg::Execute {
+    // checks if verifcation pass threshold
+    check_verification_pass_threshold(
+        deps.as_ref(),
+        &verifying_msg_str,
+        &verifications
+            .iter()
+            .map(|v| Binary::from_base64(v).map(|b| b.to_vec()))
+            .collect::<StdResult<Vec<_>>>()?,
+    )?;
+
+    // mint name nft
+    let config = CONFIG.load(deps.storage)?;
+    let mint_msg = WasmMsg::Execute {
         contract_addr: config.name_nft.to_string(),
-        msg: to_binary(&ResolverExecuteMsg::SetRecord {
-            user_name,
-            addresses,
-        })?,
+        msg: to_binary(&NameNFTExecuteMsg::CW721Base(
+            icns_name_nft::CW721BaseExecuteMsg::Mint(MintMsg {
+                token_id: name.clone(),
+                owner: info.sender.to_string(),
+                token_uri: None,
+                extension: None,
+            }),
+        ))?,
         funds: vec![],
     };
 
-    Ok(Response::new().add_message(set_record_msg))
+    Ok(Response::new()
+        .add_attribute("method", "claim")
+        .add_attribute("name", name)
+        .add_message(mint_msg))
 }
 
 // execute_add_verifier adds an verifier to the list of verifiers
@@ -106,29 +132,35 @@ pub fn execute_add_verifier(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    verifier_addr: String,
+    verifier_pubkey: String,
 ) -> Result<Response, ContractError> {
     check_send_from_admin(deps.as_ref(), &info.sender)?;
-    let adding_verifier = deps.api.addr_validate(&verifier_addr)?;
+
+    let adding_verifier = Binary::from_base64(&verifier_pubkey)?;
+    check_verifying_key(adding_verifier.as_slice())?;
 
     CONFIG.update(deps.storage, |config| -> StdResult<_> {
         Ok(Config {
-            verifiers: vec![config.verifiers, vec![adding_verifier]].concat(),
+            verifiers: vec![config.verifiers, vec![adding_verifier.to_vec()]].concat(),
             ..config
         })
     })?;
 
-    Ok(Response::new().add_attribute("method", "add_verifier"))
+    Ok(Response::new()
+        .add_attribute("method", "add_verifier")
+        .add_attribute("verifier", verifier_pubkey))
 }
 
 pub fn execute_remove_verifier(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    verifier_addr: String,
+    verifier_pubkey: String,
 ) -> Result<Response, ContractError> {
     check_send_from_admin(deps.as_ref(), &info.sender)?;
-    let removing_verifier = deps.api.addr_validate(&verifier_addr)?;
+
+    let removing_verifier = Binary::from_base64(&verifier_pubkey)?;
+    check_verifying_key(removing_verifier.as_slice())?;
 
     CONFIG.update(deps.storage, |config| -> StdResult<_> {
         Ok(Config {
@@ -143,29 +175,29 @@ pub fn execute_remove_verifier(
 
     Ok(Response::new()
         .add_attribute("method", "remove_verifier")
-        .add_attribute("verifier", verifier_addr))
+        .add_attribute("verifier", verifier_pubkey))
 }
 
-#[cfg(test)]
-mod tests {
-    use cosmwasm_std::{
-        coins, from_binary,
-        testing::{mock_dependencies, mock_env, mock_info},
-        Addr, Coin, DepsMut,
-    };
+// #[cfg(test)]
+// mod tests {
+//     use cosmwasm_std::{
+//         coins, from_binary,
+//         testing::{mock_dependencies, mock_env, mock_info},
+//         Addr, Coin, DepsMut,
+//     };
 
-    use crate::msg::InstantiateMsg;
+//     use crate::msg::InstantiateMsg;
 
-    use super::*;
+//     use super::*;
 
-    fn mock_init(deps: DepsMut, name_nft: String, resolver: String, verifier_addrs: Vec<String>) {
-        let msg = InstantiateMsg {
-            name_nft_addr: name_nft,
-            verifier_addrs,
-        };
+//     fn mock_init(deps: DepsMut, name_nft: String, resolver: String, verifier_addrs: Vec<String>) {
+//         let msg = InstantiateMsg {
+//             name_nft_addr: name_nft,
+//             verifier_addrs,
+//         };
 
-        let info = mock_info("creator", &coins(1, "token"));
-        let _res = instantiate(deps, mock_env(), info, msg)
-            .expect("contract successfully handles InstantiateMsg");
-    }
-}
+//         let info = mock_info("creator", &coins(1, "token"));
+//         let _res = instantiate(deps, mock_env(), info, msg)
+//             .expect("contract successfully handles InstantiateMsg");
+//     }
+// }
