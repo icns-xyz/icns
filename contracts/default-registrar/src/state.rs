@@ -8,8 +8,8 @@ pub static CONFIG_KEY: &[u8] = b"config";
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
-    // registry address to send msg to
-    pub registry: Addr,
+    // name nft contract address to send msg to
+    pub name_nft_contract: Addr,
     pub resolver: Addr,
 
     // operator defines the pub key of the operator who can call this contract

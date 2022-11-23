@@ -6,7 +6,7 @@ use cw2::set_contract_version;
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg};
 
-use registry::msg::{ExecuteMsg as RegistryExecuteMsg, QueryMsg as QueryMsgRegistry, IsAdminResponse};
+use icns_name_nft::msg::{ QueryMsg as QueryMsgNameNft, IsAdminResponse};
 use resolver::msg::{ExecuteMsg as ResolverExecuteMsg};
 
 use crate::state::{ Config,
@@ -27,7 +27,7 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    let registry_addr = deps.api.addr_validate(&msg.registry)?;
+    let name_nft_addr = deps.api.addr_validate(&msg.name_nft_contract)?;
     let resolver_addr = deps.api.addr_validate(&msg.resolver)?;
 
     let mut operator_addrs = Vec::new();
@@ -37,7 +37,7 @@ pub fn instantiate(
     }
 
     let config = Config {
-        registry: registry_addr,
+        name_nft_contract: name_nft_addr,
         resolver: resolver_addr,
         operators: operator_addrs,
     };
@@ -64,8 +64,8 @@ pub fn execute(
     }
 }
 
-// execute_register calls two contracts: the registry and the resolver
-// the registry contract is called to mint nft of the name service, then save the resolver address for the user_name
+// execute_register calls two contracts: the name nft contract and the resolver
+// the name nft contract is called to mint nft of the name service, then save the resolver address for the user_name
 // the resolver contract is called to save the addresses for the user_name
 pub fn execute_register(
     deps: DepsMut,
@@ -93,21 +93,10 @@ pub fn execute_register(
 
     // call resolver and set given addresses
     let set_addresses_msg = WasmMsg::Execute {
-        contract_addr: config.registry.to_string(),
+        contract_addr: config.resolver.to_string(),
         msg: to_binary(&ResolverExecuteMsg::SetRecord {
             user_name: user_name.clone(),
             addresses,
-        })?,
-        funds: vec![],
-    };
-
-    let resolver_addr = deps.api.addr_validate(&resolver)?;
-    // call registry and set resolver address
-    let set_resolver_msg = WasmMsg::Execute {
-        contract_addr: config.registry.to_string(),
-        msg: to_binary(&RegistryExecuteMsg::SetResolverAddress {
-            user_name: user_name.clone(),
-            resolver_address: resolver_addr,
         })?,
         funds: vec![],
     };
@@ -116,7 +105,6 @@ pub fn execute_register(
     
     Ok(Response::new()
         .add_message(set_addresses_msg)
-        .add_message(set_resolver_msg)
     )
 }
 
@@ -145,7 +133,7 @@ pub fn execute_add_operator(
     operators.push(operator_addr);
 
     let config = Config {
-        registry: config.registry,
+        name_nft_contract: config.name_nft_contract,
         resolver: config.resolver,
         operators,
     };
@@ -181,7 +169,7 @@ pub fn execute_remove_operator(
     operators.retain(|addr| addr != &operator_addr);
 
     let config = Config {
-        registry: config.registry,
+        name_nft_contract: config.name_nft_contract,
         resolver: config.resolver,
         operators,
     };
@@ -196,8 +184,8 @@ pub fn execute_remove_operator(
 
 pub fn is_admin(deps: Deps, address: String) -> Result<bool, ContractError> {
     let response = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-        contract_addr: CONFIG.load(deps.storage)?.registry.to_string(),
-        msg: to_binary(&QueryMsgRegistry::IsAdmin {address})?,
+        contract_addr: CONFIG.load(deps.storage)?.name_nft_contract.to_string(),
+        msg: to_binary(&QueryMsgNameNft::IsAdmin {address})?,
     })).map(|res| from_binary(&res).unwrap());
  
     // TODO: come back and decide and change how we handle the contract error here
@@ -222,12 +210,12 @@ mod tests {
 
     fn mock_init(
         deps: DepsMut,
-        registry: String,
+        name_nft_contract: String,
         resolver: String,
         operator_addrs: Vec<String>,
     ) {
         let msg = InstantiateMsg {
-            registry,
+            name_nft_contract,
             resolver,
             operator_addrs,
         };

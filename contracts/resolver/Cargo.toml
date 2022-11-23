@@ -49,7 +49,6 @@ schemars = "0.8.10"
 subtle-encoding = { version = "0.5", features = ["bech32-preview"] }
 serde = { version = "1.0.145", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.31" }
-registry =  {version = "0.1.0", path = "../registry", features = ["library"]}
 icns-name-nft =  { path = "../name_nft", features = ["library"]}
 cw721 = {workspace = true}
 

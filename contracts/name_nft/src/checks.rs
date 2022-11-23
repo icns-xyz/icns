@@ -21,7 +21,7 @@ pub fn check_send_from_registrar(deps: Deps, sender: &Addr) -> Result<(), Contra
 
     Ok(())
 }
-pub fn check_send_from_admin(deps: Deps, sender: &Addr) -> Result<(), cw721_base::ContractError> {
+pub fn check_admin(deps: Deps, sender: &Addr) -> Result<(), cw721_base::ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
     for admin in config.admins {

@@ -4,7 +4,7 @@ use cosmwasm_schema::{cw_serde};
 // TODO: change this to array
 #[cw_serde]
 pub struct InstantiateMsg {
-    pub registry: String,
+    pub name_nft_contract: String,
     pub resolver: String,
     pub operator_addrs: Vec<String>, 
 }

@@ -10,7 +10,6 @@ use cw2::set_contract_version;
 use subtle_encoding::bech32;
 // use cw2::set_contract_version;
 
-use registry::msg::{QueryMsg as QueryMsgRegistry, IsAdminResponse};
 use icns_name_nft::msg::{QueryMsg as QueryMsgName};
 use cw721::OwnerOfResponse;
 use crate::error::ContractError;
@@ -105,16 +104,17 @@ pub fn execute_set_record(
 }
 
 pub fn is_admin(deps: Deps, address: String) -> Result<bool, ContractError> {
-   let response = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-       contract_addr: CONFIG.load(deps.storage)?.name_address.to_string(),
-       msg: to_binary(&QueryMsgRegistry::IsAdmin {address})?,
-   })).map(|res| from_binary(&res).unwrap());
+    let cfg = CONFIG.load(deps.storage)?;
+    let name_address = cfg.name_address;
 
-    // TODO: come back and decide and change how we handle the contract error here
-    match response {
-        Ok(IsAdminResponse { is_admin }) => Ok(is_admin),
-        Err(_) => Ok(false),
-    }
+    // query admin from icns-name-nft contract
+    let query_msg = QueryMsgName::Admin {};
+    let res: String = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+        contract_addr: name_address.to_string(),
+        msg: to_binary(&query_msg)?,
+    }))?;
+
+    Ok(res.eq(&address))
 }
 
 pub fn is_owner(deps: Deps, username: String, sender: String) -> Result<bool, ContractError> {

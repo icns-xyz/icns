@@ -21,11 +21,11 @@ pub type ICNSNameNFTContract<'a> = Cw721Contract<'a, Extension, Empty, Empty, Em
 pub mod entry {
     use super::*;
     use crate::checks::{
-        check_send_from_admin, check_send_from_registrar, check_transferrable, pass_any,
+        check_admin, check_send_from_registrar, check_transferrable, pass_any,
     };
     use crate::execute::{add_admin, remove_admin, set_transferrable};
     use crate::msg::ExecuteMsg;
-    use crate::query::{admin, transferrable};
+    use crate::query::{admin, transferrable, is_admin};
     use crate::state::{Config, CONFIG};
     use cosmwasm_std::{
         entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
@@ -115,15 +115,15 @@ pub mod entry {
             }
             ExecuteMsg::ICNSName(msg) => match msg {
                 msg::ICNSNameExecuteMsg::AddAdmin { admin_address } => {
-                    check_send_from_admin(deps.as_ref(), &info.sender)?;
+                    check_admin(deps.as_ref(), &info.sender)?;
                     add_admin(&admin_address, deps)
                 }
                 msg::ICNSNameExecuteMsg::RemoveAdmin { admin_address } => {
-                    check_send_from_admin(deps.as_ref(), &info.sender)?;
+                    check_admin(deps.as_ref(), &info.sender)?;
                     remove_admin(&admin_address, deps)
                 }
                 msg::ICNSNameExecuteMsg::SetTransferrable { transferrable } => {
-                    check_send_from_admin(deps.as_ref(), &info.sender)?;
+                    check_admin(deps.as_ref(), &info.sender)?;
                     set_transferrable(transferrable, deps)
                 }
             },
@@ -135,6 +135,7 @@ pub mod entry {
         match msg {
             QueryMsg::Admin {} => to_binary(&admin(deps)?),
             QueryMsg::Transferrable {} => to_binary(&transferrable(deps)?),
+            QueryMsg::IsAdmin { address} => to_binary(&is_admin(deps, address)?),
             _ => _query(deps, env, msg.into()),
         }
     }

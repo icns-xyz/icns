@@ -90,18 +90,21 @@ impl TestEnvBuilder {
         let mut app = BasicApp::default();
         let code_id = app.store_code(name_contract());
 
-        // change addr vec to string vec
-        let mut admins = Vec::new();
-        for admin in self.admins {
-            admins.push(admin.to_string());
-        }
+        let sender = self.admins[0].clone();
+
+        // change admin address vec to string vec without losing ownership
+        let mut admin_strs = Vec::new();
+        self.admins.iter().for_each(|addr| {
+            admin_strs.push(addr.to_string());
+        });
+
 
         let contract_addr = app
             .instantiate_contract(
                 code_id,
-                self.admins[0].clone(),
+                sender,
                 &InstantiateMsg {
-                    admins: admins,
+                    admins: admin_strs,
                     registrar: self.registrar.to_string(),
                     transferrable: self.transferrable,
                 },
