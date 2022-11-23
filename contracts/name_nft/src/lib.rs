@@ -20,21 +20,20 @@ pub type ICNSNameNFTContract<'a> = Cw721Contract<'a, Extension, Empty, Empty, Em
 
 pub mod entry {
     use super::*;
-    use crate::checks::{
-        check_admin, check_send_from_registrar, check_transferrable, pass_any,
-    };
+    use crate::checks::{check_admin, check_send_from_registrar, check_transferrable, pass_any};
     use crate::execute::{add_admin, remove_admin, set_transferrable};
     use crate::msg::ExecuteMsg;
-    use crate::query::{admin, transferrable, is_admin};
+    use crate::query::{admin, is_admin, transferrable};
     use crate::state::{Config, CONFIG};
-    use cosmwasm_std::{
-        entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
-    };
+
+    #[cfg(not(feature = "library"))]
+    use cosmwasm_std::entry_point;
+    use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 
     const NAME: &str = "icns-name";
     const SYMBOL: &str = "icns";
 
-    #[entry_point]
+    #[cfg_attr(not(feature = "library"), entry_point)]
     pub fn instantiate(
         mut deps: DepsMut,
         env: Env,
@@ -74,7 +73,7 @@ pub mod entry {
             .add_attribute("contract_version", CONTRACT_VERSION))
     }
 
-    #[entry_point]
+    #[cfg_attr(not(feature = "library"), entry_point)]
     pub fn execute(
         deps: DepsMut,
         env: Env,
@@ -130,12 +129,12 @@ pub mod entry {
         }
     }
 
-    #[entry_point]
+    #[cfg_attr(not(feature = "library"), entry_point)]
     pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         match msg {
             QueryMsg::Admin {} => to_binary(&admin(deps)?),
             QueryMsg::Transferrable {} => to_binary(&transferrable(deps)?),
-            QueryMsg::IsAdmin { address} => to_binary(&is_admin(deps, address)?),
+            QueryMsg::IsAdmin { address } => to_binary(&is_admin(deps, address)?),
             _ => _query(deps, env, msg.into()),
         }
     }
