@@ -5,14 +5,14 @@ use crate::{
 use cosmwasm_std::{Deps, StdResult};
 
 pub fn admin(deps: Deps) -> StdResult<AdminResponse> {
-    let admins = CONFIG.load(deps.storage)?.admins;
+    let admins = CONFIG
+        .load(deps.storage)?
+        .admins
+        .into_iter()
+        .map(String::from)
+        .collect();
 
-    // iterate over admins and convert to string vector
-    let mut admins_str = Vec::new();
-    for admin in admins {
-        admins_str.push(admin.to_string());
-    }
-    Ok(AdminResponse { admins: admins_str })
+    Ok(AdminResponse { admins })
 }
 
 pub fn transferrable(deps: Deps) -> StdResult<TransferrableResponse> {
