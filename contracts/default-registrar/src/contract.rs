@@ -1,17 +1,16 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary,  DepsMut, Env, MessageInfo, Response, Addr, WasmMsg, Deps, QueryRequest, from_binary, WasmQuery};
+use cosmwasm_std::{to_binary, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg};
 use cw2::set_contract_version;
 
+use crate::checks::check_send_from_admin;
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg};
 
 use icns_name_nft::msg::{ QueryMsg as QueryMsgNameNft, IsAdminResponse};
 use resolver::msg::{ExecuteMsg as ResolverExecuteMsg};
 
-use crate::state::{ Config,
-    CONFIG,
-};
+use crate::state::{Config, CONFIG};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:default-registrar";
@@ -27,22 +26,20 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    let name_nft_addr = deps.api.addr_validate(&msg.name_nft_contract)?;
-    let resolver_addr = deps.api.addr_validate(&msg.resolver)?;
+    let name_nft_addr = deps.api.addr_validate(&msg.name_nft_addr)?;
+    let verifier_addrs = msg
+        .verifier_addrs
+        .into_iter()
+        .map(|addr| deps.api.addr_validate(&addr))
+        .collect::<StdResult<_>>()?;
 
-    let mut operator_addrs = Vec::new();
-    for operator in msg.operator_addrs {
-        let operator_addr = deps.api.addr_validate(&operator)?;
-        operator_addrs.push(operator_addr);
-    }
-
-    let config = Config {
-        name_nft_contract: name_nft_addr,
-        resolver: resolver_addr,
-        operators: operator_addrs,
-    };
-
-    CONFIG.save(deps.storage, &config)?;
+    CONFIG.save(
+        deps.storage,
+        &Config {
+            name_nft: name_nft_addr,
+            verifiers: verifier_addrs,
+        },
+    )?;
 
     Ok(Response::new()
         .add_attribute("method", "instantiate")
@@ -58,14 +55,22 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Register { user_name, owner, addresses } => execute_register(deps, env, info, user_name, owner, addresses),
-        ExecuteMsg::AddOperator { operator_addr } => execute_add_operator(deps, env, info, operator_addr),
-        ExecuteMsg::RemoveOperator { operator_addr } => execute_remove_operator(deps, env, info, operator_addr),
+        ExecuteMsg::Register {
+            name: user_name,
+            owner,
+            addresses,
+        } => execute_register(deps, env, info, user_name, owner, addresses),
+        ExecuteMsg::AddVerifier { verifier_addr } => {
+            execute_add_verifier(deps, env, info, verifier_addr)
+        }
+        ExecuteMsg::RemoveVerifier { verifier_addr } => {
+            execute_remove_verifier(deps, env, info, verifier_addr)
+        }
     }
 }
 
-// execute_register calls two contracts: the name nft contract and the resolver
-// the name nft contract is called to mint nft of the name service, then save the resolver address for the user_name
+// execute_register calls two contracts: the name_nft and the resolver
+// the name_nft contract is called to mint nft of the name service, then save the resolver address for the user_name
 // the resolver contract is called to save the addresses for the user_name
 pub fn execute_register(
     deps: DepsMut,
@@ -77,151 +82,90 @@ pub fn execute_register(
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
-    let is_admin = is_admin(deps.as_ref(), info.sender.to_string())?;
-    let is_operator = is_operator(deps.as_ref(), info.sender.clone());
-    
-     // if the sender is neither a registrar nor an admin, return error
-     if !is_admin && !is_operator {
-        return Err(ContractError::Unauthorized {});
-    }
-
     // do a sanity check on the user name
     // they cannot use "." in the user name
-    if user_name.contains(".") {
-        return Err(ContractError::InvalidUserName {user_name});
+    if user_name.contains('.') {
+        return Err(ContractError::InvalidUserName { user_name });
     }
 
     // call resolver and set given addresses
-    let set_addresses_msg = WasmMsg::Execute {
-        contract_addr: config.resolver.to_string(),
+    let set_record_msg = WasmMsg::Execute {
+        contract_addr: config.name_nft.to_string(),
         msg: to_binary(&ResolverExecuteMsg::SetRecord {
-            user_name: user_name.clone(),
+            user_name,
             addresses,
         })?,
         funds: vec![],
     };
 
-    // TODO: add message call for minting nft
-    
-    Ok(Response::new()
-        .add_message(set_addresses_msg)
-    )
+    Ok(Response::new().add_message(set_record_msg))
 }
 
-// execute_add_operator adds an operator to the list of operators
-pub fn execute_add_operator(
+// execute_add_verifier adds an verifier to the list of verifiers
+pub fn execute_add_verifier(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    operator_addr: String,
+    verifier_addr: String,
 ) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
+    check_send_from_admin(deps.as_ref(), &info.sender)?;
+    let adding_verifier = deps.api.addr_validate(&verifier_addr)?;
 
-    let is_admin = is_admin(deps.as_ref(), info.sender.to_string())?;
-    if !is_admin {
-        return Err(ContractError::Unauthorized {});
-    }
+    CONFIG.update(deps.storage, |config| -> StdResult<_> {
+        Ok(Config {
+            verifiers: vec![config.verifiers, vec![adding_verifier]].concat(),
+            ..config
+        })
+    })?;
 
-    let operator_addr = deps.api.addr_validate(&operator_addr)?;
-
-    // check that the operator is not already in the list of operators
-    if config.operators.contains(&operator_addr) {
-        return Err(ContractError::OperatorAlreadyExists {});
-    }
-
-    let mut operators = config.operators;
-    operators.push(operator_addr);
-
-    let config = Config {
-        name_nft_contract: config.name_nft_contract,
-        resolver: config.resolver,
-        operators,
-    };
-
-    CONFIG.save(deps.storage, &config)?;
-
-    Ok(Response::new()
-        .add_attribute("method", "add_operator")
-    )
+    Ok(Response::new().add_attribute("method", "add_verifier"))
 }
 
-pub fn execute_remove_operator(
+pub fn execute_remove_verifier(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    operator_addr: String,
+    verifier_addr: String,
 ) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
+    check_send_from_admin(deps.as_ref(), &info.sender)?;
+    let removing_verifier = deps.api.addr_validate(&verifier_addr)?;
 
-    let is_admin = is_admin(deps.as_ref(), info.sender.to_string())?;
-    if !is_admin {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    let operator_addr = deps.api.addr_validate(&operator_addr)?;
-
-    // check that the operator is in the list of operators
-    if !config.operators.contains(&operator_addr) {
-        return Err(ContractError::OperatorDoesNotExist {});
-    }
-
-    let mut operators = config.operators;
-    operators.retain(|addr| addr != &operator_addr);
-
-    let config = Config {
-        name_nft_contract: config.name_nft_contract,
-        resolver: config.resolver,
-        operators,
-    };
-
-    CONFIG.save(deps.storage, &config)?;
+    CONFIG.update(deps.storage, |config| -> StdResult<_> {
+        Ok(Config {
+            verifiers: config
+                .verifiers
+                .into_iter()
+                .filter(|v| *v != removing_verifier)
+                .collect(),
+            ..config
+        })
+    })?;
 
     Ok(Response::new()
-        .add_attribute("method", "remove_operator")
-        .add_attribute("operator", operator_addr)
-    )
-}
-
-pub fn is_admin(deps: Deps, address: String) -> Result<bool, ContractError> {
-    let response = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-        contract_addr: CONFIG.load(deps.storage)?.name_nft_contract.to_string(),
-        msg: to_binary(&QueryMsgNameNft::IsAdmin {address})?,
-    })).map(|res| from_binary(&res).unwrap());
- 
-    // TODO: come back and decide and change how we handle the contract error here
-     match response {
-          Ok(IsAdminResponse {is_admin}) => Ok(is_admin),
-          Err(_) => Ok(false),
-     }
- }
-
-pub fn is_operator(deps: Deps, addr: Addr) -> bool {
-    let config = CONFIG.load(deps.storage).unwrap();
-    config.operators.iter().any(|a| a.as_ref() == addr.as_ref())
+        .add_attribute("method", "remove_verifier")
+        .add_attribute("verifier", verifier_addr))
 }
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{testing::{mock_dependencies, mock_info, mock_env}, DepsMut, Addr, coins, from_binary, Coin};
+    use cosmwasm_std::{
+        coins, from_binary,
+        testing::{mock_dependencies, mock_env, mock_info},
+        Addr, Coin, DepsMut,
+    };
 
-    use crate::msg::{InstantiateMsg};
+    use crate::msg::InstantiateMsg;
 
     use super::*;
 
-    fn mock_init(
-        deps: DepsMut,
-        name_nft_contract: String,
-        resolver: String,
-        operator_addrs: Vec<String>,
-    ) {
+    fn mock_init(deps: DepsMut, name_nft: String, resolver: String, verifier_addrs: Vec<String>) {
         let msg = InstantiateMsg {
-            name_nft_contract,
-            resolver,
-            operator_addrs,
+            name_nft_addr: name_nft,
+            verifier_addrs,
         };
 
         let info = mock_info("creator", &coins(1, "token"));
         let _res = instantiate(deps, mock_env(), info, msg)
-        .expect("contract successfully handles InstantiateMsg");
+            .expect("contract successfully handles InstantiateMsg");
     }
 }

@@ -11,13 +11,13 @@ pub enum ContractError {
 
     #[error("Custom Error val: {val:?}")]
     CustomError { val: String },
-   
+
     #[error("Invalid user name: {user_name:?}")]
     InvalidUserName { user_name: String },
 
-    #[error("Operator already exists")]
-    OperatorAlreadyExists {},
+    #[error("Verifier already exists")]
+    VerifierAlreadyExists {},
 
-    #[error("Operator does not exist")]
-    OperatorDoesNotExist{},
+    #[error("Verifier does not exist")]
+    VerifierDoesNotExist {},
 }

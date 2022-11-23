@@ -28,7 +28,7 @@ pub mod entry {
     use crate::query::{admin, transferrable, is_admin};
     use crate::state::{Config, CONFIG};
     use cosmwasm_std::{
-        entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+        entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
     };
 
     const NAME: &str = "icns-name";

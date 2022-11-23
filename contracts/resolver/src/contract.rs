@@ -29,10 +29,10 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-      let registry_address = deps.api.addr_validate(&msg.name_address)?;
+      let name_address = deps.api.addr_validate(&msg.name_address)?;
   
       let cfg = Config {
-          name_address: registry_address,
+          name_address: name_address,
       };
       CONFIG.save(deps.storage, &cfg)?;
   
