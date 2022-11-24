@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_slice, to_binary, Binary, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
+    attr, from_slice, to_binary, Binary, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
 };
 use cw2::set_contract_version;
 use icns_name_nft::MintMsg;
@@ -77,7 +77,32 @@ pub fn execute(
         ExecuteMsg::RemoveVerifier { verifier_addr } => {
             execute_remove_verifier(deps, env, info, verifier_addr)
         }
+        ExecuteMsg::SetVerificationThreshold { threshold } => {
+            execute_set_verification_threshold(deps, info, threshold)
+        }
     }
+}
+
+fn execute_set_verification_threshold(
+    deps: DepsMut,
+    info: MessageInfo,
+    verification_threshold: u64,
+) -> Result<Response, ContractError> {
+    check_send_from_admin(deps.as_ref(), &info.sender)?;
+
+    let attrs = vec![
+        attr("method", "set_verification_threshold"),
+        attr("verfication_threshold", verification_threshold.to_string()),
+    ];
+
+    CONFIG.update(deps.storage, |config| -> StdResult<_> {
+        Ok(Config {
+            verification_threshold,
+            ..config
+        })
+    })?;
+
+    Ok(Response::new().add_attributes(attrs))
 }
 
 pub fn execute_claim(

@@ -24,7 +24,9 @@ pub enum ExecuteMsg {
     RemoveVerifier {
         verifier_addr: String,
     },
-    // TODO: Set threshold
+    SetVerificationThreshold {
+        threshold: u64,
+    },
 }
 
 #[cw_serde]
