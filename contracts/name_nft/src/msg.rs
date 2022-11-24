@@ -30,7 +30,7 @@ pub enum ExecuteMsg {
 #[cw_serde]
 pub enum ICNSNameExecuteMsg {
     SetTransferrable { transferrable: bool },
-    RemoveAdmin { admin_address: String},
+    RemoveAdmin { admin_address: String },
     AddAdmin { admin_address: String },
 }
 
@@ -41,9 +41,7 @@ pub enum QueryMsg {
     Admin {},
 
     #[returns(IsAdminResponse)]
-    IsAdmin {
-        address: String,
-    },
+    IsAdmin { address: String },
 
     #[returns(TransferrableResponse)]
     Transferrable {},
@@ -180,17 +178,15 @@ mod tests {
         )
     }
 
-    // #[test]
-    // fn execute_msg_serde_should_include_set_admin_extension() {
-    //     let execute_msg_binary: Binary =
-    //         r#"{"add_admin":{"admin":"admin_address"}}"#.as_bytes().into();
-    //     let execute_msg: ExecuteMsg = from_binary(&execute_msg_binary).unwrap();
-    //     println!("{:?}", execute_msg);
-    //     println!("{:?}", to_binary(&execute_msg).unwrap());
+    #[test]
+    fn execute_msg_serde_should_include_set_admin_extension() {
+        let execute_msg_binary: Binary =
+            r#"{"add_admin":{"admin_address":"admin_address"}}"#.as_bytes().into();
+        let execute_msg: ExecuteMsg = from_binary(&execute_msg_binary).unwrap();
 
-    //     assert_eq!(
-    //         std::str::from_utf8(to_binary(&execute_msg).unwrap().as_slice()),
-    //         std::str::from_utf8(execute_msg_binary.as_slice())
-    //     )
-    // }
+        assert_eq!(
+            std::str::from_utf8(to_binary(&execute_msg).unwrap().as_slice()),
+            std::str::from_utf8(execute_msg_binary.as_slice())
+        )
+    }
 }
