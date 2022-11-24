@@ -5,7 +5,7 @@ use cosmwasm_schema::cw_serde;
 #[cw_serde]
 pub struct InstantiateMsg {
     pub name_nft_addr: String,
-    pub verifier_addrs: Vec<String>,
+    pub verifier_pubkeys: Vec<String>,
     pub verification_threshold: u64,
 }
 
@@ -15,7 +15,7 @@ pub enum ExecuteMsg {
     Claim {
         name: String,
         verifying_msg: String,
-        // vec of `secp256k1.sign(verifying_msg, verifier_key)`
+        // vec of `base64(secp256k1_sign(verifying_msg, verifier_key))`
         verifications: Vec<String>,
     },
     AddVerifier {

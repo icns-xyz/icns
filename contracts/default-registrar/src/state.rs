@@ -8,8 +8,8 @@ pub static CONFIG_KEY: &[u8] = b"config";
 pub struct Config {
     // name_nft address to send msg to
     pub name_nft: Addr,
-    // verifiers defines the pub key of the verifiers
-    pub verifiers: Vec<Vec<u8>>,
+    // sec1 encoded pubkey bytes of verifier, used for signature verfication
+    pub verifier_pubkeys: Vec<Vec<u8>>,
     // number of verification that needs to pass in order to mint name
     pub verification_threshold: u64,
 }

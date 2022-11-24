@@ -31,23 +31,17 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     let name_nft_addr = deps.api.addr_validate(&msg.name_nft_addr)?;
-    let verifier_addrs = msg
-        .verifier_addrs
+    let verifier_pubkeys = msg
+        .verifier_pubkeys
         .into_iter()
-        .map(|verifier_pubkey| {
-            Ok(
-                check_verifying_key(Binary::from_base64(&verifier_pubkey)?.as_slice())?
-                    .to_bytes()
-                    .to_vec(),
-            )
-        })
+        .map(|pubkey| base64_sec1_pubkey_to_bytes(&pubkey))
         .collect::<Result<_, ContractError>>()?;
 
     CONFIG.save(
         deps.storage,
         &Config {
             name_nft: name_nft_addr,
-            verifiers: verifier_addrs,
+            verifier_pubkeys,
             verification_threshold: msg.verification_threshold,
         },
     )?;
@@ -160,13 +154,12 @@ pub fn execute_add_verifier(
     verifier_pubkey: String,
 ) -> Result<Response, ContractError> {
     check_send_from_admin(deps.as_ref(), &info.sender)?;
-
-    let adding_verifier = Binary::from_base64(&verifier_pubkey)?;
-    check_verifying_key(adding_verifier.as_slice())?;
+    let adding_verifier = base64_sec1_pubkey_to_bytes(&verifier_pubkey)?;
 
     CONFIG.update(deps.storage, |config| -> StdResult<_> {
         Ok(Config {
-            verifiers: vec![config.verifiers, vec![adding_verifier.to_vec()]].concat(),
+            verifier_pubkeys: vec![config.verifier_pubkeys, vec![adding_verifier.to_vec()]]
+                .concat(),
             ..config
         })
     })?;
@@ -183,14 +176,12 @@ pub fn execute_remove_verifier(
     verifier_pubkey: String,
 ) -> Result<Response, ContractError> {
     check_send_from_admin(deps.as_ref(), &info.sender)?;
-
-    let removing_verifier = Binary::from_base64(&verifier_pubkey)?;
-    check_verifying_key(removing_verifier.as_slice())?;
+    let removing_verifier = base64_sec1_pubkey_to_bytes(&verifier_pubkey)?;
 
     CONFIG.update(deps.storage, |config| -> StdResult<_> {
         Ok(Config {
-            verifiers: config
-                .verifiers
+            verifier_pubkeys: config
+                .verifier_pubkeys
                 .into_iter()
                 .filter(|v| *v != removing_verifier)
                 .collect(),
@@ -201,6 +192,14 @@ pub fn execute_remove_verifier(
     Ok(Response::new()
         .add_attribute("method", "remove_verifier")
         .add_attribute("verifier", verifier_pubkey))
+}
+
+fn base64_sec1_pubkey_to_bytes(pubkey: &str) -> Result<Vec<u8>, ContractError> {
+    Ok(
+        check_verifying_key(Binary::from_base64(pubkey)?.as_slice())?
+            .to_bytes()
+            .to_vec(),
+    )
 }
 
 // #[cfg(test)]

@@ -30,7 +30,7 @@ pub fn check_verification_pass_threshold(
         .iter()
         .filter_map(|signature| {
             config
-                .verifiers
+                .verifier_pubkeys
                 .iter()
                 // TODO: Report invalid signature as it is an important debugging information
                 .find(|verifier| verify_secp256k1_signature(msg, signature, verifier).is_ok())
