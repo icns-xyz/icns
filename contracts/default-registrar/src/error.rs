@@ -27,15 +27,22 @@ pub enum ContractError {
     #[error("Invalid ASN.1 DER formatted signature")]
     InvalidSignatureFormat {},
 
-    #[error("Msg and public key does not match signature")]
+    #[error("Verifying sg and public key does not match signature")]
     InvalidSignature {},
 
+    #[error("Valid verfication is below threshold: expected {expected} but got {actual}")]
+    ValidVerificationIsBelowThreshold { expected: u64, actual: u64 },
+
+    // TODO: group these variants to InvalidVerifyingMessage
     #[error("Name mismatched")]
     NameMismatched,
 
     #[error("Claimer mismatched")]
     ClaimerMismatched,
 
-    #[error("Valid verfication is below threshold: expected {expected} but got {actual}")]
-    ValidVerificationIsBelowThreshold { expected: u64, actual: u64 },
+    #[error("Contract address mismatched")]
+    ContractAddressMismatched,
+
+    #[error("Chain id mismatched")]
+    ChainIdMismatched,
 }

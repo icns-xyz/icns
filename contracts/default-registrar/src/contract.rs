@@ -7,7 +7,8 @@ use cw2::set_contract_version;
 use icns_name_nft::MintMsg;
 
 use crate::checks::{
-    check_send_from_admin, check_verification_pass_threshold, check_verifying_key,
+    check_send_from_admin, check_verfying_msg, check_verification_pass_threshold,
+    check_verifying_key,
 };
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, VerifyingMsg};
@@ -64,7 +65,7 @@ pub fn execute(
             name,
             verifying_msg,
             verifications,
-        } => execute_claim(deps, info, name, verifying_msg, verifications),
+        } => execute_claim(deps, env, info, name, verifying_msg, verifications),
         ExecuteMsg::AddVerifier { verifier_addr } => {
             execute_add_verifier(deps, env, info, verifier_addr)
         }
@@ -101,21 +102,13 @@ fn execute_set_verification_threshold(
 
 pub fn execute_claim(
     deps: DepsMut,
+    env: Env,
     info: MessageInfo,
     verifying_msg_str: String,
     name: String,
     verifications: Vec<String>,
 ) -> Result<Response, ContractError> {
-    // check if verifying msg has matched name, claimer
-    let verifying_msg: VerifyingMsg = from_slice(verifying_msg_str.as_bytes())?;
-    if verifying_msg.name != name {
-        return Err(ContractError::NameMismatched {});
-    }
-    if verifying_msg.claimer != info.sender {
-        return Err(ContractError::ClaimerMismatched {});
-    }
-
-    // checks if verifcation pass threshold
+    check_verfying_msg(&env, &info, &name, &verifying_msg_str)?;
     check_verification_pass_threshold(
         deps.as_ref(),
         &verifying_msg_str,

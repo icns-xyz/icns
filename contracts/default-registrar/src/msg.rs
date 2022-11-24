@@ -33,4 +33,6 @@ pub enum ExecuteMsg {
 pub struct VerifyingMsg {
     pub name: String,
     pub claimer: String,
+    pub contract_address: String,
+    pub chain_id: String,
 }

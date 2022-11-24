@@ -2,10 +2,10 @@ use cosmrs::{
     crypto::secp256k1::VerifyingKey,
     tendermint::signature::{Secp256k1Signature, Verifier},
 };
-use cosmwasm_std::{to_binary, Addr, Deps, QueryRequest, WasmQuery};
+use cosmwasm_std::{from_slice, to_binary, Addr, Deps, Env, MessageInfo, QueryRequest, WasmQuery};
 use icns_name_nft::msg::{AdminResponse, QueryMsg as NameNFTQueryMsg};
 
-use crate::{state::CONFIG, ContractError};
+use crate::{msg::VerifyingMsg, state::CONFIG, ContractError};
 
 pub fn check_send_from_admin(deps: Deps, sender: &Addr) -> Result<(), ContractError> {
     let AdminResponse { admins } = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
@@ -20,6 +20,29 @@ pub fn check_send_from_admin(deps: Deps, sender: &Addr) -> Result<(), ContractEr
     Ok(())
 }
 
+pub fn check_verfying_msg(
+    env: &Env,
+    info: &MessageInfo,
+    name: &str,
+    verifying_msg: &str,
+) -> Result<(), ContractError> {
+    let verifying_msg: VerifyingMsg = from_slice(verifying_msg.as_bytes())?;
+    if verifying_msg.name != name {
+        return Err(ContractError::NameMismatched {});
+    }
+    if verifying_msg.claimer != info.sender {
+        return Err(ContractError::ClaimerMismatched {});
+    }
+    if verifying_msg.contract_address != env.contract.address {
+        return Err(ContractError::ContractAddressMismatched {});
+    }
+    if verifying_msg.chain_id != env.block.chain_id {
+        return Err(ContractError::ChainIdMismatched {});
+    }
+    Ok(())
+}
+
+// TODO: test this
 pub fn check_verification_pass_threshold(
     deps: Deps,
     msg: &str,
