@@ -109,8 +109,7 @@ mod non_transferrable {
     }
 
     #[test]
-    /// This tests mimics the actual registration process.
-    fn should_allow_only_registrar_to_transfer() {
+    fn should_not_allow_registrar_to_transfer() {
         let TestEnv {
             mut app,
             contract_addr,
@@ -136,30 +135,22 @@ mod non_transferrable {
         .unwrap();
 
         // transfer must be unauthorized
-        app.execute_contract(
-            registrar,
-            contract_addr.clone(),
-            &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::TransferNft {
-                recipient: name_owner.to_string(),
-                token_id: name.to_string(),
-            }),
-            &[],
-        )
-        .unwrap();
-
-        // name is now owned by name_owner
-        let res: OwnerOfResponse = app
-            .wrap()
-            .query_wasm_smart(
+        let err = app
+            .execute_contract(
+                registrar,
                 contract_addr,
-                &QueryMsg::OwnerOf {
+                &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::TransferNft {
+                    recipient: name_owner.to_string(),
                     token_id: name.to_string(),
-                    include_expired: None,
-                },
+                }),
+                &[],
             )
-            .unwrap();
+            .unwrap_err();
 
-        assert_eq!(res.owner, name_owner.to_string());
+        assert_eq!(
+            err.downcast_ref::<ContractError>().unwrap(),
+            &ContractError::Unauthorized {}
+        );
     }
 }
 
@@ -252,7 +243,14 @@ mod transferrable {
 
         let reciever_code_id = app.store_code(mock_reciever_contract());
         let reciever_contract_addr = app
-            .instantiate_contract(reciever_code_id, admins[0].clone(), &(), &[], "name_clone", None)
+            .instantiate_contract(
+                reciever_code_id,
+                admins[0].clone(),
+                &(),
+                &[],
+                "name_clone",
+                None,
+            )
             .unwrap();
 
         // send to recipient should succeed

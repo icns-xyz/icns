@@ -20,7 +20,7 @@ pub type ICNSNameNFTContract<'a> = Cw721Contract<'a, Extension, Empty, Empty, Em
 
 pub mod entry {
     use super::*;
-    use crate::checks::{check_admin, check_send_from_registrar, check_transferrable, pass_any};
+    use crate::checks::{check_admin, check_transferrable};
     use crate::execute::{add_admin, remove_admin, set_transferrable};
     use crate::msg::ExecuteMsg;
     use crate::query::{admin, is_admin, transferrable};
@@ -86,13 +86,8 @@ pub mod entry {
                     // TransferNft and SendNft are supported only if transferrable is set to true
                     msg @ CW721BaseExecuteMsg::TransferNft { .. }
                     | msg @ CW721BaseExecuteMsg::SendNft { .. } => {
-                        pass_any(&[
-                            // transferrability is configurable.
-                            check_transferrable(deps.as_ref()),
-                            // allow registrar to transfer as part of registration process.
-                            check_send_from_registrar(deps.as_ref(), &info.sender),
-                        ])?;
-
+                        // transferrability is configurable.
+                        check_transferrable(deps.as_ref())?;
                         _execute(deps, env, info, msg)
                     }
 
