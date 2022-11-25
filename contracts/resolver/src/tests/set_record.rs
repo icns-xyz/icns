@@ -47,23 +47,5 @@ fn only_admin_can_set_record() {
         .unwrap();
 
     dbg!(admins);
-
-    // // first try executing set record with non admin
-    // let non_admin = Addr::unchecked("non_admin");
-    // let admin = Addr::unchecked(admin1);
-    // let user_name = String::from("bob");
-    // let addresses = vec![(String::from("osmo"), String::from("osmo1xxxxx")), (String::from("juno"), String::from("juno1xxxxx"))];
-
-    // let err = set_record(
-    //     &mut app,
-    //     admin,
-    //     user_name.clone(),
-    //     addresses.clone())
-    // .is_err();
-
-    // println!("err: {:?}", err);
-    // // assert_eq!(
-    // //     err.downcast_ref::<ContractError>().unwrap(),
-    // //     &ContractError::Unauthorized {},
-    // // )
 }
+

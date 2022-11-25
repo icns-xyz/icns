@@ -1,13 +1,14 @@
 use std::ops::Add;
 
 use cosmwasm_std::Empty;
-use crate::{entry, msg::InstantiateMsg};
+use crate::{entry, msg::InstantiateMsg, contract::execute, contract::instantiate, contract::query};
+// import execute
+
 
 use cw_multi_test::{next_block, App,BasicApp, Contract, BankSudo, ContractWrapper, Executor, SudoMsg};
 use cosmwasm_std::{to_binary, Addr, Coin, Uint128};
 
-use icns_name_nft;
-use schemars::_serde_json::map::Entry;
+use icns_name_nft::{self, execute};
 
 pub struct TestEnv {
     pub app: BasicApp,
@@ -62,7 +63,7 @@ impl TestEnvBuilder {
 }
 
 pub fn resolver_contract() -> Box<dyn  Contract<Empty>> {
-    let contract = ContractWrapper::new(entry::execute, entry::instantiate, entry::query);
+    let contract = ContractWrapper::new(execute, instantiate, query);
     Box::new(contract)
 }
 pub fn name_nft_contract() -> Box<dyn Contract<Empty>> {
