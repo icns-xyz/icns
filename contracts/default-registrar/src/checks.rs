@@ -3,7 +3,7 @@ use cosmrs::{
     tendermint::signature::{Secp256k1Signature, Verifier},
 };
 use cosmwasm_std::{
-    from_slice, to_binary, Addr, Decimal, Deps, Env, MessageInfo, QueryRequest, WasmQuery,
+    from_slice, to_binary, Addr, Binary, Decimal, Deps, Env, MessageInfo, QueryRequest, WasmQuery,
 };
 use cw_utils::ThresholdError;
 use icns_name_nft::msg::{AdminResponse, QueryMsg as NameNFTQueryMsg};
@@ -79,19 +79,20 @@ pub fn check_verification_pass_threshold(
     // sha256.update(msg.as_bytes());
     // let hashed_msg = sha256.finalize();
 
-    // TODO: err on non unqiue signature
+    let duplicates = verifcations.iter().duplicates().next();
+    if let Some(duplicated_signature) = duplicates {
+        let signature = check_signature(duplicated_signature)?;
+        let signature = Binary(signature.to_der().as_bytes().to_vec());
+        return Err(ContractError::DuplicatedVerification { signature });
+    }
 
     let passed_verifications = verifcations
         .iter()
         .unique()
         .filter_map(|signature| {
-            config
-                .verifier_pubkeys
-                .iter()
-                // TODO: Report invalid signature as it is an important debugging information
-                .find(|verifier| {
-                    verify_secp256k1_signature(msg.as_bytes(), signature, verifier).is_ok()
-                })
+            config.verifier_pubkeys.iter().find(|verifier| {
+                verify_secp256k1_signature(msg.as_bytes(), signature, verifier).is_ok()
+            })
         })
         .count() as u64;
 
@@ -298,17 +299,13 @@ mod test {
         // test 1/3 valid signature (one duplicated signature) < 51% should error
         let mut deps = mock_dependencies();
         set_threshold_pct(deps.as_mut(), 51);
-        let err = check_verification_pass_threshold(
-            deps.as_ref(),
-            msg,
-            &vec![sign_all(&[verifier3(), verifier3()], msg)].concat(),
-        )
-        .unwrap_err();
+        let verifications = sign_all(&[verifier3(), verifier3()], msg);
+        let err =
+            check_verification_pass_threshold(deps.as_ref(), msg, &verifications).unwrap_err();
         assert_eq!(
             err,
-            ContractError::ValidVerificationIsBelowThreshold {
-                expected_over: Decimal::new(510000000000000000u128.into()),
-                actual: Decimal::new(333333333333333333u128.into()),
+            ContractError::DuplicatedVerification {
+                signature: Binary(verifications[0].clone())
             }
         );
 
@@ -333,5 +330,26 @@ mod test {
             &sign_all(&[verifier1(), verifier4()], msg),
         )
         .unwrap();
+
+        // test no verifier set should error
+        let mut deps = mock_dependencies();
+        CONFIG
+            .save(
+                &mut deps.storage,
+                &Config {
+                    name_nft: Addr::unchecked("namenftaddr"),
+                    verifier_pubkeys: vec![],
+                    verification_threshold_percentage: Decimal::percent(50),
+                },
+            )
+            .unwrap();
+
+        let err = check_verification_pass_threshold(
+            deps.as_ref(),
+            msg,
+            &sign_all(&[verifier1(), verifier4()], msg),
+        )
+        .unwrap_err();
+        assert_eq!(err, ContractError::NoVerifier {});
     }
 }

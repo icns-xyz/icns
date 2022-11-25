@@ -23,7 +23,12 @@ impl Config {
         let passed_verification: Decimal = passed_verification.into();
         let pct = passed_verification
             .checked_div(Decimal::new((self.verifier_pubkeys.len() as u64).into()))
-            .unwrap(); // TODO: not unwrap
+            .map_err(|e| match e {
+                cosmwasm_std::CheckedFromRatioError::DivideByZero => ContractError::NoVerifier {},
+                cosmwasm_std::CheckedFromRatioError::Overflow => {
+                    panic!("check pass verification calculation overflowed")
+                }
+            })?;
 
         if pct < self.verification_threshold_percentage {
             return Err(ContractError::ValidVerificationIsBelowThreshold {

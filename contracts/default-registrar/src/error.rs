@@ -1,4 +1,4 @@
-use cosmwasm_std::{Decimal, StdError};
+use cosmwasm_std::{Binary, Decimal, StdError};
 use cw_utils::ThresholdError;
 use thiserror::Error;
 
@@ -44,4 +44,10 @@ pub enum ContractError {
 
     #[error("Invalid verifying message: {msg}")]
     InvalidVerifyingMessage { msg: String },
+
+    #[error("No verifier set")]
+    NoVerifier {},
+
+    #[error("Verification signatures must be unique: `{signature}` is duplicated")]
+    DuplicatedVerification { signature: Binary },
 }
