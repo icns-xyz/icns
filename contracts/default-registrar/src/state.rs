@@ -1,7 +1,10 @@
 use cosmwasm_schema::cw_serde;
 
-use cosmwasm_std::Addr;
+use cosmwasm_std::{Addr, Decimal};
 use cw_storage_plus::Item;
+use cw_utils::{Threshold, ThresholdError};
+
+use crate::ContractError;
 pub static CONFIG_KEY: &[u8] = b"config";
 
 #[cw_serde]
@@ -11,7 +14,27 @@ pub struct Config {
     // sec1 encoded pubkey bytes of verifier, used for signature verfication
     pub verifier_pubkeys: Vec<Vec<u8>>,
     // number of verification that needs to pass in order to mint name
-    pub verification_threshold: u64,
+    pub verification_threshold_percentage: Decimal,
 }
+impl Config {
+    pub fn check_pass_threshold(
+        &self,
+        passed_verification: impl Into<Decimal>,
+    ) -> Result<(), ContractError> {
+        let passed_verification: Decimal = passed_verification.into();
+        let pct = passed_verification
+            .checked_div(Decimal::new((self.verifier_pubkeys.len() as u64).into()))
+            .unwrap(); // TODO: not unwrap
 
+        dbg!(pct);
+        if pct <= self.verification_threshold_percentage {
+            return Err(ContractError::ValidVerificationIsBelowThreshold {
+                expected_over: self.verification_threshold_percentage,
+                actual: pct,
+            });
+        }
+
+        Ok(())
+    }
+}
 pub const CONFIG: Item<Config> = Item::new("config");

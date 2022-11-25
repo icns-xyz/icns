@@ -1,4 +1,5 @@
-use cosmwasm_std::StdError;
+use cosmwasm_std::{Decimal, StdError};
+use cw_utils::ThresholdError;
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
@@ -30,8 +31,13 @@ pub enum ContractError {
     #[error("Verifying sg and public key does not match signature")]
     InvalidSignature {},
 
-    #[error("Valid verfication is below threshold: expected {expected} but got {actual}")]
-    ValidVerificationIsBelowThreshold { expected: u64, actual: u64 },
+    #[error(
+        "Valid verfication is below threshold: expected over {expected_over}% but got {actual}%"
+    )]
+    ValidVerificationIsBelowThreshold {
+        expected_over: Decimal,
+        actual: Decimal,
+    },
 
     #[error("Invalid verifying message: {msg}")]
     InvalidVerifyingMessage { msg: String },

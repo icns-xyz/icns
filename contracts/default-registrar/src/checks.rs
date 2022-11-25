@@ -2,8 +2,11 @@ use cosmrs::{
     crypto::secp256k1::VerifyingKey,
     tendermint::signature::{Secp256k1Signature, Verifier},
 };
-use cosmwasm_std::{from_slice, to_binary, Addr, Deps, Env, MessageInfo, QueryRequest, WasmQuery};
+use cosmwasm_std::{
+    from_slice, to_binary, Addr, Decimal, Deps, Env, MessageInfo, QueryRequest, WasmQuery,
+};
 use icns_name_nft::msg::{AdminResponse, QueryMsg as NameNFTQueryMsg};
+use itertools::Itertools;
 use sha2::{Digest, Sha256};
 
 use crate::{msg::VerifyingMsg, state::CONFIG, ContractError};
@@ -72,29 +75,27 @@ pub fn check_verification_pass_threshold(
     let config = CONFIG.load(deps.storage)?;
 
     // SHA256(msg)
-    let mut sha256 = Sha256::new();
-    sha256.update(msg.as_bytes());
-    let hashed_msg = sha256.finalize();
+    // let mut sha256 = Sha256::new();
+    // sha256.update(msg.as_bytes());
+    // let hashed_msg = sha256.finalize();
+
+    // TODO: err on non unqiue signature
 
     let passed_verifications = verifcations
         .iter()
+        .unique()
         .filter_map(|signature| {
             config
                 .verifier_pubkeys
                 .iter()
                 // TODO: Report invalid signature as it is an important debugging information
                 .find(|verifier| {
-                    verify_secp256k1_signature(&hashed_msg[..], signature, verifier).is_ok()
+                    verify_secp256k1_signature(msg.as_bytes(), signature, verifier).is_ok()
                 })
         })
         .count() as u64;
 
-    if passed_verifications < config.verification_threshold {
-        return Err(ContractError::ValidVerificationIsBelowThreshold {
-            expected: config.verification_threshold,
-            actual: passed_verifications,
-        });
-    }
+    config.check_pass_threshold(Decimal::new(passed_verifications.into()))?;
 
     Ok(())
 }
@@ -123,13 +124,16 @@ pub fn check_signature(signature: &[u8]) -> Result<Secp256k1Signature, ContractE
 
 #[cfg(test)]
 mod test {
-
-    use super::verify_secp256k1_signature;
-    use crate::ContractError;
+    use super::*;
+    use crate::{
+        state::{Config, CONFIG},
+        ContractError,
+    };
     use cosmrs::{
         bip32::{self},
         crypto::secp256k1::SigningKey,
     };
+    use cosmwasm_std::{testing::mock_dependencies, Addr, Decimal, DepsMut, Uint128};
 
     fn from_mnemonic(phrase: &str, derivation_path: &str) -> SigningKey {
         let seed = bip32::Mnemonic::new(phrase, bip32::Language::English)
@@ -171,6 +175,130 @@ mod test {
                 &pubkey
             ),
             Err(ContractError::InvalidSignature {})
+        );
+    }
+
+    #[test]
+    fn test_check_verification_pass_threshold() {
+        let derivation_path = "m/44'/118'/0'/0/0";
+        let verifier1 = || {
+            from_mnemonic("notice oak worry limit wrap speak medal online prefer cluster roof addict wrist behave treat actual wasp year salad speed social layer crew genius", derivation_path)
+        };
+        let verifier2 = || {
+            from_mnemonic("quality vacuum heart guard buzz spike sight swarm shove special gym robust assume sudden deposit grid alcohol choice devote leader tilt noodle tide penalty", derivation_path)
+        };
+        let verifier3 = || {
+            from_mnemonic("symbol force gallery make bulk round subway violin worry mixture penalty kingdom boring survey tool fringe patrol sausage hard admit remember broken alien absorb", derivation_path)
+        };
+        let non_verifier = || {
+            from_mnemonic("bounce success option birth apple portion aunt rural episode solution hockey pencil lend session cause hedgehog slender journey system canvas decorate razor catch empty", derivation_path)
+        };
+
+        let mut set_threshold_pct = |deps: DepsMut, pct: u64| {
+            CONFIG
+                .save(
+                    deps.storage,
+                    &Config {
+                        name_nft: Addr::unchecked("namenftaddr"),
+                        verifier_pubkeys: vec![verifier1(), verifier2(), verifier3()]
+                            .iter()
+                            .map(|sk| sk.public_key().to_bytes())
+                            .collect(),
+                        verification_threshold_percentage: Decimal::percent(pct),
+                    },
+                )
+                .unwrap();
+        };
+
+        let sign_all = |verfiers: &[SigningKey], msg: &str| {
+            verfiers
+                .iter()
+                .map(|v| v.sign(msg.as_bytes()).unwrap().to_der().as_bytes().to_vec())
+                .collect::<Vec<Vec<u8>>>()
+        };
+
+        let msg = "verifying msg";
+
+        // test 2/3 valid signature > 51% should be passed
+        let mut deps = mock_dependencies();
+        set_threshold_pct(deps.as_mut(), 51);
+        check_verification_pass_threshold(
+            deps.as_ref(),
+            msg,
+            &sign_all(&[verifier1(), verifier2()], msg),
+        )
+        .unwrap();
+
+        // test 1/3 valid signature < 51% should error
+        let mut deps = mock_dependencies();
+        set_threshold_pct(deps.as_mut(), 51);
+        let err =
+            check_verification_pass_threshold(deps.as_ref(), msg, &sign_all(&[verifier1()], msg))
+                .unwrap_err();
+
+        assert_eq!(
+            err,
+            ContractError::ValidVerificationIsBelowThreshold {
+                expected_over: Decimal::new(510000000000000000u128.into()),
+                actual: Decimal::new(333333333333333333u128.into()),
+            }
+        );
+
+        // test 1/3 valid signature (one signed by non verifier) < 51% should error
+        let mut deps = mock_dependencies();
+        set_threshold_pct(deps.as_mut(), 51);
+        let err = check_verification_pass_threshold(
+            deps.as_ref(),
+            msg,
+            &sign_all(&[verifier1(), non_verifier()], msg),
+        )
+        .unwrap_err();
+        assert_eq!(
+            err,
+            ContractError::ValidVerificationIsBelowThreshold {
+                expected_over: Decimal::new(510000000000000000u128.into()),
+                actual: Decimal::new(333333333333333333u128.into()),
+            }
+        );
+
+        // test 1/3 valid signature (one signed wrong msg) < 51% should error
+        let mut deps = mock_dependencies();
+        set_threshold_pct(deps.as_mut(), 51);
+
+        let wrong_msg = "wrong msg";
+        let err = check_verification_pass_threshold(
+            deps.as_ref(),
+            msg,
+            &vec![
+                sign_all(&[verifier1()], msg),
+                sign_all(&[verifier2()], wrong_msg),
+            ]
+            .concat(),
+        )
+        .unwrap_err();
+        assert_eq!(
+            err,
+            ContractError::ValidVerificationIsBelowThreshold {
+                expected_over: Decimal::new(510000000000000000u128.into()),
+                actual: Decimal::new(333333333333333333u128.into()),
+            }
+        );
+
+        // test 1/3 valid signature (one duplicated signature) < 51% should error
+        let mut deps = mock_dependencies();
+        set_threshold_pct(deps.as_mut(), 51);
+        let err = check_verification_pass_threshold(
+            deps.as_ref(),
+            msg,
+            &vec![sign_all(&[verifier3(), verifier3()], msg)].concat(),
+        )
+        .unwrap_err();
+        assert_eq!(
+            err,
+            ContractError::ValidVerificationIsBelowThreshold {
+                expected_over: Decimal::new(510000000000000000u128.into()),
+                actual: Decimal::new(333333333333333333u128.into()),
+            }
         );
     }
 }

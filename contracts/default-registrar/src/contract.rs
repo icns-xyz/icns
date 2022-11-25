@@ -1,9 +1,10 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, to_binary, Binary, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
+    attr, to_binary, Binary, Decimal, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
 };
 use cw2::set_contract_version;
+use cw_utils::Threshold;
 use icns_name_nft::MintMsg;
 
 use crate::checks::{
@@ -43,7 +44,7 @@ pub fn instantiate(
         &Config {
             name_nft: name_nft_addr,
             verifier_pubkeys,
-            verification_threshold: msg.verification_threshold,
+            verification_threshold_percentage: msg.verification_threshold,
         },
     )?;
 
@@ -81,7 +82,7 @@ pub fn execute(
 fn execute_set_verification_threshold(
     deps: DepsMut,
     info: MessageInfo,
-    verification_threshold: u64,
+    verification_threshold: Decimal,
 ) -> Result<Response, ContractError> {
     check_send_from_admin(deps.as_ref(), &info.sender)?;
 
@@ -92,7 +93,7 @@ fn execute_set_verification_threshold(
 
     CONFIG.update(deps.storage, |config| -> StdResult<_> {
         Ok(Config {
-            verification_threshold,
+            verification_threshold_percentage: verification_threshold,
             ..config
         })
     })?;
@@ -108,7 +109,7 @@ pub fn execute_claim(
     name: String,
     verifications: Vec<String>,
 ) -> Result<Response, ContractError> {
-    // TODO: remove verifying msg 
+    // TODO: remove verifying msg
     //
     check_verfying_msg(&env, &info, &name, &verifying_msg_str)?;
     check_verification_pass_threshold(
