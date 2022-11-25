@@ -163,7 +163,10 @@ mod test {
         bip32::{self},
         crypto::secp256k1::SigningKey,
     };
-    use cosmwasm_std::{testing::mock_dependencies, Addr, Decimal, DepsMut};
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_env, mock_info},
+        Addr, Decimal, DepsMut,
+    };
 
     fn from_mnemonic(phrase: &str, derivation_path: &str) -> SigningKey {
         let seed = bip32::Mnemonic::new(phrase, bip32::Language::English)
@@ -171,6 +174,85 @@ mod test {
             .to_seed("");
         let xprv = bip32::XPrv::derive_from_path(seed, &derivation_path.parse().unwrap()).unwrap();
         xprv.into()
+    }
+
+    #[test]
+    fn test_check_verifying_message() {
+        let env = mock_env();
+        let contract_address = &env.contract.address;
+        let chain_id = &env.block.chain_id;
+        let sender = "sender";
+        let info = mock_info(sender, &[]);
+        let name = "name";
+
+        // success case, everything is matched
+        check_verfying_msg(&env, &info, name, &format!(
+            r#"{{"name":"{name}","claimer":"{sender}","contract_address":"{contract_address}","chain_id":"{chain_id}"}}"#,
+        )).unwrap();
+
+        // name mismatched
+        let mismatched_name = "mismatched_name";
+        let err = check_verfying_msg(&env, &info, name, &format!(
+            r#"{{"name":"{mismatched_name}","claimer":"{sender}","contract_address":"{contract_address}","chain_id":"{chain_id}"}}"#,
+        )).unwrap_err();
+
+        assert_eq!(
+            err,
+            ContractError::InvalidVerifyingMessage {
+                msg: format!(
+                    "name mismatched: expected `{}` but got `{}`",
+                    name, mismatched_name
+                ),
+            }
+        );
+
+        // claimer is not sender
+        let not_a_sender = "not_a_sender";
+        let err = check_verfying_msg(&env, &info, name, &format!(
+            r#"{{"name":"{name}","claimer":"{not_a_sender}","contract_address":"{contract_address}","chain_id":"{chain_id}"}}"#,
+        )).unwrap_err();
+
+        assert_eq!(
+            err,
+            ContractError::InvalidVerifyingMessage {
+                msg: format!(
+                    "claimer mismatched: expected `{}` but got `{}`",
+                    sender, not_a_sender
+                ),
+            }
+        );
+
+        // wrong contract_address
+        let wrong_contract_address = "wrong_contract_address";
+        let err = check_verfying_msg(&env, &info, name, &format!(
+            r#"{{"name":"{name}","claimer":"{sender}","contract_address":"{wrong_contract_address}","chain_id":"{chain_id}"}}"#,
+        )).unwrap_err();
+
+        assert_eq!(
+            err,
+            ContractError::InvalidVerifyingMessage {
+                msg: format!(
+                    "contract address mismatched: expected `{}` but got `{}`",
+                    contract_address, wrong_contract_address
+                ),
+            }
+        );
+
+        // wrong chain_id
+        let wrong_chain_id = "wrong_chain_id";
+        let err = check_verfying_msg(&env, &info, name, &format!(
+                    r#"{{"name":"{name}","claimer":"{sender}","contract_address":"{contract_address}","chain_id":"{wrong_chain_id}"}}"#,
+                )).unwrap_err();
+
+        assert_eq!(
+            err,
+            ContractError::InvalidVerifyingMessage {
+                msg: format!(
+                    "chain id mismatched: expected `{}` but got `{}`",
+                    chain_id, wrong_chain_id
+                ),
+            }
+        );
     }
 
     #[test]
