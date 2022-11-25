@@ -25,3 +25,17 @@ impl CwTemplateContract {
         .into())
     }
 }
+
+// pub fn admin(deps: Deps) -> Result<Vec<String>, ContractError> {
+//     let cfg = CONFIG.load(deps.storage)?;
+//     let name_address = cfg.name_address;
+
+//     // query admin from icns-name-nft contract
+//     let query_msg = QueryMsgName::Admin {};
+//     let res: AdminResponse = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+//         contract_addr: name_address.to_string(),
+//         msg: to_binary(&query_msg)?,
+//     }))?;
+
+//     Ok(res.admins)
+// }

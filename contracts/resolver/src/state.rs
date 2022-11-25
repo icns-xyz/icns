@@ -12,3 +12,5 @@ pub const CONFIG: Item<Config> = Item::new("config");
 
 // map of (username, bech32 prefix) -> address
 pub const ADDRESSES: Map<(String, String), String> = Map::new("addresses");
+
+// TODO: add reverse resolver

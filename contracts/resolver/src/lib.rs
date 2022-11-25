@@ -21,7 +21,7 @@ pub mod entry {
     use icns_name_nft::msg::{QueryMsg as QueryMsgName};
     use cw721::OwnerOfResponse;
     use crate::error::ContractError;
-    use crate::msg::{ExecuteMsg, GetAddressResponse, GetAddressesResponse, InstantiateMsg, QueryMsg};
+    use crate::msg::{ExecuteMsg, GetAddressResponse, GetAddressesResponse, InstantiateMsg, QueryMsg, AdminResponse};
     use crate::state::{Config, ADDRESSES, CONFIG};
 
     // version info for migration info
@@ -111,6 +111,20 @@ pub mod entry {
         Ok(Response::default())
     }
 
+    pub fn admin(deps: Deps) -> Result<Vec<String>, ContractError> {
+    let cfg = CONFIG.load(deps.storage)?;
+    let name_address = cfg.name_address;
+
+    // query admin from icns-name-nft contract
+    let query_msg = QueryMsgName::Admin {};
+    let res: AdminResponse = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+        contract_addr: name_address.to_string(),
+        msg: to_binary(&query_msg)?,
+    }))?;
+
+    Ok(res.admins)
+}
+
     pub fn is_admin(deps: Deps, address: String) -> Result<bool, ContractError> {
         let cfg = CONFIG.load(deps.storage)?;
         let name_address = cfg.name_address;
@@ -148,6 +162,7 @@ pub mod entry {
                 user_name,
                 bec32_prefix,
             } => to_binary(&query_address(deps, env, user_name, bec32_prefix)?),
+            QueryMsg::Admin {} => to_binary(&query_admin(deps)?),
         }
     }
 
@@ -173,6 +188,17 @@ pub mod entry {
         let resp = GetAddressResponse { address };
 
         Ok(resp)
+    }
+
+    pub fn query_admin(
+        deps: Deps,
+    ) -> StdResult<AdminResponse> {
+        // unwrap this 
+        let result = admin(deps);
+        match result {
+            Ok(admins) => Ok(AdminResponse { admins }),
+            Err(_) => Ok(AdminResponse { admins: vec![String::from("")] }),
+        }
     }
 }
 #[cfg(test)]

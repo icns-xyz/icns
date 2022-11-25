@@ -20,7 +20,18 @@ pub struct TestEnvBuilder {
     pub name_nft: Addr,
 }
 
+impl Default for TestEnvBuilder {
+    fn default() -> Self {
+        Self {
+            name_nft: Addr::unchecked("name_nft"),
+        }
+    }
+}
 impl TestEnvBuilder {
+    pub fn with_name_nft_contract(self, name_nft: Addr) -> Self {
+        Self { name_nft }
+    }
+
     pub fn build(self) -> TestEnv {
         let mut app = BasicApp::default();
         let code_id = app.store_code(resolver_contract());
@@ -46,11 +57,8 @@ impl TestEnvBuilder {
                 contract_addr,
                 name_nft: self.name_nft,
             }
-
-
-
-        // let mut app = B
     }
+
 }
 
 pub fn resolver_contract() -> Box<dyn  Contract<Empty>> {
@@ -67,10 +75,10 @@ pub fn name_nft_contract() -> Box<dyn Contract<Empty>> {
     Box::new(contract)
 }
 
-pub fn instantiate_with_name_nft_and_admins(
-    app: &mut App,
+pub fn instantiate_name_nft_with_admins_and_new_app(
     admins: Vec<String>
-) -> Addr  {
+) -> (Addr, App)  {
+    let mut app = BasicApp::default();
     let name_nft = app.store_code(name_nft_contract());
 
     let nft_address = app
@@ -88,5 +96,29 @@ pub fn instantiate_with_name_nft_and_admins(
         )
         .unwrap();
     
-    nft_address
+    (nft_address, app)
+}
+
+pub fn instantiate_resolver_with_name_nft(
+    app: &mut BasicApp,
+    name_nft: Addr,
+) -> Addr {
+    let code_id = app.store_code(resolver_contract());
+
+    let sender = Addr::unchecked("sender");
+
+    let contract_addr = app
+        .instantiate_contract(
+            code_id,
+            sender,
+            &InstantiateMsg{
+                name_address: name_nft.to_string(),
+            },
+            &[],
+            "resolver", 
+            None,
+        )
+        .unwrap();
+
+    contract_addr
 }

@@ -108,6 +108,8 @@ pub fn execute_claim(
     name: String,
     verifications: Vec<String>,
 ) -> Result<Response, ContractError> {
+    // TODO: remove verifying msg 
+    //
     check_verfying_msg(&env, &info, &name, &verifying_msg_str)?;
     check_verification_pass_threshold(
         deps.as_ref(),

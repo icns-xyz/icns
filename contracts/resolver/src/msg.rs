@@ -30,6 +30,14 @@ pub enum QueryMsg {
         user_name: String,
         bec32_prefix: String,
     },
+
+    #[returns(AdminResponse)]
+    Admin {},
+}
+
+#[cw_serde]
+pub struct AdminResponse {
+    pub admins: Vec<String>,
 }
 
 #[cw_serde]
