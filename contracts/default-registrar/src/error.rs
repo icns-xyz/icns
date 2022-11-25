@@ -33,16 +33,6 @@ pub enum ContractError {
     #[error("Valid verfication is below threshold: expected {expected} but got {actual}")]
     ValidVerificationIsBelowThreshold { expected: u64, actual: u64 },
 
-    // TODO: group these variants to InvalidVerifyingMessage
-    #[error("Name mismatched")]
-    NameMismatched,
-
-    #[error("Claimer mismatched")]
-    ClaimerMismatched,
-
-    #[error("Contract address mismatched")]
-    ContractAddressMismatched,
-
-    #[error("Chain id mismatched")]
-    ChainIdMismatched,
+    #[error("Invalid verifying message: {msg}")]
+    InvalidVerifyingMessage { msg: String },
 }

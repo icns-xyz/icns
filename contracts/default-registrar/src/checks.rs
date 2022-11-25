@@ -29,16 +29,36 @@ pub fn check_verfying_msg(
 ) -> Result<(), ContractError> {
     let verifying_msg: VerifyingMsg = from_slice(verifying_msg.as_bytes())?;
     if verifying_msg.name != name {
-        return Err(ContractError::NameMismatched {});
+        return Err(ContractError::InvalidVerifyingMessage {
+            msg: format!(
+                "name mismatched: expected `{}` but got `{}`",
+                name, verifying_msg.name
+            ),
+        });
     }
     if verifying_msg.claimer != info.sender {
-        return Err(ContractError::ClaimerMismatched {});
+        return Err(ContractError::InvalidVerifyingMessage {
+            msg: format!(
+                "claimer mismatched: expected `{}` but got `{}`",
+                info.sender, verifying_msg.claimer
+            ),
+        });
     }
     if verifying_msg.contract_address != env.contract.address {
-        return Err(ContractError::ContractAddressMismatched {});
+        return Err(ContractError::InvalidVerifyingMessage {
+            msg: format!(
+                "contract address mismatched: expected `{}` but got `{}`",
+                env.contract.address, verifying_msg.contract_address
+            ),
+        });
     }
     if verifying_msg.chain_id != env.block.chain_id {
-        return Err(ContractError::ChainIdMismatched {});
+        return Err(ContractError::InvalidVerifyingMessage {
+            msg: format!(
+                "chain id mismatched: expected `{}` but got `{}`",
+                env.block.chain_id, verifying_msg.chain_id
+            ),
+        });
     }
     Ok(())
 }
