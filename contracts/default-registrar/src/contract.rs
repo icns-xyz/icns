@@ -11,7 +11,7 @@ use crate::checks::{
     check_verification_pass_threshold, check_verifying_key,
 };
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, Verification};
 
 use icns_name_nft::msg::ExecuteMsg as NameNFTExecuteMsg;
 
@@ -109,7 +109,7 @@ pub fn execute_claim(
     info: MessageInfo,
     verifying_msg_str: String,
     name: String,
-    verifications: Vec<String>,
+    verifications: Vec<Verification>,
 ) -> Result<Response, ContractError> {
     check_verfying_msg(&env, &info, &name, &verifying_msg_str)?;
     check_verification_pass_threshold(
@@ -117,7 +117,12 @@ pub fn execute_claim(
         &verifying_msg_str,
         &verifications
             .iter()
-            .map(|v| Binary::from_base64(v).map(|b| b.to_vec()))
+            .map(|verification| {
+                Ok((
+                    Binary::from_base64(&verification.public_key).map(|binary| binary.to_vec())?,
+                    Binary::from_base64(&verification.signature).map(|binary| binary.to_vec())?,
+                ))
+            })
             .collect::<StdResult<Vec<_>>>()?,
     )?;
 

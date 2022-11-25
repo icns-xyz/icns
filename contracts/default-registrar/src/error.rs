@@ -13,6 +13,9 @@ pub enum ContractError {
     #[error("Unauthorized")]
     Unauthorized {},
 
+    #[error("Not a verfier public key: {public_key}")]
+    NotAVerifierPublicKey { public_key: Binary },
+
     #[error("Custom Error val: {val:?}")]
     CustomError { val: String },
 

@@ -17,7 +17,7 @@ pub enum ExecuteMsg {
         name: String,
         verifying_msg: String,
         // vec of `base64(secp256k1_sign(verifying_msg, verifier_key))`
-        verifications: Vec<String>,
+        verifications: Vec<Verification>,
     },
     AddVerifier {
         verifier_addr: String,
@@ -28,6 +28,12 @@ pub enum ExecuteMsg {
     SetVerificationThreshold {
         threshold: Decimal,
     },
+}
+
+#[cw_serde]
+pub struct Verification {
+    pub public_key: String,
+    pub signature: String,
 }
 
 #[cw_serde]

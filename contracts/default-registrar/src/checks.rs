@@ -70,7 +70,8 @@ pub fn check_verfying_msg(
 pub fn check_verification_pass_threshold(
     deps: Deps,
     msg: &str,
-    verifcations: &[Vec<u8>],
+    // (public_key, signature)
+    verifications: &[(Vec<u8>, Vec<u8>)],
 ) -> Result<(), ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
@@ -79,24 +80,44 @@ pub fn check_verification_pass_threshold(
     // sha256.update(msg.as_bytes());
     // let hashed_msg = sha256.finalize();
 
-    let duplicates = verifcations.iter().duplicates().next();
-    if let Some(duplicated_signature) = duplicates {
+    // check if verification comes from verifier
+    verifications
+        .iter()
+        .try_for_each(|(pubkey, _)| -> Result<(), ContractError> {
+            config
+                .verifier_pubkeys
+                .iter()
+                .find(|verifier| *verifier == pubkey)
+                .ok_or(ContractError::NotAVerifierPublicKey {
+                    public_key: Binary(pubkey.clone()),
+                })?;
+            Ok(())
+        })?;
+
+    // check for duplicated signatures
+    let duplicated_signatures = verifications
+        .iter()
+        .map(|(_, signature)| signature)
+        .duplicates()
+        .next();
+
+    if let Some(duplicated_signature) = duplicated_signatures {
         let signature = check_signature(duplicated_signature)?;
         let signature = Binary(signature.to_der().as_bytes().to_vec());
         return Err(ContractError::DuplicatedVerification { signature });
     }
 
-    let passed_verifications = verifcations
+    // verify all signatures
+    verifications
         .iter()
         .unique()
-        .filter_map(|signature| {
-            config.verifier_pubkeys.iter().find(|verifier| {
-                verify_secp256k1_signature(msg.as_bytes(), signature, verifier).is_ok()
-            })
-        })
-        .count() as u64;
+        .try_for_each(|(public_key, signature)| {
+            verify_secp256k1_signature(msg.as_bytes(), signature, public_key)
+        })?;
 
-    config.check_pass_threshold(Decimal::new(passed_verifications.into()))?;
+    // when all signature are valid, no duplicates and all from verifiers, check if it pass threshold
+    let verification_count = verifications.len() as u64;
+    config.check_pass_threshold(Decimal::new(verification_count.into()))?;
 
     Ok(())
 }
@@ -225,8 +246,13 @@ mod test {
         let sign_all = |verfiers: &[SigningKey], msg: &str| {
             verfiers
                 .iter()
-                .map(|v| v.sign(msg.as_bytes()).unwrap().to_der().as_bytes().to_vec())
-                .collect::<Vec<Vec<u8>>>()
+                .map(|v| {
+                    (
+                        v.public_key().to_bytes(),
+                        v.sign(msg.as_bytes()).unwrap().to_der().as_bytes().to_vec(),
+                    )
+                })
+                .collect::<Vec<(Vec<u8>, Vec<u8>)>>()
         };
 
         let msg = "verifying msg";
@@ -267,9 +293,8 @@ mod test {
         .unwrap_err();
         assert_eq!(
             err,
-            ContractError::ValidVerificationIsBelowThreshold {
-                expected_over: Decimal::new(510000000000000000u128.into()),
-                actual: Decimal::new(333333333333333333u128.into()),
+            ContractError::NotAVerifierPublicKey {
+                public_key: Binary(non_verifier().public_key().to_bytes())
             }
         );
 
@@ -288,13 +313,7 @@ mod test {
             .concat(),
         )
         .unwrap_err();
-        assert_eq!(
-            err,
-            ContractError::ValidVerificationIsBelowThreshold {
-                expected_over: Decimal::new(510000000000000000u128.into()),
-                actual: Decimal::new(333333333333333333u128.into()),
-            }
-        );
+        assert_eq!(err, ContractError::InvalidSignature {});
 
         // test 1/3 valid signature (one duplicated signature) < 51% should error
         let mut deps = mock_dependencies();
@@ -305,7 +324,7 @@ mod test {
         assert_eq!(
             err,
             ContractError::DuplicatedVerification {
-                signature: Binary(verifications[0].clone())
+                signature: Binary(verifications[0].1.clone())
             }
         );
 
@@ -344,12 +363,8 @@ mod test {
             )
             .unwrap();
 
-        let err = check_verification_pass_threshold(
-            deps.as_ref(),
-            msg,
-            &sign_all(&[verifier1(), verifier4()], msg),
-        )
-        .unwrap_err();
+        let err =
+            check_verification_pass_threshold(deps.as_ref(), msg, &sign_all(&[], msg)).unwrap_err();
         assert_eq!(err, ContractError::NoVerifier {});
     }
 }
