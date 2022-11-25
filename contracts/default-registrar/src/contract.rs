@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, from_slice, to_binary, Binary, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
+    attr, to_binary, Binary, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
 };
 use cw2::set_contract_version;
 use icns_name_nft::MintMsg;
@@ -11,7 +11,7 @@ use crate::checks::{
     check_verifying_key,
 };
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, VerifyingMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg};
 
 use icns_name_nft::msg::ExecuteMsg as NameNFTExecuteMsg;
 

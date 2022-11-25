@@ -4,6 +4,7 @@ use cosmrs::{
 };
 use cosmwasm_std::{from_slice, to_binary, Addr, Deps, Env, MessageInfo, QueryRequest, WasmQuery};
 use icns_name_nft::msg::{AdminResponse, QueryMsg as NameNFTQueryMsg};
+use sha2::{Digest, Sha256};
 
 use crate::{msg::VerifyingMsg, state::CONFIG, ContractError};
 
@@ -49,6 +50,12 @@ pub fn check_verification_pass_threshold(
     verifcations: &[Vec<u8>],
 ) -> Result<(), ContractError> {
     let config = CONFIG.load(deps.storage)?;
+
+    // SHA256(msg)
+    let mut sha256 = Sha256::new();
+    sha256.update(msg.as_bytes());
+    let hashed_msg = sha256.finalize();
+
     let passed_verifications = verifcations
         .iter()
         .filter_map(|signature| {
@@ -56,7 +63,9 @@ pub fn check_verification_pass_threshold(
                 .verifier_pubkeys
                 .iter()
                 // TODO: Report invalid signature as it is an important debugging information
-                .find(|verifier| verify_secp256k1_signature(msg, signature, verifier).is_ok())
+                .find(|verifier| {
+                    verify_secp256k1_signature(&hashed_msg[..], signature, verifier).is_ok()
+                })
         })
         .count() as u64;
 
@@ -72,7 +81,7 @@ pub fn check_verification_pass_threshold(
 // signature is der encoded
 // pubkey is sec-1 encoded
 fn verify_secp256k1_signature(
-    msg: &str,
+    msg: &[u8],
     signature: &[u8],
     pubkey: &[u8],
 ) -> Result<(), ContractError> {
@@ -80,7 +89,7 @@ fn verify_secp256k1_signature(
     let signature = check_signature(signature)?;
 
     verifying_key
-        .verify(msg.as_bytes(), &signature)
+        .verify(msg, &signature)
         .map_err(|_| ContractError::InvalidSignature {})
 }
 
@@ -121,22 +130,26 @@ mod test {
         let signature = verifier1.sign(msg.as_bytes()).unwrap().to_der();
 
         assert_eq!(
-            verify_secp256k1_signature(msg, signature.as_bytes(), &pubkey),
+            verify_secp256k1_signature(msg.as_bytes(), signature.as_bytes(), &pubkey),
             Ok(())
         );
 
         assert_eq!(
-            verify_secp256k1_signature(msg, &[69, 69, 69], &pubkey),
+            verify_secp256k1_signature(msg.as_bytes(), &[69, 69, 69], &pubkey),
             Err(ContractError::InvalidSignatureFormat {})
         );
 
         assert_eq!(
-            verify_secp256k1_signature(msg, signature.as_bytes(), &[69, 69, 69]),
+            verify_secp256k1_signature(msg.as_bytes(), signature.as_bytes(), &[69, 69, 69]),
             Err(ContractError::InvalidPublicKeyFormat {})
         );
 
         assert_eq!(
-            verify_secp256k1_signature(r#"{"name":"slave"}"#, signature.as_bytes(), &pubkey),
+            verify_secp256k1_signature(
+                r#"{"name":"slave"}"#.as_bytes(),
+                signature.as_bytes(),
+                &pubkey
+            ),
             Err(ContractError::InvalidSignature {})
         );
     }
