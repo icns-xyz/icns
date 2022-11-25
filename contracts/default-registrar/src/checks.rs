@@ -5,9 +5,9 @@ use cosmrs::{
 use cosmwasm_std::{
     from_slice, to_binary, Addr, Decimal, Deps, Env, MessageInfo, QueryRequest, WasmQuery,
 };
+use cw_utils::ThresholdError;
 use icns_name_nft::msg::{AdminResponse, QueryMsg as NameNFTQueryMsg};
 use itertools::Itertools;
-use sha2::{Digest, Sha256};
 
 use crate::{msg::VerifyingMsg, state::CONFIG, ContractError};
 
@@ -122,6 +122,14 @@ pub fn check_signature(signature: &[u8]) -> Result<Secp256k1Signature, ContractE
     Secp256k1Signature::from_der(signature).map_err(|_| ContractError::InvalidSignatureFormat {})
 }
 
+pub fn check_valid_threshold(percent: &Decimal) -> Result<(), ThresholdError> {
+    if *percent > Decimal::percent(100) || *percent < Decimal::percent(50) {
+        Err(ThresholdError::InvalidThreshold {})
+    } else {
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -133,7 +141,7 @@ mod test {
         bip32::{self},
         crypto::secp256k1::SigningKey,
     };
-    use cosmwasm_std::{testing::mock_dependencies, Addr, Decimal, DepsMut, Uint128};
+    use cosmwasm_std::{testing::mock_dependencies, Addr, Decimal, DepsMut};
 
     fn from_mnemonic(phrase: &str, derivation_path: &str) -> SigningKey {
         let seed = bip32::Mnemonic::new(phrase, bip32::Language::English)
@@ -190,11 +198,14 @@ mod test {
         let verifier3 = || {
             from_mnemonic("symbol force gallery make bulk round subway violin worry mixture penalty kingdom boring survey tool fringe patrol sausage hard admit remember broken alien absorb", derivation_path)
         };
-        let non_verifier = || {
+        let verifier4 = || {
             from_mnemonic("bounce success option birth apple portion aunt rural episode solution hockey pencil lend session cause hedgehog slender journey system canvas decorate razor catch empty", derivation_path)
         };
+        let non_verifier = || {
+            from_mnemonic("prefer forget visit mistake mixture feel eyebrow autumn shop pair address airport diesel street pass vague innocent poem method awful require hurry unhappy shoulder", derivation_path)
+        };
 
-        let mut set_threshold_pct = |deps: DepsMut, pct: u64| {
+        let set_threshold_pct = |deps: DepsMut, pct: u64| {
             CONFIG
                 .save(
                     deps.storage,
@@ -300,5 +311,27 @@ mod test {
                 actual: Decimal::new(333333333333333333u128.into()),
             }
         );
+
+        // test 2/4 valid signature = 50% should pass
+        let mut deps = mock_dependencies();
+        CONFIG
+            .save(
+                &mut deps.storage,
+                &Config {
+                    name_nft: Addr::unchecked("namenftaddr"),
+                    verifier_pubkeys: vec![verifier1(), verifier2(), verifier3(), verifier4()]
+                        .iter()
+                        .map(|sk| sk.public_key().to_bytes())
+                        .collect(),
+                    verification_threshold_percentage: Decimal::percent(50),
+                },
+            )
+            .unwrap();
+        check_verification_pass_threshold(
+            deps.as_ref(),
+            msg,
+            &sign_all(&[verifier1(), verifier4()], msg),
+        )
+        .unwrap();
     }
 }

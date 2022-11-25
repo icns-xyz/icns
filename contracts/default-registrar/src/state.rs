@@ -2,7 +2,6 @@ use cosmwasm_schema::cw_serde;
 
 use cosmwasm_std::{Addr, Decimal};
 use cw_storage_plus::Item;
-use cw_utils::{Threshold, ThresholdError};
 
 use crate::ContractError;
 pub static CONFIG_KEY: &[u8] = b"config";
@@ -26,8 +25,7 @@ impl Config {
             .checked_div(Decimal::new((self.verifier_pubkeys.len() as u64).into()))
             .unwrap(); // TODO: not unwrap
 
-        dbg!(pct);
-        if pct <= self.verification_threshold_percentage {
+        if pct < self.verification_threshold_percentage {
             return Err(ContractError::ValidVerificationIsBelowThreshold {
                 expected_over: self.verification_threshold_percentage,
                 actual: pct,

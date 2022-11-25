@@ -4,12 +4,11 @@ use cosmwasm_std::{
     attr, to_binary, Binary, Decimal, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
 };
 use cw2::set_contract_version;
-use cw_utils::Threshold;
 use icns_name_nft::MintMsg;
 
 use crate::checks::{
-    check_send_from_admin, check_verfying_msg, check_verification_pass_threshold,
-    check_verifying_key,
+    check_send_from_admin, check_valid_threshold, check_verfying_msg,
+    check_verification_pass_threshold, check_verifying_key,
 };
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg};
@@ -39,6 +38,7 @@ pub fn instantiate(
         .map(|pubkey| base64_sec1_pubkey_to_bytes(&pubkey))
         .collect::<Result<_, ContractError>>()?;
 
+    check_valid_threshold(&msg.verification_threshold)?;
     CONFIG.save(
         deps.storage,
         &Config {
@@ -90,6 +90,8 @@ fn execute_set_verification_threshold(
         attr("method", "set_verification_threshold"),
         attr("verfication_threshold", verification_threshold.to_string()),
     ];
+
+    check_valid_threshold(&verification_threshold)?;
 
     CONFIG.update(deps.storage, |config| -> StdResult<_> {
         Ok(Config {
