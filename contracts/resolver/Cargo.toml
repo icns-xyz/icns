@@ -54,3 +54,5 @@ cw721 = {workspace = true}
 
 [dev-dependencies]
 cw-multi-test = "0.15.1"
+cw721-base = {workspace = true, features = ["library"]}
+

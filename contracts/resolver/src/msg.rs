@@ -23,7 +23,7 @@ pub enum QueryMsg {
     Config {},
 
     #[returns(GetAddressesResponse)]
-    GetAddreses { user_name: String },
+    GetAddresses { user_name: String },
 
     #[returns(GetAddressResponse)]
     GetAddress {

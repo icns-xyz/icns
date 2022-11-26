@@ -61,7 +61,6 @@ pub fn execute_set_record(
 ) -> Result<Response, ContractError> {
     // check if the msg sender is a registrar or admin. If not, return err
     let is_admin = is_admin(deps.as_ref(), info.sender.to_string())?;
-    println!("is_admin: {}", is_admin);
     let is_owner_nft = is_owner(deps.as_ref(), user_name.clone(), info.sender.to_string())?;
 
     // if the sender is neither a registrar nor an admin, return error
@@ -158,7 +157,7 @@ pub fn is_owner(deps: Deps, username: String, sender: String) -> Result<bool, Co
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&CONFIG.load(deps.storage)?),
-        QueryMsg::GetAddreses { user_name } => to_binary(&query_addresses(deps, env, user_name)?),
+        QueryMsg::GetAddresses { user_name } => to_binary(&query_addresses(deps, env, user_name)?),
         QueryMsg::GetAddress {
             user_name,
             bec32_prefix,
@@ -173,6 +172,9 @@ fn query_addresses(deps: Deps, _env: Env, name: String) -> StdResult<GetAddresse
         .prefix(name)
         .range(deps.storage, None, None, Ascending)
         .collect::<StdResult<Vec<_>>>()?;
+    if &addresses.len() == &0 {
+        return Ok(GetAddressesResponse { addresses: vec![] });
+    }
     let resp = GetAddressesResponse { addresses };
 
     Ok(resp)

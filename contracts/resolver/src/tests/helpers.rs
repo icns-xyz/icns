@@ -76,8 +76,9 @@ pub fn name_nft_contract() -> Box<dyn Contract<Empty>> {
     Box::new(contract)
 }
 
-pub fn instantiate_name_nft_with_admins_and_new_app(
-    admins: Vec<String>
+pub fn instantiate_name_nft(
+    admins: Vec<String>, 
+    registrar: String,
 ) -> (Addr, App)  {
     let mut app = BasicApp::default();
     let name_nft = app.store_code(name_nft_contract());
@@ -87,7 +88,7 @@ pub fn instantiate_name_nft_with_admins_and_new_app(
             name_nft, 
             Addr::unchecked("example"),
                 &icns_name_nft::msg::InstantiateMsg{
-                    registrar: String::from("default-registrar"),
+                    registrar: registrar,
                     admins: admins,
                     transferrable: false,
                 },
