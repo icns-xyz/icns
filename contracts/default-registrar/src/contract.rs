@@ -1,17 +1,17 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, to_binary, Binary, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
+    attr, to_binary, Binary, Decimal, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
 };
 use cw2::set_contract_version;
 use icns_name_nft::MintMsg;
 
 use crate::checks::{
-    check_send_from_admin, check_verfying_msg, check_verification_pass_threshold,
-    check_verifying_key,
+    check_send_from_admin, check_valid_threshold, check_verfying_msg,
+    check_verification_pass_threshold, check_verifying_key,
 };
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, Verification};
 
 use icns_name_nft::msg::ExecuteMsg as NameNFTExecuteMsg;
 
@@ -38,12 +38,13 @@ pub fn instantiate(
         .map(|pubkey| base64_sec1_pubkey_to_bytes(&pubkey))
         .collect::<Result<_, ContractError>>()?;
 
+    check_valid_threshold(&msg.verification_threshold)?;
     CONFIG.save(
         deps.storage,
         &Config {
             name_nft: name_nft_addr,
             verifier_pubkeys,
-            verification_threshold: msg.verification_threshold,
+            verification_threshold_percentage: msg.verification_threshold,
         },
     )?;
 
@@ -81,7 +82,7 @@ pub fn execute(
 fn execute_set_verification_threshold(
     deps: DepsMut,
     info: MessageInfo,
-    verification_threshold: u64,
+    verification_threshold: Decimal,
 ) -> Result<Response, ContractError> {
     check_send_from_admin(deps.as_ref(), &info.sender)?;
 
@@ -90,9 +91,11 @@ fn execute_set_verification_threshold(
         attr("verfication_threshold", verification_threshold.to_string()),
     ];
 
+    check_valid_threshold(&verification_threshold)?;
+
     CONFIG.update(deps.storage, |config| -> StdResult<_> {
         Ok(Config {
-            verification_threshold,
+            verification_threshold_percentage: verification_threshold,
             ..config
         })
     })?;
@@ -106,17 +109,20 @@ pub fn execute_claim(
     info: MessageInfo,
     verifying_msg_str: String,
     name: String,
-    verifications: Vec<String>,
+    verifications: Vec<Verification>,
 ) -> Result<Response, ContractError> {
-    // TODO: remove verifying msg 
-    //
     check_verfying_msg(&env, &info, &name, &verifying_msg_str)?;
     check_verification_pass_threshold(
         deps.as_ref(),
         &verifying_msg_str,
         &verifications
             .iter()
-            .map(|v| Binary::from_base64(v).map(|b| b.to_vec()))
+            .map(|verification| {
+                Ok((
+                    Binary::from_base64(&verification.public_key).map(|binary| binary.to_vec())?,
+                    Binary::from_base64(&verification.signature).map(|binary| binary.to_vec())?,
+                ))
+            })
             .collect::<StdResult<Vec<_>>>()?,
     )?;
 

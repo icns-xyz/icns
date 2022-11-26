@@ -2,9 +2,12 @@ use cosmrs::{
     crypto::secp256k1::VerifyingKey,
     tendermint::signature::{Secp256k1Signature, Verifier},
 };
-use cosmwasm_std::{from_slice, to_binary, Addr, Deps, Env, MessageInfo, QueryRequest, WasmQuery};
+use cosmwasm_std::{
+    from_slice, to_binary, Addr, Binary, Decimal, Deps, Env, MessageInfo, QueryRequest, WasmQuery,
+};
+use cw_utils::ThresholdError;
 use icns_name_nft::msg::{AdminResponse, QueryMsg as NameNFTQueryMsg};
-use sha2::{Digest, Sha256};
+use itertools::Itertools;
 
 use crate::{msg::VerifyingMsg, state::CONFIG, ContractError};
 
@@ -29,16 +32,36 @@ pub fn check_verfying_msg(
 ) -> Result<(), ContractError> {
     let verifying_msg: VerifyingMsg = from_slice(verifying_msg.as_bytes())?;
     if verifying_msg.name != name {
-        return Err(ContractError::NameMismatched {});
+        return Err(ContractError::InvalidVerifyingMessage {
+            msg: format!(
+                "name mismatched: expected `{}` but got `{}`",
+                name, verifying_msg.name
+            ),
+        });
     }
     if verifying_msg.claimer != info.sender {
-        return Err(ContractError::ClaimerMismatched {});
+        return Err(ContractError::InvalidVerifyingMessage {
+            msg: format!(
+                "claimer mismatched: expected `{}` but got `{}`",
+                info.sender, verifying_msg.claimer
+            ),
+        });
     }
     if verifying_msg.contract_address != env.contract.address {
-        return Err(ContractError::ContractAddressMismatched {});
+        return Err(ContractError::InvalidVerifyingMessage {
+            msg: format!(
+                "contract address mismatched: expected `{}` but got `{}`",
+                env.contract.address, verifying_msg.contract_address
+            ),
+        });
     }
     if verifying_msg.chain_id != env.block.chain_id {
-        return Err(ContractError::ChainIdMismatched {});
+        return Err(ContractError::InvalidVerifyingMessage {
+            msg: format!(
+                "chain id mismatched: expected `{}` but got `{}`",
+                env.block.chain_id, verifying_msg.chain_id
+            ),
+        });
     }
     Ok(())
 }
@@ -47,34 +70,54 @@ pub fn check_verfying_msg(
 pub fn check_verification_pass_threshold(
     deps: Deps,
     msg: &str,
-    verifcations: &[Vec<u8>],
+    // (public_key, signature)
+    verifications: &[(Vec<u8>, Vec<u8>)],
 ) -> Result<(), ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
     // SHA256(msg)
-    let mut sha256 = Sha256::new();
-    sha256.update(msg.as_bytes());
-    let hashed_msg = sha256.finalize();
+    // let mut sha256 = Sha256::new();
+    // sha256.update(msg.as_bytes());
+    // let hashed_msg = sha256.finalize();
 
-    let passed_verifications = verifcations
+    // check if verification comes from verifier
+    verifications
         .iter()
-        .filter_map(|signature| {
+        .try_for_each(|(pubkey, _)| -> Result<(), ContractError> {
             config
                 .verifier_pubkeys
                 .iter()
-                // TODO: Report invalid signature as it is an important debugging information
-                .find(|verifier| {
-                    verify_secp256k1_signature(&hashed_msg[..], signature, verifier).is_ok()
-                })
-        })
-        .count() as u64;
+                .find(|verifier| *verifier == pubkey)
+                .ok_or(ContractError::NotAVerifierPublicKey {
+                    public_key: Binary(pubkey.clone()),
+                })?;
+            Ok(())
+        })?;
 
-    if passed_verifications < config.verification_threshold {
-        return Err(ContractError::ValidVerificationIsBelowThreshold {
-            expected: config.verification_threshold,
-            actual: passed_verifications,
-        });
+    // check for duplicated signatures
+    let duplicated_signatures = verifications
+        .iter()
+        .map(|(_, signature)| signature)
+        .duplicates()
+        .next();
+
+    if let Some(duplicated_signature) = duplicated_signatures {
+        let signature = check_signature(duplicated_signature)?;
+        let signature = Binary(signature.to_der().as_bytes().to_vec());
+        return Err(ContractError::DuplicatedVerification { signature });
     }
+
+    // verify all signatures
+    verifications
+        .iter()
+        .unique()
+        .try_for_each(|(public_key, signature)| {
+            verify_secp256k1_signature(msg.as_bytes(), signature, public_key)
+        })?;
+
+    // when all signature are valid, no duplicates and all from verifiers, check if it pass threshold
+    let verification_count = verifications.len() as u64;
+    config.check_pass_threshold(Decimal::new(verification_count.into()))?;
 
     Ok(())
 }
@@ -101,14 +144,28 @@ pub fn check_signature(signature: &[u8]) -> Result<Secp256k1Signature, ContractE
     Secp256k1Signature::from_der(signature).map_err(|_| ContractError::InvalidSignatureFormat {})
 }
 
+pub fn check_valid_threshold(percent: &Decimal) -> Result<(), ThresholdError> {
+    if *percent > Decimal::percent(100) || *percent < Decimal::percent(50) {
+        Err(ThresholdError::InvalidThreshold {})
+    } else {
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod test {
-
-    use super::verify_secp256k1_signature;
-    use crate::ContractError;
+    use super::*;
+    use crate::{
+        state::{Config, CONFIG},
+        ContractError,
+    };
     use cosmrs::{
         bip32::{self},
         crypto::secp256k1::SigningKey,
+    };
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_env, mock_info},
+        Addr, Decimal, DepsMut,
     };
 
     fn from_mnemonic(phrase: &str, derivation_path: &str) -> SigningKey {
@@ -117,6 +174,85 @@ mod test {
             .to_seed("");
         let xprv = bip32::XPrv::derive_from_path(seed, &derivation_path.parse().unwrap()).unwrap();
         xprv.into()
+    }
+
+    #[test]
+    fn test_check_verifying_message() {
+        let env = mock_env();
+        let contract_address = &env.contract.address;
+        let chain_id = &env.block.chain_id;
+        let sender = "sender";
+        let info = mock_info(sender, &[]);
+        let name = "name";
+
+        // success case, everything is matched
+        check_verfying_msg(&env, &info, name, &format!(
+            r#"{{"name":"{name}","claimer":"{sender}","contract_address":"{contract_address}","chain_id":"{chain_id}"}}"#,
+        )).unwrap();
+
+        // name mismatched
+        let mismatched_name = "mismatched_name";
+        let err = check_verfying_msg(&env, &info, name, &format!(
+            r#"{{"name":"{mismatched_name}","claimer":"{sender}","contract_address":"{contract_address}","chain_id":"{chain_id}"}}"#,
+        )).unwrap_err();
+
+        assert_eq!(
+            err,
+            ContractError::InvalidVerifyingMessage {
+                msg: format!(
+                    "name mismatched: expected `{}` but got `{}`",
+                    name, mismatched_name
+                ),
+            }
+        );
+
+        // claimer is not sender
+        let not_a_sender = "not_a_sender";
+        let err = check_verfying_msg(&env, &info, name, &format!(
+            r#"{{"name":"{name}","claimer":"{not_a_sender}","contract_address":"{contract_address}","chain_id":"{chain_id}"}}"#,
+        )).unwrap_err();
+
+        assert_eq!(
+            err,
+            ContractError::InvalidVerifyingMessage {
+                msg: format!(
+                    "claimer mismatched: expected `{}` but got `{}`",
+                    sender, not_a_sender
+                ),
+            }
+        );
+
+        // wrong contract_address
+        let wrong_contract_address = "wrong_contract_address";
+        let err = check_verfying_msg(&env, &info, name, &format!(
+            r#"{{"name":"{name}","claimer":"{sender}","contract_address":"{wrong_contract_address}","chain_id":"{chain_id}"}}"#,
+        )).unwrap_err();
+
+        assert_eq!(
+            err,
+            ContractError::InvalidVerifyingMessage {
+                msg: format!(
+                    "contract address mismatched: expected `{}` but got `{}`",
+                    contract_address, wrong_contract_address
+                ),
+            }
+        );
+
+        // wrong chain_id
+        let wrong_chain_id = "wrong_chain_id";
+        let err = check_verfying_msg(&env, &info, name, &format!(
+                    r#"{{"name":"{name}","claimer":"{sender}","contract_address":"{contract_address}","chain_id":"{wrong_chain_id}"}}"#,
+                )).unwrap_err();
+
+        assert_eq!(
+            err,
+            ContractError::InvalidVerifyingMessage {
+                msg: format!(
+                    "chain id mismatched: expected `{}` but got `{}`",
+                    chain_id, wrong_chain_id
+                ),
+            }
+        );
     }
 
     #[test]
@@ -152,5 +288,165 @@ mod test {
             ),
             Err(ContractError::InvalidSignature {})
         );
+    }
+
+    #[test]
+    fn test_check_verification_pass_threshold() {
+        let derivation_path = "m/44'/118'/0'/0/0";
+        let verifier1 = || {
+            from_mnemonic("notice oak worry limit wrap speak medal online prefer cluster roof addict wrist behave treat actual wasp year salad speed social layer crew genius", derivation_path)
+        };
+        let verifier2 = || {
+            from_mnemonic("quality vacuum heart guard buzz spike sight swarm shove special gym robust assume sudden deposit grid alcohol choice devote leader tilt noodle tide penalty", derivation_path)
+        };
+        let verifier3 = || {
+            from_mnemonic("symbol force gallery make bulk round subway violin worry mixture penalty kingdom boring survey tool fringe patrol sausage hard admit remember broken alien absorb", derivation_path)
+        };
+        let verifier4 = || {
+            from_mnemonic("bounce success option birth apple portion aunt rural episode solution hockey pencil lend session cause hedgehog slender journey system canvas decorate razor catch empty", derivation_path)
+        };
+        let non_verifier = || {
+            from_mnemonic("prefer forget visit mistake mixture feel eyebrow autumn shop pair address airport diesel street pass vague innocent poem method awful require hurry unhappy shoulder", derivation_path)
+        };
+
+        let set_threshold_pct = |deps: DepsMut, pct: u64| {
+            CONFIG
+                .save(
+                    deps.storage,
+                    &Config {
+                        name_nft: Addr::unchecked("namenftaddr"),
+                        verifier_pubkeys: vec![verifier1(), verifier2(), verifier3()]
+                            .iter()
+                            .map(|sk| sk.public_key().to_bytes())
+                            .collect(),
+                        verification_threshold_percentage: Decimal::percent(pct),
+                    },
+                )
+                .unwrap();
+        };
+
+        let sign_all = |verfiers: &[SigningKey], msg: &str| {
+            verfiers
+                .iter()
+                .map(|v| {
+                    (
+                        v.public_key().to_bytes(),
+                        v.sign(msg.as_bytes()).unwrap().to_der().as_bytes().to_vec(),
+                    )
+                })
+                .collect::<Vec<(Vec<u8>, Vec<u8>)>>()
+        };
+
+        let msg = "verifying msg";
+
+        // test 2/3 valid signature > 51% should be passed
+        let mut deps = mock_dependencies();
+        set_threshold_pct(deps.as_mut(), 51);
+        check_verification_pass_threshold(
+            deps.as_ref(),
+            msg,
+            &sign_all(&[verifier1(), verifier2()], msg),
+        )
+        .unwrap();
+
+        // test 1/3 valid signature < 51% should error
+        let mut deps = mock_dependencies();
+        set_threshold_pct(deps.as_mut(), 51);
+        let err =
+            check_verification_pass_threshold(deps.as_ref(), msg, &sign_all(&[verifier1()], msg))
+                .unwrap_err();
+
+        assert_eq!(
+            err,
+            ContractError::ValidVerificationIsBelowThreshold {
+                expected_over: Decimal::new(510000000000000000u128.into()),
+                actual: Decimal::new(333333333333333333u128.into()),
+            }
+        );
+
+        // test 1/3 valid signature (one signed by non verifier) < 51% should error
+        let mut deps = mock_dependencies();
+        set_threshold_pct(deps.as_mut(), 51);
+        let err = check_verification_pass_threshold(
+            deps.as_ref(),
+            msg,
+            &sign_all(&[verifier1(), non_verifier()], msg),
+        )
+        .unwrap_err();
+        assert_eq!(
+            err,
+            ContractError::NotAVerifierPublicKey {
+                public_key: Binary(non_verifier().public_key().to_bytes())
+            }
+        );
+
+        // test 1/3 valid signature (one signed wrong msg) < 51% should error
+        let mut deps = mock_dependencies();
+        set_threshold_pct(deps.as_mut(), 51);
+
+        let wrong_msg = "wrong msg";
+        let err = check_verification_pass_threshold(
+            deps.as_ref(),
+            msg,
+            &vec![
+                sign_all(&[verifier1()], msg),
+                sign_all(&[verifier2()], wrong_msg),
+            ]
+            .concat(),
+        )
+        .unwrap_err();
+        assert_eq!(err, ContractError::InvalidSignature {});
+
+        // test 1/3 valid signature (one duplicated signature) < 51% should error
+        let mut deps = mock_dependencies();
+        set_threshold_pct(deps.as_mut(), 51);
+        let verifications = sign_all(&[verifier3(), verifier3()], msg);
+        let err =
+            check_verification_pass_threshold(deps.as_ref(), msg, &verifications).unwrap_err();
+        assert_eq!(
+            err,
+            ContractError::DuplicatedVerification {
+                signature: Binary(verifications[0].1.clone())
+            }
+        );
+
+        // test 2/4 valid signature = 50% should pass
+        let mut deps = mock_dependencies();
+        CONFIG
+            .save(
+                &mut deps.storage,
+                &Config {
+                    name_nft: Addr::unchecked("namenftaddr"),
+                    verifier_pubkeys: vec![verifier1(), verifier2(), verifier3(), verifier4()]
+                        .iter()
+                        .map(|sk| sk.public_key().to_bytes())
+                        .collect(),
+                    verification_threshold_percentage: Decimal::percent(50),
+                },
+            )
+            .unwrap();
+        check_verification_pass_threshold(
+            deps.as_ref(),
+            msg,
+            &sign_all(&[verifier1(), verifier4()], msg),
+        )
+        .unwrap();
+
+        // test no verifier set should error
+        let mut deps = mock_dependencies();
+        CONFIG
+            .save(
+                &mut deps.storage,
+                &Config {
+                    name_nft: Addr::unchecked("namenftaddr"),
+                    verifier_pubkeys: vec![],
+                    verification_threshold_percentage: Decimal::percent(50),
+                },
+            )
+            .unwrap();
+
+        let err =
+            check_verification_pass_threshold(deps.as_ref(), msg, &sign_all(&[], msg)).unwrap_err();
+        assert_eq!(err, ContractError::NoVerifier {});
     }
 }

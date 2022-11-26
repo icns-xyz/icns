@@ -1,4 +1,5 @@
-use cosmwasm_std::StdError;
+use cosmwasm_std::{Binary, Decimal, StdError};
+use cw_utils::ThresholdError;
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
@@ -6,8 +7,14 @@ pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
 
+    #[error("{0}")]
+    Threshold(#[from] ThresholdError),
+
     #[error("Unauthorized")]
     Unauthorized {},
+
+    #[error("Not a verfier public key: {public_key}")]
+    NotAVerifierPublicKey { public_key: Binary },
 
     #[error("Custom Error val: {val:?}")]
     CustomError { val: String },
@@ -30,19 +37,20 @@ pub enum ContractError {
     #[error("Verifying sg and public key does not match signature")]
     InvalidSignature {},
 
-    #[error("Valid verfication is below threshold: expected {expected} but got {actual}")]
-    ValidVerificationIsBelowThreshold { expected: u64, actual: u64 },
+    #[error(
+        "Valid verfication is below threshold: expected over {expected_over}% but got {actual}%"
+    )]
+    ValidVerificationIsBelowThreshold {
+        expected_over: Decimal,
+        actual: Decimal,
+    },
 
-    // TODO: group these variants to InvalidVerifyingMessage
-    #[error("Name mismatched")]
-    NameMismatched,
+    #[error("Invalid verifying message: {msg}")]
+    InvalidVerifyingMessage { msg: String },
 
-    #[error("Claimer mismatched")]
-    ClaimerMismatched,
+    #[error("No verifier set")]
+    NoVerifier {},
 
-    #[error("Contract address mismatched")]
-    ContractAddressMismatched,
-
-    #[error("Chain id mismatched")]
-    ChainIdMismatched,
+    #[error("Verification signatures must be unique: `{signature}` is duplicated")]
+    DuplicatedVerification { signature: Binary },
 }
