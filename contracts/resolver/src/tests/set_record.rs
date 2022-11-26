@@ -14,6 +14,7 @@ use cw721_base::{ExecuteMsg as CW721BaseExecuteMsg, Extension, MintMsg};
 
 use super::helpers::{
     instantiate_name_nft, instantiate_resolver_with_name_nft, TestEnv,
+    default_setting,
     TestEnvBuilder,
 };
 
@@ -24,13 +25,7 @@ fn set_get_single_record() {
     let admins = vec![admin1.clone(), admin2.clone()];
     let registrar = String::from("default-registrar");
 
-    // first instantiate name nft
-    let (name_nft_contract, mut app) = instantiate_name_nft(admins, registrar.clone());
-
-    // now instantiate resolver using name nft contract
-    let resolver_contract_addr =
-        instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
-
+    let (_, resolver_contract_addr, app) = default_setting(admins, registrar);
     let addresses = |app: &BasicApp, name: String| -> StdResult<_> {
         let GetAddressesResponse { addresses, .. } = app.wrap().query_wasm_smart(
             resolver_contract_addr.clone(),
@@ -41,34 +36,6 @@ fn set_get_single_record() {
 
         Ok(addresses)
     };
-
-    // mint name nft to bob
-    let mint = app.execute_contract(
-        Addr::unchecked(registrar.clone()),
-        name_nft_contract.clone(),
-        &NameExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
-            token_id: "bob".to_string(),
-            owner: "bob".to_string(),
-            token_uri: None,
-            extension: None,
-        })),
-        &[],
-    ).is_err();
-    assert_eq!(mint, false);
-
-    // now set record
-    app.execute_contract(
-        Addr::unchecked(admin1.clone()),
-        resolver_contract_addr.clone(),
-        &ExecuteMsg::SetRecord {
-                user_name: "bob".to_string(),
-                addresses: vec![
-                    ("juno".to_string(), "juno1kn27c8fu9qjmcn9hqytdzlml55mcs7dl2wu2ts".to_string()),
-                    ("cosmos".to_string(), "cosmos1gf3dm2mvqhymts6ksrstlyuu2m8pw6dhv43wpe".to_string()),
-                ],
-            }, 
-        &[],
-    ).unwrap();
 
     // now get record
     let addresses = addresses(&app, "bob".to_string()).unwrap();
@@ -86,40 +53,7 @@ fn set_duplicate_username() {
     let admins = vec![admin1.clone(), admin2.clone()];
     let registrar = String::from("default-registrar");
 
-    // first instantiate name nft
-    let (name_nft_contract, mut app) = instantiate_name_nft(admins, registrar.clone());
-
-    // now instantiate resolver using name nft contract
-    let resolver_contract_addr =
-        instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
-
-    // mint name nft to bob
-    let mint = app.execute_contract(
-        Addr::unchecked(registrar.clone()),
-        name_nft_contract.clone(),
-        &NameExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
-            token_id: "bob".to_string(),
-            owner: "bob".to_string(),
-            token_uri: None,
-            extension: None,
-        })),
-        &[],
-    ).is_err();
-    assert_eq!(mint, false);
-
-    // now set record
-    app.execute_contract(
-        Addr::unchecked(admin1.clone()),
-        resolver_contract_addr.clone(),
-        &ExecuteMsg::SetRecord {
-                user_name: "bob".to_string(),
-                addresses: vec![
-                    ("juno".to_string(), "juno1kn27c8fu9qjmcn9hqytdzlml55mcs7dl2wu2ts".to_string()),
-                    ("cosmos".to_string(), "cosmos1gf3dm2mvqhymts6ksrstlyuu2m8pw6dhv43wpe".to_string()),
-                ],
-            }, 
-        &[],
-    ).unwrap();
+    let (_, resolver_contract_addr, mut app) = default_setting(admins, registrar);
 
     // now set record again, this should error
     let err = app.execute_contract(

@@ -160,8 +160,8 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::GetAddresses { user_name } => to_binary(&query_addresses(deps, env, user_name)?),
         QueryMsg::GetAddress {
             user_name,
-            bec32_prefix,
-        } => to_binary(&query_address(deps, env, user_name, bec32_prefix)?),
+            bech32_prefix,
+        } => to_binary(&query_address(deps, env, user_name, bech32_prefix)?),
         QueryMsg::Admin {  } => to_binary(&query_admin(deps)?),
         // TODO: add query to query directly using ICNS (e.g req: tony.eth)
     }
@@ -187,9 +187,11 @@ fn query_address(
     bech32_prefix: String,
 ) -> StdResult<GetAddressResponse> {
     let address = ADDRESSES.may_load(deps.storage, (user_name, bech32_prefix))?;
-    let resp = GetAddressResponse { address };
-
-    Ok(resp)
+    
+    match address {
+        Some(addr) => Ok(GetAddressResponse { address: addr }),
+        None => Ok(GetAddressResponse { address: "".to_string() }),
+    }
 }
 
 fn query_admin(

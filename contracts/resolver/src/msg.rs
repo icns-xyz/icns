@@ -28,7 +28,7 @@ pub enum QueryMsg {
     #[returns(GetAddressResponse)]
     GetAddress {
         user_name: String,
-        bec32_prefix: String,
+        bech32_prefix: String,
     },
 
     #[returns(AdminResponse)]
@@ -48,5 +48,5 @@ pub struct GetAddressesResponse {
 
 #[cw_serde]
 pub struct GetAddressResponse {
-    pub address: Option<String>,
+    pub address: String,
 }

@@ -1,14 +1,16 @@
 use std::ops::Add;
 
 use cosmwasm_std::Empty;
-use crate::{entry, msg::InstantiateMsg, contract::execute, contract::instantiate, contract::query};
+use crate::{entry, msg::InstantiateMsg, contract::execute, contract::instantiate, contract::query, msg::ExecuteMsg};
 // import execute
 
 
 use cw_multi_test::{next_block, App,BasicApp, Contract, BankSudo, ContractWrapper, Executor, SudoMsg};
 use cosmwasm_std::{to_binary, Addr, Coin, Uint128};
 
-use icns_name_nft::{self, execute};
+use icns_name_nft::{self, msg::ExecuteMsg as NameExecuteMsg};
+use cw721_base::{ExecuteMsg as CW721BaseExecuteMsg, Extension, MintMsg};
+
 
 pub struct TestEnv {
     pub app: BasicApp,
@@ -74,6 +76,44 @@ pub fn name_nft_contract() -> Box<dyn Contract<Empty>> {
     );
 
     Box::new(contract)
+}
+
+pub fn default_setting(
+    admins: Vec<String>,
+    registrar: String,
+) -> (Addr, Addr, App){
+    let (name_nft_contract, mut app) = instantiate_name_nft(admins.clone(), registrar.clone());
+    let resolver_contract_addr =
+        instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
+    
+    //  mint name nft to bob
+    let mint = app.execute_contract(
+        Addr::unchecked(registrar.clone()),
+        name_nft_contract.clone(),
+        &NameExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+            token_id: "bob".to_string(),
+            owner: "bob".to_string(),
+            token_uri: None,
+            extension: None,
+        })),
+        &[],
+    ).is_err();
+    assert_eq!(mint, false);
+
+    app.execute_contract(
+        Addr::unchecked(admins[0].clone()),
+        resolver_contract_addr.clone(),
+        &ExecuteMsg::SetRecord {
+                user_name: "bob".to_string(),
+                addresses: vec![
+                    ("juno".to_string(), "juno1kn27c8fu9qjmcn9hqytdzlml55mcs7dl2wu2ts".to_string()),
+                    ("cosmos".to_string(), "cosmos1gf3dm2mvqhymts6ksrstlyuu2m8pw6dhv43wpe".to_string()),
+                ],
+            }, 
+        &[],
+    ).unwrap();
+
+    return (name_nft_contract, resolver_contract_addr, app);
 }
 
 pub fn instantiate_name_nft(
