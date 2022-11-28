@@ -115,12 +115,11 @@ pub fn check_verification_pass_threshold(
 
     Ok(())
 }
-// signature is der encoded
-// pubkey is sec-1 encoded
+
 fn verify_secp256k1_signature(
     msg: &[u8],
-    signature: &[u8],
-    pubkey: &[u8],
+    signature: &[u8], // DER encoded
+    pubkey: &[u8],    // SEC-1 encoded
 ) -> Result<(), ContractError> {
     let verifying_key = check_verifying_key(pubkey)?;
     let signature = check_signature(signature)?;
