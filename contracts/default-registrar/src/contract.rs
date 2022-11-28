@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, to_binary, Binary, Decimal, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
+    attr, to_binary, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
 };
 use cw2::set_contract_version;
 use icns_name_nft::MintMsg;
@@ -11,7 +11,7 @@ use crate::checks::{
     check_verification_pass_threshold, check_verifying_key,
 };
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, Verification};
+use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, Verification};
 
 use icns_name_nft::msg::ExecuteMsg as NameNFTExecuteMsg;
 
@@ -107,8 +107,8 @@ pub fn execute_claim(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    verifying_msg_str: String,
     name: String,
+    verifying_msg_str: String,
     verifications: Vec<Verification>,
 ) -> Result<Response, ContractError> {
     check_verfying_msg(&env, &info, &name, &verifying_msg_str)?;
@@ -193,6 +193,11 @@ pub fn execute_remove_verifier(
     Ok(Response::new()
         .add_attribute("method", "remove_verifier")
         .add_attribute("verifier", verifier_pubkey))
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn query(_deps: Deps, _env: Env, _msgg: QueryMsg) -> Result<Binary, ContractError> {
+    unimplemented!()
 }
 
 fn base64_sec1_pubkey_to_bytes(pubkey: &str) -> Result<Vec<u8>, ContractError> {

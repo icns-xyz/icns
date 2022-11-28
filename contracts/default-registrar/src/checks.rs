@@ -159,10 +159,7 @@ mod test {
         state::{Config, CONFIG},
         ContractError,
     };
-    use cosmrs::{
-        bip32::{self},
-        crypto::secp256k1::SigningKey,
-    };
+    use cosmrs::{bip32, crypto::secp256k1::SigningKey};
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env, mock_info},
         Addr, Decimal, DepsMut,
