@@ -6,17 +6,39 @@ use crate::{
     ContractError, contract::is_admin,
 };
 
-use cosmwasm_std::{Addr, Empty, StdResult};
+
+use cosmwasm_std::{Addr, Empty, StdResult, testing::MockApi};
 use cw_multi_test::{BasicApp, Executor};
 use icns_name_nft::{msg::ExecuteMsg as NameExecuteMsg, msg::QueryMsg as NameQueryMsg};
 use cw721_base::{ExecuteMsg as CW721BaseExecuteMsg, Extension, MintMsg};
-
+use hex_literal::hex;
+use subtle_encoding::hex;
 
 use super::helpers::{
     instantiate_name_nft, instantiate_resolver_with_name_nft, TestEnv,
     default_setting,
     TestEnvBuilder,
 };
+
+use sha2::{Digest, Sha256};
+use ripemd::{Ripemd160, Digest as RipemdDigest};
+use bech32::{self};
+
+
+#[test]
+fn pubkey_to_address() {
+    let original_hex = hex!("02394bc53633366a2ab9b5d697a94c8c0121cc5e3f0d554a63167edb318ceae8bc");
+
+    let sha256 = Sha256::digest(original_hex);
+    let result = Ripemd160::digest(sha256);
+
+    assert_eq!(
+        result.as_ref(),
+        hex!("6aad751bb99fb0f13237f027b45eeebc37bec200")
+    );
+
+    // let a = bech32::encode("osmo",result.as_ref(), bech32::Variant::Bech32);
+}
 
 #[test]
 fn set_get_single_record() {

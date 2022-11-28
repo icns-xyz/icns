@@ -128,7 +128,7 @@ pub fn instantiate_name_nft(
             name_nft, 
             Addr::unchecked("example"),
                 &icns_name_nft::msg::InstantiateMsg{
-                    registrar: registrar,
+                    // registrar: registrar,
                     admins: admins,
                     transferrable: false,
                 },
