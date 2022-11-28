@@ -1,14 +1,18 @@
 use cosmwasm_std::{DepsMut, Response, StdResult};
+use cw721_base::ContractError;
 
-use crate::{state::{Config, CONFIG}, checks::check_admin};
-
+use crate::{
+    checks::check_admin,
+    state::{Config, CONFIG},
+    ICNSNameNFTContract,
+};
 
 pub fn add_admin(admin: &str, deps: DepsMut) -> Result<Response, cw721_base::ContractError> {
     // check that admin does not already exist
     let config = CONFIG.load(deps.storage)?;
     for existing_admin in config.admins {
         if existing_admin == deps.api.addr_validate(admin)? {
-            return Err(cw721_base::ContractError::Unauthorized {  });
+            return Err(cw721_base::ContractError::Unauthorized {});
         }
     }
 
@@ -32,7 +36,7 @@ pub fn remove_admin(admin: &str, deps: DepsMut) -> Result<Response, cw721_base::
         admins.retain(|x| x != &admin_addr);
         Ok(Config { admins, ..config })
     })?;
-    
+
     Ok(Response::new()
         .add_attribute("method", "remove_admin")
         .add_attribute("admin", admin))
@@ -51,4 +55,15 @@ pub fn set_transferrable(
     Ok(Response::new()
         .add_attribute("method", "set_transferrable")
         .add_attribute("transferrable", transferrable.to_string()))
+}
+
+pub fn set_minter_address(minter_address: &str, deps: DepsMut) -> Result<Response, ContractError> {
+    let name_nft = ICNSNameNFTContract::default();
+    let minter = deps.api.addr_validate(minter_address)?;
+
+    name_nft.minter.save(deps.storage, &minter)?;
+
+    Ok(Response::new()
+        .add_attribute("method", "set_minter_address")
+        .add_attribute("minter_address", minter_address))
 }

@@ -21,7 +21,7 @@ pub type ICNSNameNFTContract<'a> = Cw721Contract<'a, Extension, Empty, Empty, Em
 pub mod entry {
     use super::*;
     use crate::checks::{check_admin, check_transferrable};
-    use crate::execute::{add_admin, remove_admin, set_transferrable};
+    use crate::execute::{add_admin, remove_admin, set_minter_address, set_transferrable};
     use crate::msg::ExecuteMsg;
     use crate::query::{admin, is_admin, transferrable};
     use crate::state::{Config, CONFIG};
@@ -29,15 +29,16 @@ pub mod entry {
     #[cfg(not(feature = "library"))]
     use cosmwasm_std::entry_point;
     use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+    use cw721::ContractInfoResponse;
 
     const NAME: &str = "icns-name";
     const SYMBOL: &str = "icns";
 
     #[cfg_attr(not(feature = "library"), entry_point)]
     pub fn instantiate(
-        mut deps: DepsMut,
-        env: Env,
-        info: MessageInfo,
+        deps: DepsMut,
+        _env: Env,
+        _info: MessageInfo,
         msg: InstantiateMsg,
     ) -> Result<Response, ContractError> {
         // let admin_addr: Addr = deps.api.addr_validate(&msg.admin)?;
@@ -53,20 +54,16 @@ pub mod entry {
 
         CONFIG.save(deps.storage, &config)?;
 
-        let cw721_base_instantiate_msg = Cw721BaseInstantiateMsg {
-            name: NAME.to_string(),
-            symbol: SYMBOL.to_string(),
-            minter: msg.registrar,
+        cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+        let name_nft = ICNSNameNFTContract::default();
+
+        let info = ContractInfoResponse {
+            name: NAME.to_owned(),
+            symbol: SYMBOL.to_owned(),
         };
 
-        ICNSNameNFTContract::default().instantiate(
-            deps.branch(),
-            env,
-            info,
-            cw721_base_instantiate_msg,
-        )?;
-
-        cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+        name_nft.contract_info.save(deps.storage, &info)?;
 
         Ok(Response::default()
             .add_attribute("contract_name", CONTRACT_NAME)
@@ -119,6 +116,10 @@ pub mod entry {
                 msg::ICNSNameExecuteMsg::SetTransferrable { transferrable } => {
                     check_admin(deps.as_ref(), &info.sender)?;
                     set_transferrable(transferrable, deps)
+                }
+                msg::ICNSNameExecuteMsg::SetMinter { minter_address } => {
+                    check_admin(deps.as_ref(), &info.sender)?;
+                    set_minter_address(&minter_address, deps)
                 }
             },
         }

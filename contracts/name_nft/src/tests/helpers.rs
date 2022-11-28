@@ -1,4 +1,8 @@
-use crate::{entry, InstantiateMsg};
+use crate::{
+    entry,
+    msg::{ExecuteMsg, ICNSNameExecuteMsg},
+    InstantiateMsg,
+};
 
 use cosmwasm_std::{Addr, DepsMut, Empty, MessageInfo, Response};
 use cw_multi_test::{BasicApp, Contract, ContractWrapper, Executor};
@@ -98,14 +102,12 @@ impl TestEnvBuilder {
             admin_strs.push(addr.to_string());
         });
 
-
         let contract_addr = app
             .instantiate_contract(
                 code_id,
                 sender,
                 &InstantiateMsg {
                     admins: admin_strs,
-                    registrar: self.registrar.to_string(),
                     transferrable: self.transferrable,
                 },
                 &[],
@@ -113,6 +115,16 @@ impl TestEnvBuilder {
                 None,
             )
             .unwrap();
+
+        app.execute_contract(
+            self.admins[0].clone(),
+            contract_addr.clone(),
+            &ExecuteMsg::ICNSName(ICNSNameExecuteMsg::SetMinter {
+                minter_address: self.registrar.to_string(),
+            }),
+            &[],
+        )
+        .unwrap();
 
         TestEnv {
             app,
