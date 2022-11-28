@@ -1,19 +1,18 @@
 use cosmwasm_std::{Addr, Deps};
-use cw721_base::ContractError;
 
-use crate::state::CONFIG;
+use crate::{error::ContractError, state::CONFIG};
 
 pub fn check_transferrable(deps: Deps) -> Result<(), ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
     if !config.transferrable {
-        return Err(ContractError::Unauthorized {});
+        return Err(cw721_base::ContractError::Unauthorized {}.into());
     }
 
     Ok(())
 }
 
-pub fn check_admin(deps: Deps, sender: &Addr) -> Result<(), cw721_base::ContractError> {
+pub fn check_admin(deps: Deps, sender: &Addr) -> Result<(), ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
     for admin in config.admins {
@@ -22,5 +21,13 @@ pub fn check_admin(deps: Deps, sender: &Addr) -> Result<(), cw721_base::Contract
         }
     }
 
-    Err(cw721_base::ContractError::Unauthorized {})
+    Err(cw721_base::ContractError::Unauthorized {}.into())
+}
+
+pub fn validate_name(name: &str) -> Result<(), ContractError> {
+    if name.contains('.') {
+        return Err(ContractError::InvalidName {});
+    }
+
+    Ok(())
 }

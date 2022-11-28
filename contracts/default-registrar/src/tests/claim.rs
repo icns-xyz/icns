@@ -249,31 +249,29 @@ fn claim_name() {
     );
 
     // execute claim with . in name
-    // let bob_name_with_dot = "bob.dylan";
-    // let verifying_msg = format!(
-    //     r#"{{"name":"{bob_name_with_dot}","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}"}}"#,
-    // );
+    let bob_name_with_dot = "bob.dylan";
+    let verifying_msg = format!(
+        r#"{{"name":"{bob_name_with_dot}","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}"}}"#,
+    );
 
-    // let err = app
-    //     .execute_contract(
-    //         bob.clone(),
-    //         registrar_contract_addr.clone(),
-    //         &ExecuteMsg::Claim {
-    //             name: bob_name_with_dot.to_string(),
-    //             verifying_msg: verifying_msg.clone(),
-    //             verifications: verify_all(&verifying_msg, vec![verifier1(), verifier2()]),
-    //         },
-    //         &[],
-    //     )
-    //     .unwrap_err();
+    let err = app
+        .execute_contract(
+            bob.clone(),
+            registrar_contract_addr.clone(),
+            &ExecuteMsg::Claim {
+                name: bob_name_with_dot.to_string(),
+                verifying_msg: verifying_msg.clone(),
+                verifications: verify_all(&verifying_msg, vec![verifier1(), verifier2()]),
+            },
+            &[],
+        )
+        .unwrap_err();
 
-    // assert_eq!(
-    //     err.downcast_ref::<ContractError>().unwrap(),
-    //     &ContractError::ValidVerificationIsBelowThreshold {
-    //         expected_over: Decimal::percent(50),
-    //         actual: Decimal::percent(25)
-    //     }
-    // );
+    assert_eq!(
+        err.downcast_ref::<icns_name_nft::error::ContractError>()
+            .unwrap(),
+        &icns_name_nft::error::ContractError::InvalidName {}
+    );
 
     // execute claim with passing verification
     let verifying_msg = format!(
@@ -313,7 +311,8 @@ fn claim_name() {
         .unwrap_err();
 
     assert_eq!(
-        err.downcast_ref::<cw721_base::ContractError>().unwrap(),
-        &cw721_base::ContractError::Claimed {}
+        err.downcast_ref::<icns_name_nft::error::ContractError>()
+            .unwrap(),
+        &(cw721_base::ContractError::Claimed {}.into())
     );
 }

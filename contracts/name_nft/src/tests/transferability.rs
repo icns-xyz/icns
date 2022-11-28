@@ -1,6 +1,7 @@
 #![cfg(test)]
 
 use crate::{
+    error::ContractError,
     msg::{ExecuteMsg, ICNSNameExecuteMsg, TransferrableResponse},
     tests::helpers::{TestEnv, TestEnvBuilder},
     QueryMsg,
@@ -9,10 +10,12 @@ use crate::{
 use cosmwasm_std::to_binary;
 use cosmwasm_std::{Addr, Empty};
 use cw721::OwnerOfResponse;
-use cw721_base::{ContractError, ExecuteMsg as CW721BaseExecuteMsg, Extension, MintMsg};
+use cw721_base::{ExecuteMsg as CW721BaseExecuteMsg, Extension, MintMsg};
 use cw_multi_test::{BasicApp, Executor};
 
 mod non_transferrable {
+    use crate::error::ContractError;
+
     use super::*;
 
     #[test]
@@ -57,7 +60,7 @@ mod non_transferrable {
 
         assert_eq!(
             err.downcast_ref::<ContractError>().unwrap(),
-            &ContractError::Unauthorized {}
+            &cw721_base::ContractError::Unauthorized {}.into()
         );
     }
 
@@ -104,7 +107,7 @@ mod non_transferrable {
 
         assert_eq!(
             err.downcast_ref::<ContractError>().unwrap(),
-            &ContractError::Unauthorized {}
+            &cw721_base::ContractError::Unauthorized {}.into()
         );
     }
 
@@ -149,7 +152,7 @@ mod non_transferrable {
 
         assert_eq!(
             err.downcast_ref::<ContractError>().unwrap(),
-            &ContractError::Unauthorized {}
+            &cw721_base::ContractError::Unauthorized {}.into()
         );
     }
 }
@@ -315,7 +318,7 @@ fn only_admin_can_set_transferrable() {
     let err = set_transferrable(&mut app, Addr::unchecked("random_person"), true).unwrap_err();
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
-        &ContractError::Unauthorized {}
+        &cw721_base::ContractError::Unauthorized {}.into()
     );
     assert!(!transferrable(&app));
 
@@ -323,7 +326,7 @@ fn only_admin_can_set_transferrable() {
     let err = set_transferrable(&mut app, registrar, true).unwrap_err();
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
-        &ContractError::Unauthorized {}
+        &cw721_base::ContractError::Unauthorized {}.into()
     );
     assert!(!transferrable(&app));
 

@@ -2,11 +2,12 @@ pub use crate::msg::{InstantiateMsg, QueryMsg};
 use cosmwasm_std::Empty;
 pub use cw721_base::{
     entry::{execute as _execute, query as _query},
-    ContractError, Cw721Contract, ExecuteMsg as CW721BaseExecuteMsg, Extension,
+    Cw721Contract, ExecuteMsg as CW721BaseExecuteMsg, Extension,
     InstantiateMsg as Cw721BaseInstantiateMsg, MintMsg, MinterResponse,
 };
 
 mod checks;
+pub mod error;
 pub mod execute;
 pub mod msg;
 pub mod query;
@@ -20,7 +21,8 @@ pub type ICNSNameNFTContract<'a> = Cw721Contract<'a, Extension, Empty, Empty, Em
 
 pub mod entry {
     use super::*;
-    use crate::checks::{check_admin, check_transferrable};
+    use crate::checks::{check_admin, check_transferrable, validate_name};
+    use crate::error::ContractError;
     use crate::execute::{add_admin, remove_admin, set_minter_address, set_transferrable};
     use crate::msg::ExecuteMsg;
     use crate::query::{admin, is_admin, transferrable};
@@ -40,7 +42,7 @@ pub mod entry {
         _env: Env,
         _info: MessageInfo,
         msg: InstantiateMsg,
-    ) -> Result<Response, ContractError> {
+    ) -> Result<Response, cw721_base::ContractError> {
         // let admin_addr: Addr = deps.api.addr_validate(&msg.admin)?;
         let mut admin_addrs = Vec::new();
         for admin in msg.admins {
@@ -76,7 +78,7 @@ pub mod entry {
         env: Env,
         info: MessageInfo,
         msg: ExecuteMsg,
-    ) -> Result<Response, cw721_base::ContractError> {
+    ) -> Result<Response, ContractError> {
         match msg {
             ExecuteMsg::CW721Base(msg) => {
                 match msg {
@@ -85,20 +87,31 @@ pub mod entry {
                     | msg @ CW721BaseExecuteMsg::SendNft { .. } => {
                         // transferrability is configurable.
                         check_transferrable(deps.as_ref())?;
-                        _execute(deps, env, info, msg)
+                        _execute(deps, env, info, msg).map_err(Into::into)
                     }
 
                     // approval related msgs are allowed as is
                     msg @ CW721BaseExecuteMsg::Approve { .. }
                     | msg @ CW721BaseExecuteMsg::Revoke { .. }
                     | msg @ CW721BaseExecuteMsg::ApproveAll { .. }
-                    | msg @ CW721BaseExecuteMsg::RevokeAll { .. } => _execute(deps, env, info, msg),
+                    | msg @ CW721BaseExecuteMsg::RevokeAll { .. } => {
+                        _execute(deps, env, info, msg).map_err(Into::into)
+                    }
 
                     // minting is allowed as is
-                    msg @ CW721BaseExecuteMsg::Mint(_) => _execute(deps, env, info, msg),
+                    msg @ CW721BaseExecuteMsg::Mint(_) => {
+                        // validate name
+                        if let CW721BaseExecuteMsg::Mint(m) = &msg {
+                            validate_name(&m.token_id)?;
+                        };
+
+                        _execute(deps, env, info, msg).map_err(Into::into)
+                    }
 
                     // buring is disabled
-                    CW721BaseExecuteMsg::Burn { .. } => Err(ContractError::Unauthorized {}),
+                    CW721BaseExecuteMsg::Burn { .. } => {
+                        Err(cw721_base::ContractError::Unauthorized {}.into())
+                    }
 
                     // cw721_base extension is not being used
                     CW721BaseExecuteMsg::Extension { .. } => unimplemented!(),

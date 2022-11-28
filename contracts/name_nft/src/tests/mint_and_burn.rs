@@ -1,6 +1,7 @@
 #![cfg(test)]
 
 use crate::{
+    error::ContractError,
     msg::{ExecuteMsg, ICNSNameExecuteMsg},
     tests::helpers::{TestEnv, TestEnvBuilder},
     QueryMsg,
@@ -8,7 +9,7 @@ use crate::{
 
 use cosmwasm_std::{Addr, Empty, StdError, StdResult};
 use cw721::OwnerOfResponse;
-use cw721_base::{ContractError, ExecuteMsg as CW721BaseExecuteMsg, Extension, MintMsg};
+use cw721_base::{ExecuteMsg as CW721BaseExecuteMsg, Extension, MintMsg};
 use cw_multi_test::{BasicApp, Executor};
 
 #[test]
@@ -64,9 +65,12 @@ fn can_not_mint_until_minter_is_set() {
 
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
-        &ContractError::Std(StdError::NotFound {
-            kind: "cosmwasm_std::addresses::Addr".to_string()
-        })
+        &ContractError::CW721Base(
+            StdError::NotFound {
+                kind: "cosmwasm_std::addresses::Addr".to_string()
+            }
+            .into()
+        )
     );
 
     // non-admin can't set minter
@@ -83,7 +87,7 @@ fn can_not_mint_until_minter_is_set() {
 
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
-        &ContractError::Unauthorized {}
+        &cw721_base::ContractError::Unauthorized {}.into()
     );
 
     // set minter to registrar
@@ -164,7 +168,7 @@ fn only_registrar_can_mint() {
     .unwrap_err();
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
-        &ContractError::Unauthorized {}
+        &cw721_base::ContractError::Unauthorized {}.into()
     );
 
     assert_eq!(owner(&app, name.to_string()).unwrap_err(), not_found_err);
@@ -179,7 +183,7 @@ fn only_registrar_can_mint() {
     .unwrap_err();
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
-        &ContractError::Unauthorized {}
+        &cw721_base::ContractError::Unauthorized {}.into()
     );
 
     assert_eq!(owner(&app, name.to_string()).unwrap_err(), not_found_err);
@@ -220,6 +224,6 @@ fn burning_is_not_allowed() {
 
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
-        &ContractError::Unauthorized {}
+        &cw721_base::ContractError::Unauthorized {}.into()
     );
 }
