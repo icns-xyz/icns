@@ -29,7 +29,8 @@ pub enum ExecuteMsg {
         threshold: Decimal,
     },
 }
-
+#[cw_serde]
+pub struct QueryMsg;
 #[cw_serde]
 pub struct Verification {
     pub public_key: String,

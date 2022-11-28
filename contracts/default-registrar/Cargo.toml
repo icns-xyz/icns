@@ -58,3 +58,4 @@ thiserror = {version = "1.0.31"}
 [dev-dependencies]
 anyhow = "1.0.66"
 cw-multi-test = "0.13.2"
+cw721 = {workspace = true}
