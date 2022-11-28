@@ -54,13 +54,20 @@ fn can_not_mint_until_minter_is_set() {
     let name = "bob";
 
     // mint without setting minter should error
-    mint(
+    let err = mint(
         &mut app,
         registrar.clone(),
         name.to_string(),
         random_person.to_string(),
     )
     .unwrap_err();
+
+    assert_eq!(
+        err.downcast_ref::<ContractError>().unwrap(),
+        &ContractError::Std(StdError::NotFound {
+            kind: "cosmwasm_std::addresses::Addr".to_string()
+        })
+    );
 
     // non-admin can't set minter
     let err = app
