@@ -35,7 +35,12 @@ pub fn instantiate(
     let verifier_pubkeys = msg
         .verifier_pubkeys
         .into_iter()
-        .map(|pubkey| base64_sec1_pubkey_to_bytes(&pubkey))
+        .map(|pubkey| {
+            let pubkey_bytes = pubkey.to_vec();
+            check_verifying_key(&pubkey_bytes)?;
+
+            Ok(pubkey_bytes)
+        })
         .collect::<Result<_, ContractError>>()?;
 
     check_valid_threshold(&msg.verification_threshold)?;
@@ -67,12 +72,12 @@ pub fn execute(
             verifying_msg,
             verifications,
         } => execute_claim(deps, env, info, name, verifying_msg, verifications),
-        ExecuteMsg::AddVerifier { verifier_addr } => {
-            execute_add_verifier(deps, env, info, verifier_addr)
-        }
-        ExecuteMsg::RemoveVerifier { verifier_addr } => {
-            execute_remove_verifier(deps, env, info, verifier_addr)
-        }
+        ExecuteMsg::AddVerifier {
+            verifier_pubkey: verifier_addr,
+        } => execute_add_verifier(deps, env, info, verifier_addr),
+        ExecuteMsg::RemoveVerifier {
+            verifier_pubkey: verifier_addr,
+        } => execute_remove_verifier(deps, env, info, verifier_addr),
         ExecuteMsg::SetVerificationThreshold { threshold } => {
             execute_set_verification_threshold(deps, info, threshold)
         }
@@ -119,8 +124,8 @@ pub fn execute_claim(
             .iter()
             .map(|verification| {
                 Ok((
-                    Binary::from_base64(&verification.public_key).map(|binary| binary.to_vec())?,
-                    Binary::from_base64(&verification.signature).map(|binary| binary.to_vec())?,
+                    verification.public_key.to_vec(),
+                    verification.signature.to_vec(),
                 ))
             })
             .collect::<StdResult<Vec<_>>>()?,
@@ -152,10 +157,11 @@ pub fn execute_add_verifier(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    verifier_pubkey: String,
+    verifier_pubkey: Binary,
 ) -> Result<Response, ContractError> {
     check_send_from_admin(deps.as_ref(), &info.sender)?;
-    let adding_verifier = base64_sec1_pubkey_to_bytes(&verifier_pubkey)?;
+    let adding_verifier = verifier_pubkey.to_vec();
+    check_verifying_key(&adding_verifier)?;
 
     CONFIG.update(deps.storage, |config| -> StdResult<_> {
         Ok(Config {
@@ -167,17 +173,18 @@ pub fn execute_add_verifier(
 
     Ok(Response::new()
         .add_attribute("method", "add_verifier")
-        .add_attribute("verifier", verifier_pubkey))
+        .add_attribute("verifier", verifier_pubkey.to_base64()))
 }
 
 pub fn execute_remove_verifier(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    verifier_pubkey: String,
+    verifier_pubkey: Binary,
 ) -> Result<Response, ContractError> {
     check_send_from_admin(deps.as_ref(), &info.sender)?;
-    let removing_verifier = base64_sec1_pubkey_to_bytes(&verifier_pubkey)?;
+    let removing_verifier = verifier_pubkey.to_vec();
+    check_verifying_key(&removing_verifier)?;
 
     CONFIG.update(deps.storage, |config| -> StdResult<_> {
         Ok(Config {
@@ -192,18 +199,10 @@ pub fn execute_remove_verifier(
 
     Ok(Response::new()
         .add_attribute("method", "remove_verifier")
-        .add_attribute("verifier", verifier_pubkey))
+        .add_attribute("verifier", verifier_pubkey.to_base64()))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(_deps: Deps, _env: Env, _msgg: QueryMsg) -> Result<Binary, ContractError> {
     unimplemented!()
-}
-
-fn base64_sec1_pubkey_to_bytes(pubkey: &str) -> Result<Vec<u8>, ContractError> {
-    Ok(
-        check_verifying_key(Binary::from_base64(pubkey)?.as_slice())?
-            .to_bytes()
-            .to_vec(),
-    )
 }

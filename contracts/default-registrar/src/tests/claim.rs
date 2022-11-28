@@ -90,11 +90,10 @@ fn claim_name() {
         from_mnemonic("prefer forget visit mistake mixture feel eyebrow autumn shop pair address airport diesel street pass vague innocent poem method awful require hurry unhappy shoulder", derivation_path)
     };
 
-    let base64_pubkey =
-        |verifier: &SigningKey| Binary(verifier.public_key().to_bytes()).to_base64();
+    let base64_pubkey = |verifier: &SigningKey| Binary(verifier.public_key().to_bytes());
 
     let base64_signature =
-        |signature: &Secp256k1Signature| Binary(signature.to_der().as_bytes().to_vec()).to_base64();
+        |signature: &Secp256k1Signature| Binary(signature.to_der().as_bytes().to_vec());
 
     let verify_all = |verifying_msg: &str, verifiers: Vec<SigningKey>| -> Vec<Verification> {
         verifiers
