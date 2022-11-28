@@ -207,27 +207,3 @@ fn base64_sec1_pubkey_to_bytes(pubkey: &str) -> Result<Vec<u8>, ContractError> {
             .to_vec(),
     )
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use cosmwasm_std::{
-//         coins, from_binary,
-//         testing::{mock_dependencies, mock_env, mock_info},
-//         Addr, Coin, DepsMut,
-//     };
-
-//     use crate::msg::InstantiateMsg;
-
-//     use super::*;
-
-//     fn mock_init(deps: DepsMut, name_nft: String, resolver: String, verifier_addrs: Vec<String>) {
-//         let msg = InstantiateMsg {
-//             name_nft_addr: name_nft,
-//             verifier_addrs,
-//         };
-
-//         let info = mock_info("creator", &coins(1, "token"));
-//         let _res = instantiate(deps, mock_env(), info, msg)
-//             .expect("contract successfully handles InstantiateMsg");
-//     }
-// }
