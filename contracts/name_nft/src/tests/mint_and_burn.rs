@@ -62,6 +62,23 @@ fn can_not_mint_until_minter_is_set() {
     )
     .unwrap_err();
 
+    // non-admin can't set minter
+    let err = app
+        .execute_contract(
+            random_person.clone(),
+            contract_addr.clone(),
+            &ExecuteMsg::ICNSName(ICNSNameExecuteMsg::SetMinter {
+                minter_address: registrar.to_string(),
+            }),
+            &[],
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        err.downcast_ref::<ContractError>().unwrap(),
+        &ContractError::Unauthorized {}
+    );
+
     // set minter to registrar
     app.execute_contract(
         admins[0].clone(),
