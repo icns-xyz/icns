@@ -70,6 +70,7 @@ pub struct TestEnvBuilder {
     pub admins: Vec<Addr>,
     pub registrar: Addr,
     pub transferrable: bool,
+    pub setup_minter: bool,
 }
 
 impl Default for TestEnvBuilder {
@@ -78,6 +79,7 @@ impl Default for TestEnvBuilder {
             admins: vec![Addr::unchecked("admin")],
             registrar: Addr::unchecked("registrar"),
             transferrable: false,
+            setup_minter: true,
         }
     }
 }
@@ -86,6 +88,13 @@ impl TestEnvBuilder {
     pub fn with_transferrable(self, transferrable: bool) -> Self {
         Self {
             transferrable,
+            ..self
+        }
+    }
+
+    pub fn with_no_minter(self) -> Self {
+        Self {
+            setup_minter: false,
             ..self
         }
     }
@@ -116,15 +125,17 @@ impl TestEnvBuilder {
             )
             .unwrap();
 
-        app.execute_contract(
-            self.admins[0].clone(),
-            contract_addr.clone(),
-            &ExecuteMsg::ICNSName(ICNSNameExecuteMsg::SetMinter {
-                minter_address: self.registrar.to_string(),
-            }),
-            &[],
-        )
-        .unwrap();
+        if self.setup_minter {
+            app.execute_contract(
+                self.admins[0].clone(),
+                contract_addr.clone(),
+                &ExecuteMsg::ICNSName(ICNSNameExecuteMsg::SetMinter {
+                    minter_address: self.registrar.to_string(),
+                }),
+                &[],
+            )
+            .unwrap();
+        }
 
         TestEnv {
             app,
