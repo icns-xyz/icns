@@ -1,8 +1,8 @@
 [package]
-name = "resolver"
-version = "0.1.0"
 authors = ["mattverse <mattpark1028@gmail.com>"]
 edition = "2021"
+name = "icns-resolver"
+version = "0.1.0"
 
 exclude = [
   # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
@@ -16,15 +16,15 @@ exclude = [
 crate-type = ["cdylib", "rlib"]
 
 [profile.release]
-opt-level = 3
-debug = false
-rpath = false
-lto = true
-debug-assertions = false
 codegen-units = 1
-panic = 'abort'
+debug = false
+debug-assertions = false
 incremental = false
+lto = true
+opt-level = 3
 overflow-checks = true
+panic = 'abort'
+rpath = false
 
 [features]
 # for more explicit tests, cargo test --features=backtraces
@@ -40,28 +40,24 @@ optimize = """docker run --rm -v "$(pwd)":/code \
 """
 
 [dependencies]
+bech32 = "0.9.1"
+cosmwasm-crypto = "1.1.3"
 cosmwasm-schema = "1.1.3"
 cosmwasm-std = "1.1.3"
 cosmwasm-storage = "1.1.3"
-cosmwasm-crypto = "1.1.3"
 cw-storage-plus = "0.15.1"
 cw2 = "0.15.1"
-schemars = "0.8.10"
-subtle-encoding = { version = "0.5", features = ["bech32-preview"] }
-serde = { version = "1.0.145", default-features = false, features = ["derive"] }
-thiserror = { version = "1.0.31" }
-icns-name-nft =  { path = "../name_nft", features = ["library"]}
 cw721 = {workspace = true}
-sha2 = "0.10"
 hex-literal = "0.3.1"
+icns-name-nft = {path = "../name-nft", features = ["library"]}
 ripemd = "0.1.3"
-bech32 = "0.9.1"
 base64 = "0.13.1"
-
-
-
+schemars = "0.8.10"
+serde = {version = "1.0.145", default-features = false, features = ["derive"]}
+sha2 = "0.10"
+subtle-encoding = {version = "0.5", features = ["bech32-preview"]}
+thiserror = {version = "1.0.31"}
 
 [dev-dependencies]
 cw-multi-test = "0.15.1"
 cw721-base = {workspace = true, features = ["library"]}
-

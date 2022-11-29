@@ -1,13 +1,13 @@
 #![cfg(test)]
 
 use crate::{
+    error::ContractError,
     msg::{AdminResponse, ExecuteMsg, ICNSNameExecuteMsg},
     tests::helpers::{TestEnv, TestEnvBuilder},
     QueryMsg,
 };
 
 use cosmwasm_std::Addr;
-use cw721_base::ContractError;
 use cw_multi_test::{BasicApp, Executor};
 
 #[test]
@@ -39,7 +39,7 @@ fn only_admin_can_add_remove_new_admin() {
         app.execute_contract(
             sender,
             contract_addr.clone(),
-            &ExecuteMsg::ICNSName(ICNSNameExecuteMsg::AddAdmin{ admin_address }),
+            &ExecuteMsg::ICNSName(ICNSNameExecuteMsg::AddAdmin { admin_address }),
             &[],
         )
     };
@@ -58,7 +58,7 @@ fn only_admin_can_add_remove_new_admin() {
     let err = add_admin(&mut app, new_admin.clone(), new_admin.to_string()).unwrap_err();
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
-        &ContractError::Unauthorized {}
+        &cw721_base::ContractError::Unauthorized {}.into()
     );
 
     assert_eq!(get_admin(&app), admins_string);
@@ -67,7 +67,7 @@ fn only_admin_can_add_remove_new_admin() {
     let err = add_admin(&mut app, registrar.clone(), new_admin.to_string()).unwrap_err();
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
-        &ContractError::Unauthorized {}
+        &cw721_base::ContractError::Unauthorized {}.into()
     );
     assert_eq!(get_admin(&app), admins_string);
 
@@ -80,7 +80,7 @@ fn only_admin_can_add_remove_new_admin() {
     add_admin(&mut app, admins[0].clone(), new_admin.to_string()).unwrap_err();
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
-        &ContractError::Unauthorized {}
+        &cw721_base::ContractError::Unauthorized {}.into()
     );
 
     // now we test removing admin
@@ -89,21 +89,20 @@ fn only_admin_can_add_remove_new_admin() {
     remove_admin(&mut app, registrar, new_admin.to_string()).unwrap_err();
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
-        &ContractError::Unauthorized {}
+        &cw721_base::ContractError::Unauthorized {}.into()
     );
 
     // try removing a non admin, it should fail
     remove_admin(&mut app, admins[0].clone(), String::from("non-admin")).unwrap_err();
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
-        &ContractError::Unauthorized {}
+        &cw721_base::ContractError::Unauthorized {}.into()
     );
 
     // remove admin by admin should succeed
     remove_admin(&mut app, admins[0].clone(), new_admin.to_string()).unwrap();
-    
+
     // remove new_admin from the admins_string vec
     admins_string.retain(|x| x != &new_admin.to_string());
     assert_eq!(get_admin(&app), admins_string);
 }
-

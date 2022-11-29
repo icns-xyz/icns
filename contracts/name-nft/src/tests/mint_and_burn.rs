@@ -1,6 +1,7 @@
 #![cfg(test)]
 
 use crate::{
+    error::ContractError,
     msg::{ExecuteMsg, ICNSNameExecuteMsg},
     tests::helpers::{TestEnv, TestEnvBuilder},
     QueryMsg,
@@ -8,7 +9,7 @@ use crate::{
 
 use cosmwasm_std::{Addr, Empty, StdError, StdResult};
 use cw721::OwnerOfResponse;
-use cw721_base::{ContractError, ExecuteMsg as CW721BaseExecuteMsg, Extension, MintMsg};
+use cw721_base::{ExecuteMsg as CW721BaseExecuteMsg, Extension, MintMsg};
 use cw_multi_test::{BasicApp, Executor};
 
 #[test]
@@ -64,9 +65,12 @@ fn can_not_mint_until_minter_is_set() {
 
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
-        &ContractError::Std(StdError::NotFound {
-            kind: "cosmwasm_std::addresses::Addr".to_string()
-        })
+        &ContractError::CW721Base(
+            StdError::NotFound {
+                kind: "cosmwasm_std::addresses::Addr".to_string()
+            }
+            .into()
+        )
     );
 
     // non-admin can't set minter
@@ -83,7 +87,7 @@ fn can_not_mint_until_minter_is_set() {
 
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
-        &ContractError::Unauthorized {}
+        &cw721_base::ContractError::Unauthorized {}.into()
     );
 
     // set minter to registrar
@@ -111,6 +115,56 @@ fn can_not_mint_until_minter_is_set() {
     );
 }
 
+#[test]
+fn can_not_name_with_dot() {
+    let TestEnv {
+        mut app,
+        admins,
+        contract_addr,
+        registrar,
+        ..
+    } = TestEnvBuilder::default().with_transferrable(false).build();
+
+    let mint = |app: &mut BasicApp, sender: Addr, name: String, owner: String| {
+        app.execute_contract(
+            sender,
+            contract_addr.clone(),
+            &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+                token_id: name,
+                owner,
+                token_uri: None,
+                extension: None,
+            })),
+            &[],
+        )
+    };
+
+    let random_person = Addr::unchecked("random_person");
+    let name = "bob.dylan";
+
+    // set minter to registrar
+    app.execute_contract(
+        admins[0].clone(),
+        contract_addr.clone(),
+        &ExecuteMsg::ICNSName(ICNSNameExecuteMsg::SetMinter {
+            minter_address: registrar.to_string(),
+        }),
+        &[],
+    )
+    .unwrap();
+
+    let err = mint(
+        &mut app,
+        registrar,
+        name.to_string(),
+        random_person.to_string(),
+    )
+    .unwrap_err();
+    assert_eq!(
+        err.downcast_ref::<ContractError>().unwrap(),
+        &ContractError::InvalidName {}
+    );
+}
 #[test]
 fn only_registrar_can_mint() {
     let TestEnv {
@@ -164,7 +218,7 @@ fn only_registrar_can_mint() {
     .unwrap_err();
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
-        &ContractError::Unauthorized {}
+        &cw721_base::ContractError::Unauthorized {}.into()
     );
 
     assert_eq!(owner(&app, name.to_string()).unwrap_err(), not_found_err);
@@ -179,7 +233,7 @@ fn only_registrar_can_mint() {
     .unwrap_err();
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
-        &ContractError::Unauthorized {}
+        &cw721_base::ContractError::Unauthorized {}.into()
     );
 
     assert_eq!(owner(&app, name.to_string()).unwrap_err(), not_found_err);
@@ -220,6 +274,6 @@ fn burning_is_not_allowed() {
 
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
-        &ContractError::Unauthorized {}
+        &cw721_base::ContractError::Unauthorized {}.into()
     );
 }

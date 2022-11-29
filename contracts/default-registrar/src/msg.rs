@@ -1,12 +1,12 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::Decimal;
+use cosmwasm_std::{Binary, Decimal};
 
 /// Message type for `instantiate` entry_point
 // TODO: change this to array
 #[cw_serde]
 pub struct InstantiateMsg {
     pub name_nft_addr: String,
-    pub verifier_pubkeys: Vec<String>,
+    pub verifier_pubkeys: Vec<Binary>,
     pub verification_threshold: Decimal,
 }
 
@@ -20,10 +20,10 @@ pub enum ExecuteMsg {
         verifications: Vec<Verification>,
     },
     AddVerifier {
-        verifier_addr: String,
+        verifier_pubkey: Binary,
     },
     RemoveVerifier {
-        verifier_addr: String,
+        verifier_pubkey: Binary,
     },
     SetVerificationThreshold {
         threshold: Decimal,
@@ -33,8 +33,8 @@ pub enum ExecuteMsg {
 pub struct QueryMsg;
 #[cw_serde]
 pub struct Verification {
-    pub public_key: String,
-    pub signature: String,
+    pub public_key: Binary,
+    pub signature: Binary,
 }
 
 #[cw_serde]

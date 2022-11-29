@@ -1,18 +1,18 @@
 use cosmwasm_std::{DepsMut, Response, StdResult};
-use cw721_base::ContractError;
 
 use crate::{
     checks::check_admin,
+    error::ContractError,
     state::{Config, CONFIG},
     ICNSNameNFTContract,
 };
 
-pub fn add_admin(admin: &str, deps: DepsMut) -> Result<Response, cw721_base::ContractError> {
+pub fn add_admin(admin: &str, deps: DepsMut) -> Result<Response, ContractError> {
     // check that admin does not already exist
     let config = CONFIG.load(deps.storage)?;
     for existing_admin in config.admins {
         if existing_admin == deps.api.addr_validate(admin)? {
-            return Err(cw721_base::ContractError::Unauthorized {});
+            return Err(cw721_base::ContractError::Unauthorized {}.into());
         }
     }
 
@@ -26,7 +26,7 @@ pub fn add_admin(admin: &str, deps: DepsMut) -> Result<Response, cw721_base::Con
         .add_attribute("admin", admin))
 }
 
-pub fn remove_admin(admin: &str, deps: DepsMut) -> Result<Response, cw721_base::ContractError> {
+pub fn remove_admin(admin: &str, deps: DepsMut) -> Result<Response, ContractError> {
     let admin_addr = deps.api.addr_validate(admin)?;
     // check that admin exists
     check_admin(deps.as_ref(), &admin_addr)?;
@@ -42,10 +42,7 @@ pub fn remove_admin(admin: &str, deps: DepsMut) -> Result<Response, cw721_base::
         .add_attribute("admin", admin))
 }
 
-pub fn set_transferrable(
-    transferrable: bool,
-    deps: DepsMut,
-) -> Result<Response, cw721_base::ContractError> {
+pub fn set_transferrable(transferrable: bool, deps: DepsMut) -> Result<Response, ContractError> {
     CONFIG.update(deps.storage, |config| -> StdResult<_> {
         Ok(Config {
             transferrable,

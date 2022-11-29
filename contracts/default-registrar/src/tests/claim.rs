@@ -1,16 +1,15 @@
 #![cfg(test)]
 
-use cosmrs::{
-    bip32,
-    crypto::secp256k1::SigningKey,
-    tendermint::{serializers::bytes::base64string, signature::Secp256k1Signature},
-};
-use cosmwasm_std::{from_slice, Addr, Binary, Decimal, Empty, StdError, StdResult};
+use cosmrs::{bip32, crypto::secp256k1::SigningKey, tendermint::signature::Secp256k1Signature};
+use cosmwasm_std::{Addr, Binary, Decimal, Empty, StdError, StdResult};
 use cw721::OwnerOfResponse;
 use cw_multi_test::{BasicApp, Contract, ContractWrapper, Executor};
 use icns_name_nft::msg::ICNSNameExecuteMsg;
 
-use crate::msg::{ExecuteMsg, InstantiateMsg, Verification, VerifyingMsg};
+use crate::{
+    msg::{ExecuteMsg, InstantiateMsg, Verification},
+    ContractError,
+};
 
 pub fn name_nft_contract() -> Box<dyn Contract<Empty>> {
     let contract = ContractWrapper::new(
@@ -91,11 +90,10 @@ fn claim_name() {
         from_mnemonic("prefer forget visit mistake mixture feel eyebrow autumn shop pair address airport diesel street pass vague innocent poem method awful require hurry unhappy shoulder", derivation_path)
     };
 
-    let base64_pubkey =
-        |verifier: &SigningKey| Binary(verifier.public_key().to_bytes()).to_base64();
+    let base64_pubkey = |verifier: &SigningKey| Binary(verifier.public_key().to_bytes());
 
     let base64_signature =
-        |signature: &Secp256k1Signature| Binary(signature.to_der().as_bytes().to_vec()).to_base64();
+        |signature: &Secp256k1Signature| Binary(signature.to_der().as_bytes().to_vec());
 
     let verify_all = |verifying_msg: &str, verifiers: Vec<SigningKey>| -> Vec<Verification> {
         verifiers
@@ -139,16 +137,144 @@ fn claim_name() {
 
     let bob = Addr::unchecked("bobaddr");
     let bob_name = "bob";
+    let multitest_chain_id = "cosmos-testnet-14002";
 
-    let verifying_msg = format!(
-        r#"{{"name":"{bob_name}","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"cosmos-testnet-14002"}}"#,
-    );
-
+    // "bob" shouldn't be owned by anyone at first
     assert_eq!(
         owner(&app, bob_name.to_string()).unwrap_err(),
         StdError::GenericErr {
             msg: "Querier contract error: cw721_base::state::TokenInfo<core::option::Option<cosmwasm_std::results::empty::Empty>> not found".to_string()
         }
+    );
+
+    // execute claim with wrong verifying msg form
+    let verifying_msg = format!(r#"{{"name": "{bob_name}"}}"#,);
+
+    let err = app
+        .execute_contract(
+            bob.clone(),
+            registrar_contract_addr.clone(),
+            &ExecuteMsg::Claim {
+                name: bob_name.to_string(),
+                verifying_msg: verifying_msg.clone(),
+                verifications: verify_all(&verifying_msg, vec![verifier1(), verifier3()]),
+            },
+            &[],
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        err.downcast_ref::<ContractError>().unwrap(),
+        &ContractError::Std(StdError::ParseErr {
+            target_type: "icns_default_registrar::msg::VerifyingMsg".to_string(),
+            msg: "missing field `claimer`".to_string()
+        })
+    );
+
+    // execute claim with wrong verifying msg info
+    let verifying_msg = format!(
+        r#"{{"name":"alice","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}"}}"#,
+    );
+
+    let err = app
+        .execute_contract(
+            bob.clone(),
+            registrar_contract_addr.clone(),
+            &ExecuteMsg::Claim {
+                name: bob_name.to_string(),
+                verifying_msg: verifying_msg.clone(),
+                verifications: verify_all(&verifying_msg, vec![verifier1(), verifier3()]),
+            },
+            &[],
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        err.downcast_ref::<ContractError>().unwrap(),
+        &ContractError::InvalidVerifyingMessage {
+            msg: "name mismatched: expected `bob` but got `alice`".to_string(),
+        }
+    );
+
+    // execute claim with verification from non-verifier
+    let verifying_msg = format!(
+        r#"{{"name":"{bob_name}","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}"}}"#,
+    );
+
+    let err = app
+        .execute_contract(
+            bob.clone(),
+            registrar_contract_addr.clone(),
+            &ExecuteMsg::Claim {
+                name: bob_name.to_string(),
+                verifying_msg: verifying_msg.clone(),
+                verifications: verify_all(&verifying_msg, vec![verifier1(), non_verifier()]),
+            },
+            &[],
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        err.downcast_ref::<ContractError>().unwrap(),
+        &ContractError::NotAVerifierPublicKey {
+            public_key: Binary(non_verifier().public_key().to_bytes())
+        }
+    );
+
+    // execute claim with non passing verification below threshold
+    let verifying_msg = format!(
+        r#"{{"name":"{bob_name}","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}"}}"#,
+    );
+
+    let err = app
+        .execute_contract(
+            bob.clone(),
+            registrar_contract_addr.clone(),
+            &ExecuteMsg::Claim {
+                name: bob_name.to_string(),
+                verifying_msg: verifying_msg.clone(),
+                verifications: verify_all(&verifying_msg, vec![verifier1()]),
+            },
+            &[],
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        err.downcast_ref::<ContractError>().unwrap(),
+        &ContractError::ValidVerificationIsBelowThreshold {
+            expected_over: Decimal::percent(50),
+            actual: Decimal::percent(25)
+        }
+    );
+
+    // execute claim with . in name
+    let bob_name_with_dot = "bob.dylan";
+    let verifying_msg = format!(
+        r#"{{"name":"{bob_name_with_dot}","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}"}}"#,
+    );
+
+    let err = app
+        .execute_contract(
+            bob.clone(),
+            registrar_contract_addr.clone(),
+            &ExecuteMsg::Claim {
+                name: bob_name_with_dot.to_string(),
+                verifying_msg: verifying_msg.clone(),
+                verifications: verify_all(&verifying_msg, vec![verifier1(), verifier2()]),
+            },
+            &[],
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        err.downcast_ref::<icns_name_nft::error::ContractError>()
+            .unwrap(),
+        &icns_name_nft::error::ContractError::InvalidName {}
+    );
+
+    // execute claim with passing verification
+    let verifying_msg = format!(
+        r#"{{"name":"{bob_name}","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}"}}"#,
     );
 
     app.execute_contract(
@@ -157,17 +283,35 @@ fn claim_name() {
         &ExecuteMsg::Claim {
             name: bob_name.to_string(),
             verifying_msg: verifying_msg.clone(),
-            verifications: verify_all(&verifying_msg, vec![verifier1(), verifier3()]),
+            verifications: verify_all(&verifying_msg, vec![verifier4(), verifier3()]),
         },
         &[],
     )
     .unwrap();
 
-    assert_eq!(owner(&app, bob_name.to_string()).unwrap(), bob.to_string());
+    assert_eq!(owner(&app, bob_name.to_string()).unwrap(), bob);
 
-    // execute claim with wrong msg
-    // execute claim with non passing verification
-    // execute claim with passing verification
-    // check if nft gets minted properly
     // execute claim with passing but same name -> should error
+    let verifying_msg = format!(
+        r#"{{"name":"{bob_name}","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}"}}"#,
+    );
+
+    let err = app
+        .execute_contract(
+            bob,
+            registrar_contract_addr,
+            &ExecuteMsg::Claim {
+                name: bob_name.to_string(),
+                verifying_msg: verifying_msg.clone(),
+                verifications: verify_all(&verifying_msg, vec![verifier4(), verifier3()]),
+            },
+            &[],
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        err.downcast_ref::<icns_name_nft::error::ContractError>()
+            .unwrap(),
+        &(cw721_base::ContractError::Claimed {}.into())
+    );
 }
