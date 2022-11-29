@@ -166,7 +166,7 @@ fn claim_name() {
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
         &ContractError::Std(StdError::ParseErr {
-            target_type: "default_registrar::msg::VerifyingMsg".to_string(),
+            target_type: "icns_default_registrar::msg::VerifyingMsg".to_string(),
             msg: "missing field `claimer`".to_string()
         })
     );

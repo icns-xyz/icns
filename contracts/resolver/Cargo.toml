@@ -1,7 +1,7 @@
 [package]
 authors = ["mattverse <mattpark1028@gmail.com>"]
 edition = "2021"
-name = "resolver"
+name = "icns-resolver"
 version = "0.1.0"
 
 exclude = [

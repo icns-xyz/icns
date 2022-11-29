@@ -1,7 +1,7 @@
 [package]
 authors = ["mattverse <mattpark1028@gmail.com>"]
 edition = "2021"
-name = "default-registrar"
+name = "icns-default-registrar"
 version = "0.1.0"
 
 exclude = [
@@ -48,8 +48,8 @@ cw-storage-plus = "0.13.2"
 cw-utils = "1.0.0"
 cw2 = "0.13.2"
 icns-name-nft = {path = "../name-nft", features = ["library"]}
+icns-resolver = {version = "0.1.0", path = "../resolver", features = ["library"]}
 itertools = "0.10.5"
-resolver = {version = "0.1.0", path = "../resolver", features = ["library"]}
 schemars = "0.8.8"
 serde = {version = "1.0.137", default-features = false, features = ["derive"]}
 sha2 = "0.10.6"

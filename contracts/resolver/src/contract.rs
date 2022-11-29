@@ -14,10 +14,10 @@ use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, GetAddressResponse, GetAddressesResponse, InstantiateMsg, QueryMsg};
 use crate::state::{Config, ADDRESSES, CONFIG};
 use cw721::OwnerOfResponse;
-use icns_name_nft::msg::{QueryMsg as QueryMsgName, AdminResponse};
+use icns_name_nft::msg::{AdminResponse, QueryMsg as QueryMsgName};
 
 // version info for migration info
-const CONTRACT_NAME: &str = "crates.io:resolver";
+const CONTRACT_NAME: &str = "crates.io:icns-resolver";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -115,7 +115,8 @@ pub fn is_admin(deps: Deps, address: String) -> Result<bool, ContractError> {
         msg: to_binary(&query_msg)?,
     }))?;
 
-    Ok(res.admins
+    Ok(res
+        .admins
         .into_iter()
         .find(|admin| admin.eq(&address))
         .is_some())
@@ -162,7 +163,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             user_name,
             bech32_prefix,
         } => to_binary(&query_address(deps, env, user_name, bech32_prefix)?),
-        QueryMsg::Admin {  } => to_binary(&query_admin(deps)?),
+        QueryMsg::Admin {} => to_binary(&query_admin(deps)?),
         // TODO: add query to query directly using ICNS (e.g req: tony.eth)
     }
 }
@@ -187,20 +188,22 @@ fn query_address(
     bech32_prefix: String,
 ) -> StdResult<GetAddressResponse> {
     let address = ADDRESSES.may_load(deps.storage, (user_name, bech32_prefix))?;
-    
+
     match address {
         Some(addr) => Ok(GetAddressResponse { address: addr }),
-        None => Ok(GetAddressResponse { address: "".to_string() }),
+        None => Ok(GetAddressResponse {
+            address: "".to_string(),
+        }),
     }
 }
 
-fn query_admin(
-    deps: Deps,
-) -> StdResult<AdminResponse> {
-    // unwrap this 
+fn query_admin(deps: Deps) -> StdResult<AdminResponse> {
+    // unwrap this
     let result = admin(deps);
     match result {
         Ok(admins) => Ok(AdminResponse { admins }),
-        Err(_) => Ok(AdminResponse { admins: vec![String::from("")] }),
+        Err(_) => Ok(AdminResponse {
+            admins: vec![String::from("")],
+        }),
     }
 }
