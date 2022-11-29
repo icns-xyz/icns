@@ -1,9 +1,9 @@
 #![cfg(test)]
 
 use crate::{
-    msg::{QueryMsg, GetAddressesResponse},
+    msg::{QueryMsg, GetAddressesResponse, AddressInfo},
     msg::{AdminResponse, ExecuteMsg},
-    ContractError, contract::is_admin,
+    ContractError, contract::is_admin, tests::helpers::default_set_record,
 };
 
 use cosmwasm_std::{Addr, Empty, StdResult};
@@ -47,12 +47,7 @@ fn only_admin_can_set_record() {
     .execute_contract(
         Addr::unchecked("non_admin".to_string()), 
         resolver_contract_addr.clone(),
-        &ExecuteMsg::SetRecord {
-                user_name: "bob".to_string(),
-                addresses: vec![
-                    ("juno".to_string(), "juno1kn27c8fu9qjmcn9hqytdzlml55mcs7dl2wu2ts".to_string()),
-                ],
-            }, 
+        &default_set_record(),
         &[],
     ).unwrap_err();
     assert_eq!(err.downcast::<ContractError>().unwrap(), ContractError::Unauthorized {});
@@ -62,12 +57,7 @@ fn only_admin_can_set_record() {
     .execute_contract(
         Addr::unchecked(admin1.clone()), 
         resolver_contract_addr.clone(),
-        &ExecuteMsg::SetRecord {
-                user_name: "bob".to_string(),
-                addresses: vec![
-                    ("juno".to_string(), "juno1kn27c8fu9qjmcn9hqytdzlml55mcs7dl2wu2ts".to_string()),
-                ],
-            }, 
+        &default_set_record(), 
         &[],
     ).unwrap();
 
@@ -121,12 +111,7 @@ fn only_owner_can_set_record() {
     .execute_contract(
         Addr::unchecked("non_owner".to_string()), 
         resolver_contract_addr.clone(),
-        &ExecuteMsg::SetRecord {
-                user_name: "bob".to_string(),
-                addresses: vec![
-                    ("juno".to_string(), "juno1kn27c8fu9qjmcn9hqytdzlml55mcs7dl2wu2ts".to_string()),
-                ],
-            }, 
+        &default_set_record(), 
         &[],
     ).unwrap_err();
     assert_eq!(err.downcast::<ContractError>().unwrap(), ContractError::Unauthorized {});
@@ -136,12 +121,7 @@ fn only_owner_can_set_record() {
     .execute_contract(
         Addr::unchecked(admin1.clone()), 
         resolver_contract_addr.clone(),
-        &ExecuteMsg::SetRecord {
-                user_name: "bob".to_string(),
-                addresses: vec![
-                    ("juno".to_string(), "juno1kn27c8fu9qjmcn9hqytdzlml55mcs7dl2wu2ts".to_string()),
-                ],
-            }, 
+        &default_set_record(), 
         &[],
     ).unwrap();
 }

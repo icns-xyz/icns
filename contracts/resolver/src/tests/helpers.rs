@@ -1,7 +1,7 @@
 use std::ops::Add;
 
-use cosmwasm_std::Empty;
-use crate::{entry, msg::InstantiateMsg, contract::execute, contract::instantiate, contract::query, msg::ExecuteMsg};
+use cosmwasm_std::{Empty, Binary};
+use crate::{entry, msg::{InstantiateMsg, AddressInfo}, contract::execute, contract::instantiate, contract::query, msg::{ExecuteMsg, self}};
 // import execute
 
 
@@ -78,6 +78,24 @@ pub fn name_nft_contract() -> Box<dyn Contract<Empty>> {
     Box::new(contract)
 }
 
+pub fn default_set_record() -> ExecuteMsg {
+    let signature = Binary::from_base64("69c865c686a4b141297fee846e16a0f9c8df965fe64abea4513f653c8a3b385019f81c93081a2f3c0930c5cd3265bf621af863f48a2a9a54f8883d4a54d2c3d2").unwrap();
+    let pub_key = Binary::from_base64("02394bc53633366a2ab9b5d697a94c8c0121cc5e3f0d554a63167edb318ceae8bc").unwrap();
+
+    ExecuteMsg::SetRecord {
+        user_name: "bob".to_string(),
+        address_info: AddressInfo{
+            bech32_address: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string(),
+            address_hash: msg::AddressHash::SHA256,
+            pub_key,
+            signature,
+        },
+        bech32_prefix: "osmo".to_string(),
+        replace_primary_if_exists: false,
+        signature_salt: 1323124,
+    }
+}   
+
 pub fn default_setting(
     admins: Vec<String>,
     registrar: String,
@@ -103,13 +121,7 @@ pub fn default_setting(
     app.execute_contract(
         Addr::unchecked(admins[0].clone()),
         resolver_contract_addr.clone(),
-        &ExecuteMsg::SetRecord {
-                user_name: "bob".to_string(),
-                addresses: vec![
-                    ("juno".to_string(), "juno1kn27c8fu9qjmcn9hqytdzlml55mcs7dl2wu2ts".to_string()),
-                    ("cosmos".to_string(), "cosmos1gf3dm2mvqhymts6ksrstlyuu2m8pw6dhv43wpe".to_string()),
-                ],
-            }, 
+        &default_set_record(), 
         &[],
     ).unwrap();
 

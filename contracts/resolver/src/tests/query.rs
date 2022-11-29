@@ -3,7 +3,7 @@
 use crate::{
     msg::{QueryMsg, GetAddressesResponse, GetAddressResponse},
     msg::{AdminResponse, ExecuteMsg},
-    ContractError, contract::is_admin,
+    ContractError, contract::is_admin, tests::helpers::default_set_record,
 };
 
 use cosmwasm_std::{Addr, Empty, StdResult};
@@ -89,12 +89,7 @@ fn query_addresses() {
     app.execute_contract(
         Addr::unchecked(admins[0].clone()),
         resolver_contract_addr.clone(),
-        &ExecuteMsg::SetRecord {
-                user_name: "alice".to_string(),
-                addresses: vec![
-                    ("osmo".to_string(), "osmo1t8qckan2yrygq7kl9apwhzfalwzgc242lk02ch".to_string()),
-                ],
-            }, 
+        &default_set_record(), 
         &[],
     ).unwrap();
 
@@ -176,12 +171,7 @@ fn query_address() {
     app.execute_contract(
         Addr::unchecked(admins[0].clone()),
         resolver_contract_addr.clone(),
-        &ExecuteMsg::SetRecord {
-                user_name: "alice".to_string(),
-                addresses: vec![
-                    ("osmo".to_string(), "osmo1t8qckan2yrygq7kl9apwhzfalwzgc242lk02ch".to_string()),
-                ],
-            }, 
+        &default_set_record(), 
         &[],
     ).unwrap();
 

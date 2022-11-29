@@ -1,6 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::Order::Ascending;
+use cosmwasm_crypto::{secp256k1_verify};
+
 
 use cosmwasm_std::{
     from_binary, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryRequest, Response,
@@ -8,11 +10,13 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use subtle_encoding::bech32;
+
 // use cw2::set_contract_version;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, GetAddressResponse, GetAddressesResponse, InstantiateMsg, QueryMsg};
-use crate::state::{Config, ADDRESSES, CONFIG};
+use crate::msg::{ExecuteMsg, GetAddressResponse, GetAddressesResponse, InstantiateMsg, QueryMsg, AddressInfo, AddressHash};
+use crate::state::{Config, ADDRESSES, REVERSE_RESOLVER, CONFIG, SIGNATURE};
+use crate::crypto::{pubkey_to_bech32_address, create_adr36_message, adr36_verification};
 use cw721::OwnerOfResponse;
 use icns_name_nft::msg::{QueryMsg as QueryMsgName, AdminResponse};
 
@@ -47,17 +51,32 @@ pub fn execute(
     match msg {
         ExecuteMsg::SetRecord {
             user_name,
-            addresses,
-        } => execute_set_record(deps, env, info, user_name, addresses),
+            bech32_prefix,
+            address_info,
+            replace_primary_if_exists,
+            signature_salt,
+        } => execute_set_record(
+            deps,
+            env,
+            info,
+            user_name,
+            bech32_prefix,
+            address_info,
+            replace_primary_if_exists,
+            signature_salt,
+        ),
     }
 }
 
 pub fn execute_set_record(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     user_name: String,
-    addresses: Vec<(String, String)>,
+    bech32_prefix: String,
+    address_info: AddressInfo,
+    replace_primary_if_exists: bool,
+    signature_salt: u128,
 ) -> Result<Response, ContractError> {
     // check if the msg sender is a registrar or admin. If not, return err
     let is_admin = is_admin(deps.as_ref(), info.sender.to_string())?;
@@ -68,38 +87,76 @@ pub fn execute_set_record(
         return Err(ContractError::Unauthorized {});
     }
 
-    // do a sanity check on the given addresses for the different bech32 prefixes
-    // We do two checks here:
-    // 1. Check that the given addresses are valid bech32 addresses
-    // 2. Check if they match the given prefixes
-    // if the sanity check fails, we return an error
-    for (prefix, address) in addresses.iter() {
-        let prefix_decoded = bech32::decode(address)
-            .map_err(|_| ContractError::Bech32DecodingErr {
-                addr: address.to_string(),
-            })?
-            .0;
-        if !prefix.eq(&prefix_decoded) {
-            return Err(ContractError::Bech32PrefixMismatch {
-                prefix: prefix.to_string(),
-                addr: address.to_string(),
-            });
+    // check address hash method, currently only sha256 is supported
+    if address_info.address_hash != AddressHash::SHA256 {
+        return Err(ContractError::HashMethodNotSupported {  });
+    }
+
+    // extract bech32 prefix from given address
+    let bech32_prefix_decoded = bech32::decode(address_info.bech32_address.clone())
+        .map_err(|_| ContractError::Bech32DecodingErr {
+            addr: address_info.bech32_address.to_string(),
+        })?
+        .0;
+
+    // first check if the user input for prefix + address is valid
+    if bech32_prefix != bech32_prefix_decoded {
+        return Err(ContractError::Bech32PrefixMismatch {
+            prefix: bech32_prefix.to_string(),
+            addr: address_info.bech32_address.to_string(),
+        });
+    }
+    
+    // do adr36 verification
+    let chain_id = "osmosis-1".to_string();
+    let contract_address = "osmo1cjta2pw3ltzsvy9phdvtvqprexclt0p3m9aj54".to_string();
+    adr36_verification(
+        deps.as_ref(),
+        user_name.clone(),
+        bech32_prefix.clone(),
+        address_info.clone(),
+        chain_id,
+        contract_address,
+        signature_salt
+    )?;
+
+    // check if the user_name already exists in the storage
+    // we do this check for the reverse resolver
+    let address = ADDRESSES.may_load(deps.storage, (user_name.clone(), bech32_prefix.clone()))?;
+    match address {
+        Some(_) => {
+            // if user name existed and replace_primary_if_exists is true, replace the primary address in reverse resolver
+            if replace_primary_if_exists {
+                REVERSE_RESOLVER.save(
+                    deps.storage, 
+                    address_info.bech32_address.clone(),
+                    &(user_name.clone(), bech32_prefix.clone()),
+                )?;
+            }
+        }
+        None => {
+            // and save the address directly as primary name for reverse resolver
+            REVERSE_RESOLVER.save(
+                deps.storage, 
+                address_info.bech32_address.clone(),
+                &(user_name.clone(), bech32_prefix.clone()),
+            )?;
         }
     }
 
-    // check if the user_name is already registered
-    let user_name_exists = query_addresses(deps.as_ref(), env, user_name.clone())?;
-    if !user_name_exists.addresses.is_empty() {
-        return Err(ContractError::UserAlreadyRegistered { name: user_name });
-    }
+    // now override the address in the storage
+    ADDRESSES.save(
+        deps.storage,
+        (user_name.clone(), bech32_prefix.clone()),
+        &address_info.bech32_address.clone()
+    )?;
 
-    for (bech32_prefix, address) in addresses {
-        ADDRESSES.save(
-            deps.storage,
-            (user_name.clone(), bech32_prefix.clone()),
-            &address,
-        )?;
-    }
+    // save signature to prevent replay attack
+    SIGNATURE.save(
+        deps.storage,
+        address_info.signature.as_slice(),
+        &true,
+    )?;
 
     Ok(Response::default())
 }

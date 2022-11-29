@@ -1,4 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::{Addr, Binary};
 
 use crate::state::Config;
 #[cw_serde]
@@ -11,9 +12,25 @@ pub struct InstantiateMsg {
 pub enum ExecuteMsg {
     SetRecord {
         user_name: String,
-        // tuple of (bech32 prefix, address)
-        addresses: Vec<(String, String)>,
+        bech32_prefix: String,
+        address_info: AddressInfo,
+        replace_primary_if_exists: bool,
+        signature_salt: u128,
     },
+}
+
+#[cw_serde]
+pub struct AddressInfo {
+    pub bech32_address: String,
+    pub address_hash: AddressHash,
+    pub pub_key: Binary,
+    pub signature: Binary,
+}
+
+#[cw_serde]
+pub enum AddressHash {
+    SHA256,
+    Keccak256,
 }
 
 #[cw_serde]
