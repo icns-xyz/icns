@@ -29,6 +29,7 @@ pub struct AddressInfo {
 }
 
 #[cw_serde]
+#[serde(untagged)]
 pub enum AddressHash {
     SHA256,
     Keccak256,

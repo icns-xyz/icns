@@ -1,4 +1,5 @@
 use std::ops::Add;
+use hex_literal::hex;
 
 use cosmwasm_std::{Empty, Binary};
 use crate::{entry, msg::{InstantiateMsg, AddressInfo}, contract::execute, contract::instantiate, contract::query, msg::{ExecuteMsg, self}};
@@ -79,8 +80,10 @@ pub fn name_nft_contract() -> Box<dyn Contract<Empty>> {
 }
 
 pub fn default_set_record() -> ExecuteMsg {
-    let signature = Binary::from_base64("69c865c686a4b141297fee846e16a0f9c8df965fe64abea4513f653c8a3b385019f81c93081a2f3c0930c5cd3265bf621af863f48a2a9a54f8883d4a54d2c3d2").unwrap();
-    let pub_key = Binary::from_base64("02394bc53633366a2ab9b5d697a94c8c0121cc5e3f0d554a63167edb318ceae8bc").unwrap();
+    let original_pubkey_vec = hex!("02394bc53633366a2ab9b5d697a94c8c0121cc5e3f0d554a63167edb318ceae8bc");
+    let original_signature_vec = hex!("69c865c686a4b141297fee846e16a0f9c8df965fe64abea4513f653c8a3b385019f81c93081a2f3c0930c5cd3265bf621af863f48a2a9a54f8883d4a54d2c3d2");
+    let pub_key = Binary::from(original_pubkey_vec);
+    let signature = Binary::from(original_signature_vec);
 
     ExecuteMsg::SetRecord {
         user_name: "bob".to_string(),
