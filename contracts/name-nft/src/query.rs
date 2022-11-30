@@ -21,6 +21,7 @@ pub fn is_admin(deps: Deps, addr: String) -> StdResult<IsAdminResponse> {
     // iterate over admins and convert to string vector
     let mut is_admin = false;
     for admin in admins {
+        // TODO: double check this is correctly comparable
         if admin == addr {
             is_admin = true;
             break;

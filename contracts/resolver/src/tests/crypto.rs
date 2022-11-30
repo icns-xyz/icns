@@ -1,18 +1,31 @@
+use cosmwasm_std::Binary;
 use hex_literal::hex;
-use subtle_encoding::{hex::decode as hex_decode};
+use subtle_encoding::{hex::{decode as hex_decode, self}};
 use ripemd::{Digest as RipemdDigest, Ripemd160};
 use sha2::Sha256;
 use std::ops::Deref;
 use cosmwasm_crypto::{secp256k1_verify};
 use bech32::ToBase32;
+use base64::{encode as base64_encode};
+use cosmwasm_std::testing::{mock_dependencies};
 
+use crate::{crypto::{pubkey_to_bech32_address, create_adr36_message, create_adr36_data, adr36_verification}, msg::AddressInfo};
+use crate::msg::AddressHash;
 
 #[test]
 fn pubkey_to_address() {
-    let original_hex = hex_decode("02394bc53633366a2ab9b5d697a94c8c0121cc5e3f0d554a63167edb318ceae8bc").unwrap();
+    let original_binary_vec = hex_decode("02394bc53633366a2ab9b5d697a94c8c0121cc5e3f0d554a63167edb318ceae8bc").unwrap();
 
-    let sha256 = Sha256::digest(original_hex);
+    // first check using pubkey_to_bech32_address method
+    let pub_key_binary =  Binary::from(original_binary_vec.clone());
+    let bech32_address = pubkey_to_bech32_address(pub_key_binary, "osmo".to_string());
+    assert_eq!(
+        bech32_address,
+        "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697"
+    );
 
+    // check each step of the method individually
+    let sha256 = Sha256::digest(original_binary_vec.clone());
     let result = Ripemd160::digest(sha256);
 
     assert_eq!(
@@ -26,7 +39,6 @@ fn pubkey_to_address() {
         bech32_address,
         "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697"
     );
-    
 }
 
 #[test]
@@ -52,4 +64,105 @@ fn secp256k1_verification() {
 
     let verify_result = secp256k1_verify(&hashed, &signature, &pub_key).unwrap();
     assert_eq!(verify_result, false);
+}
+
+#[test]
+fn create_valid_adr36_data() {
+    let user_name = "tony".to_string();
+    let bech32_prefix = "osmo".to_string();
+    let bech32_address = "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string();
+    let chain_id = "osmosis-1".to_string();
+    let contract_address = "osmo1cjta2pw3ltzsvy9phdvtvqprexclt0p3m9aj54".to_string();
+    let signature_salt = 1323124;
+
+    let message = create_adr36_data(
+        user_name,
+        bech32_prefix,
+        bech32_address,
+        chain_id,
+        contract_address,
+        signature_salt
+    );
+
+    let expected_message = "The following is the information for ICNS registration for tony.osmo.
+
+Chain id: osmosis-1
+Contract Address: osmo1cjta2pw3ltzsvy9phdvtvqprexclt0p3m9aj54
+Address: osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697
+Salt: 1323124".to_string();
+
+    let expected_base_64 = base64_encode(expected_message);
+    assert_eq!(
+        message,
+        expected_base_64
+    );
+}
+
+#[test]
+fn create_valid_adr36_message() {
+    let user_name = "tony".to_string();
+    let bech32_prefix = "osmo".to_string();
+    let bech32_address = "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string();
+    let chain_id = "osmosis-1".to_string();
+    let contract_address = "osmo1cjta2pw3ltzsvy9phdvtvqprexclt0p3m9aj54".to_string();
+    let signature_salt = 1323124;
+
+    let message = create_adr36_message(
+        user_name,
+        bech32_prefix,
+        bech32_address.clone(),
+        chain_id,
+        contract_address,
+        signature_salt
+    );
+
+    let message_prefix = "{\"account_number\":\"0\",\"chain_id\":\"\",\"fee\":{\"amount\":[],\"gas\":\"0\"},\"memo\":\"\",\"msgs\":[{\"type\":\"sign/MsgSignData\",\"value\":{\"data\":\"";
+    let data = "VGhlIGZvbGxvd2luZyBpcyB0aGUgaW5mb3JtYXRpb24gZm9yIElDTlMgcmVnaXN0cmF0aW9uIGZvciB0b255Lm9zbW8uCgpDaGFpbiBpZDogb3Ntb3Npcy0xCkNvbnRyYWN0IEFkZHJlc3M6IG9zbW8xY2p0YTJwdzNsdHpzdnk5cGhkdnR2cXByZXhjbHQwcDNtOWFqNTQKQWRkcmVzczogb3NtbzFkMmtoMnhhZW43YzB6djNoN3FubWdoaHdoc21tYXNzcWhxczY5NwpTYWx0OiAxMzIzMTI0".to_string();
+    let signer_prefix = "\",\"signer\":\"";
+    let signer = bech32_address.clone();
+    let message_suffix = "\"}}],\"sequence\":\"0\"}";
+
+    let expected_message = format!("{}{}{}{}{}", message_prefix, data, signer_prefix, signer, message_suffix);
+
+    assert_eq!(
+        message,
+        expected_message
+    );
+}
+
+#[test]
+fn adr36_verify() {
+    let user_name = "tony".to_string();
+    let bech32_prefix = "osmo".to_string();
+    let bech32_address = "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string();
+    let chain_id = "osmosis-1".to_string();
+    let contract_address = "osmo1cjta2pw3ltzsvy9phdvtvqprexclt0p3m9aj54".to_string();
+    let signature_salt = 1323124;
+    
+    let original_pubkey_vec = hex!("02394bc53633366a2ab9b5d697a94c8c0121cc5e3f0d554a63167edb318ceae8bc");
+    let original_signature_vec = hex!("69c865c686a4b141297fee846e16a0f9c8df965fe64abea4513f653c8a3b385019f81c93081a2f3c0930c5cd3265bf621af863f48a2a9a54f8883d4a54d2c3d2");
+    let pub_key = Binary::from(original_pubkey_vec);
+    let signature = Binary::from(original_signature_vec);
+
+    
+    let address_info = AddressInfo {
+        bech32_address, 
+        address_hash: AddressHash::SHA256,
+        pub_key: pub_key,
+        signature: signature
+    };
+
+    let deps = mock_dependencies();
+    let adr_verification = adr36_verification(
+        deps.as_ref(),
+        user_name,
+        bech32_prefix,
+        address_info,
+        chain_id,
+        contract_address,
+        signature_salt
+    ).is_err();
+    assert!(!adr_verification)
+    
+
 }

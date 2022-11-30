@@ -70,7 +70,7 @@ pub fn execute(
 
 pub fn execute_set_record(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     user_name: String,
     bech32_prefix: String,
@@ -108,8 +108,8 @@ pub fn execute_set_record(
     }
     
     // do adr36 verification
-    let chain_id = "osmosis-1".to_string();
-    let contract_address = "osmo1cjta2pw3ltzsvy9phdvtvqprexclt0p3m9aj54".to_string();
+    let chain_id = env.block.chain_id;
+    let contract_address = env.contract.address.to_string();
     adr36_verification(
         deps.as_ref(),
         user_name.clone(),

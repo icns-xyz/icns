@@ -44,8 +44,11 @@ pub fn adr36_verification(
         signature_salt
     ); 
 
+    let message_bytes = message.as_bytes();
+    let message_hash = Sha256::digest(message_bytes);
+
     // verify signature using secp256k1
-    let verified_result = secp256k1_verify(&message.as_bytes(), &address_info.signature, &address_info.pub_key)
+    let verified_result = secp256k1_verify(&message_hash, &address_info.signature, &address_info.pub_key)
        .map_err(|_| ContractError::SigntaureMisMatch {  })?;
     if !verified_result {
         return Err(ContractError::SigntaureMisMatch {  });
@@ -95,13 +98,13 @@ pub fn create_adr36_data(
     let address = bech32_address.clone();
     let salt = signature_salt.to_string();
 
-    let data_string = format!("
-    The following is the information for ICNS registration for {}.
+    let data_string = format!("The following is the information for ICNS registration for {}.
 
 Chain id: {}
 Contract Address: {}
 Address: {}
 Salt: {}", icns, chain_id, contract_address, address, salt);
+
     let data = base64_encode(data_string);
 
     return data

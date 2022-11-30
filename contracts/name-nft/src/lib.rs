@@ -144,6 +144,7 @@ pub mod entry {
             QueryMsg::Admin {} => to_binary(&admin(deps)?),
             QueryMsg::Transferrable {} => to_binary(&transferrable(deps)?),
             QueryMsg::IsAdmin { address } => to_binary(&is_admin(deps, address)?),
+            // TODO : add query for config
             _ => _query(deps, env, msg.into()),
         }
     }
