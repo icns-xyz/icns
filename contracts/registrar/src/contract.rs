@@ -14,8 +14,8 @@ use crate::checks::{
 };
 use crate::error::ContractError;
 use crate::msg::{
-    ExecuteMsg, InstantiateMsg, QueryMsg, Verification, VerificationThresholdResponse,
-    VerifierPubKeysResponse,
+    ExecuteMsg, InstantiateMsg, NameNFTAddressResponse, QueryMsg, Verification,
+    VerificationThresholdResponse, VerifierPubKeysResponse,
 };
 
 use icns_name_nft::msg::ExecuteMsg as NameNFTExecuteMsg;
@@ -109,6 +109,17 @@ pub fn execute(
             })?;
 
             Ok(Response::new().add_attribute("method", "update_verifier_pubkeys"))
+        }
+        ExecuteMsg::SetNameNFTAddress { name_nft_address } => {
+            check_send_from_admin(deps.as_ref(), &info.sender)?;
+            CONFIG.update(deps.storage, |config| -> Result<_, ContractError> {
+                Ok(Config {
+                    name_nft: deps.api.addr_validate(&name_nft_address)?,
+                    ..config
+                })
+            })?;
+
+            Ok(Response::new())
         }
     }
 }
@@ -258,6 +269,9 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, StdError> {
             verification_threshold_percentage: CONFIG
                 .load(deps.storage)?
                 .verification_threshold_percentage,
+        }),
+        QueryMsg::NameNFTAddress {} => to_binary(&NameNFTAddressResponse {
+            name_nft_address: CONFIG.load(deps.storage)?.name_nft.to_string(),
         }),
     }
 }

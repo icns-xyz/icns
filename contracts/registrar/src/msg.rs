@@ -28,14 +28,21 @@ pub enum ExecuteMsg {
     SetVerificationThreshold {
         threshold: Decimal,
     },
+    SetNameNFTAddress {
+        name_nft_address: String,
+    },
 }
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
     #[returns(VerifierPubKeysResponse)]
     VerifierPubKeys {},
+
     #[returns(VerificationThresholdResponse)]
     VerificationThreshold {},
+
+    #[returns(NameNFTAddressResponse)]
+    NameNFTAddress {},
 }
 
 #[cw_serde]
@@ -45,6 +52,11 @@ pub struct VerifierPubKeysResponse {
 #[cw_serde]
 pub struct VerificationThresholdResponse {
     pub verification_threshold_percentage: Decimal,
+}
+
+#[cw_serde]
+pub struct NameNFTAddressResponse {
+    pub name_nft_address: String,
 }
 
 #[cw_serde]
