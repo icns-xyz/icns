@@ -13,7 +13,10 @@ use crate::checks::{
     check_verification_pass_threshold, check_verifying_key,
 };
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, Verification, VerifierPubKeysResponse};
+use crate::msg::{
+    ExecuteMsg, InstantiateMsg, QueryMsg, Verification, VerificationThresholdResponse,
+    VerifierPubKeysResponse,
+};
 
 use icns_name_nft::msg::ExecuteMsg as NameNFTExecuteMsg;
 
@@ -250,6 +253,11 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, StdError> {
     match msg {
         QueryMsg::VerifierPubKeys {} => to_binary(&VerifierPubKeysResponse {
             verifier_pubkeys: CONFIG.load(deps.storage)?.verifier_pubkeys,
+        }),
+        QueryMsg::VerificationThreshold {} => to_binary(&VerificationThresholdResponse {
+            verification_threshold_percentage: CONFIG
+                .load(deps.storage)?
+                .verification_threshold_percentage,
         }),
     }
 }

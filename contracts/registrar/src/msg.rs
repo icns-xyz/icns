@@ -34,11 +34,17 @@ pub enum ExecuteMsg {
 pub enum QueryMsg {
     #[returns(VerifierPubKeysResponse)]
     VerifierPubKeys {},
+    #[returns(VerificationThresholdResponse)]
+    VerificationThreshold {},
 }
 
 #[cw_serde]
 pub struct VerifierPubKeysResponse {
     pub verifier_pubkeys: Vec<Binary>,
+}
+#[cw_serde]
+pub struct VerificationThresholdResponse {
+    pub verification_threshold_percentage: Decimal,
 }
 
 #[cw_serde]

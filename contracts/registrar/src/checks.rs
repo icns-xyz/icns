@@ -5,7 +5,7 @@ use cosmrs::{
 use cosmwasm_std::{
     from_slice, to_binary, Addr, Binary, Decimal, Deps, Env, MessageInfo, QueryRequest, WasmQuery,
 };
-use cw_utils::ThresholdError;
+
 use icns_name_nft::msg::{AdminResponse, QueryMsg as NameNFTQueryMsg};
 use itertools::Itertools;
 
@@ -137,9 +137,9 @@ pub fn check_signature(signature: &[u8]) -> Result<Secp256k1Signature, ContractE
     Secp256k1Signature::from_der(signature).map_err(|_| ContractError::InvalidSignatureFormat {})
 }
 
-pub fn check_valid_threshold(percent: &Decimal) -> Result<(), ThresholdError> {
-    if *percent > Decimal::percent(100) || *percent < Decimal::percent(50) {
-        Err(ThresholdError::InvalidThreshold {})
+pub fn check_valid_threshold(percent: &Decimal) -> Result<(), ContractError> {
+    if *percent > Decimal::percent(100) || *percent < Decimal::percent(0) {
+        Err(ContractError::InvalidThreshold {})
     } else {
         Ok(())
     }

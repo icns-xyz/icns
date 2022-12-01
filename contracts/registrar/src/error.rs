@@ -53,4 +53,7 @@ pub enum ContractError {
 
     #[error("Verification signatures must be unique: `{signature}` is duplicated")]
     DuplicatedVerification { signature: Binary },
+
+    #[error("Invalid voting threshold percentage, must be in the 0-1.0 range")]
+    InvalidThreshold {},
 }
