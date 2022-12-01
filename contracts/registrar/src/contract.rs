@@ -1,17 +1,22 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, to_binary, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
+    attr, to_binary, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Response, StdError,
+    StdResult, WasmMsg,
 };
 use cw2::set_contract_version;
 use icns_name_nft::MintMsg;
+use itertools::Itertools;
 
 use crate::checks::{
     check_send_from_admin, check_valid_threshold, check_verfying_msg,
     check_verification_pass_threshold, check_verifying_key,
 };
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, Verification};
+use crate::msg::{
+    ExecuteMsg, InstantiateMsg, NameNFTAddressResponse, QueryMsg, Verification,
+    VerificationThresholdResponse, VerifierPubKeysResponse,
+};
 
 use icns_name_nft::msg::ExecuteMsg as NameNFTExecuteMsg;
 
@@ -31,24 +36,23 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
+    // validate name nft address
     let name_nft_addr = deps.api.addr_validate(&msg.name_nft_addr)?;
-    let verifier_pubkeys = msg
-        .verifier_pubkeys
-        .into_iter()
-        .map(|pubkey| {
-            let pubkey_bytes = pubkey.to_vec();
-            check_verifying_key(&pubkey_bytes)?;
 
-            Ok(pubkey_bytes)
-        })
-        .collect::<Result<_, ContractError>>()?;
+    // check each verififying key if there is invalid key
+    msg.verifier_pubkeys
+        .iter()
+        .try_for_each(|pubkey| check_verifying_key(pubkey).map(|_| ()))?;
 
+    // check if threshold is valid (0.0-1.0)
     check_valid_threshold(&msg.verification_threshold)?;
+
+    // save all configs
     CONFIG.save(
         deps.storage,
         &Config {
             name_nft: name_nft_addr,
-            verifier_pubkeys,
+            verifier_pubkeys: msg.verifier_pubkeys,
             verification_threshold_percentage: msg.verification_threshold,
         },
     )?;
@@ -72,17 +76,70 @@ pub fn execute(
             verifying_msg,
             verifications,
             referral,
-        } => execute_claim(deps, env, info, name, verifying_msg, verifications, referral),
-        ExecuteMsg::AddVerifier {
-            verifier_pubkey: verifier_addr,
-        } => execute_add_verifier(deps, env, info, verifier_addr),
-        ExecuteMsg::RemoveVerifier {
-            verifier_pubkey: verifier_addr,
-        } => execute_remove_verifier(deps, env, info, verifier_addr),
+        } => execute_claim(
+            deps,
+            env,
+            info,
+            name,
+            verifying_msg,
+            verifications,
+            referral,
+        ),
         ExecuteMsg::SetVerificationThreshold { threshold } => {
             execute_set_verification_threshold(deps, info, threshold)
         }
+        ExecuteMsg::UpdateVerifierPubkeys { add, remove } => {
+            execute_update_verifier_pubkeys(deps, info, add, remove)
+        }
+        ExecuteMsg::SetNameNFTAddress { name_nft_address } => {
+            execute_set_name_nft_address(deps, info, name_nft_address)
+        }
     }
+}
+
+fn execute_set_name_nft_address(
+    deps: DepsMut,
+    info: MessageInfo,
+    name_nft_address: String,
+) -> Result<Response, ContractError> {
+    check_send_from_admin(deps.as_ref(), &info.sender)?;
+    CONFIG.update(deps.storage, |config| -> Result<_, ContractError> {
+        Ok(Config {
+            name_nft: deps.api.addr_validate(&name_nft_address)?,
+            ..config
+        })
+    })?;
+
+    Ok(Response::new()
+        .add_attribute("method", "set_name_nft_address")
+        .add_attribute("name_nft_address", name_nft_address))
+}
+
+fn execute_update_verifier_pubkeys(
+    deps: DepsMut,
+    info: MessageInfo,
+    add: Vec<Binary>,
+    remove: Vec<Binary>,
+) -> Result<Response, ContractError> {
+    check_send_from_admin(deps.as_ref(), &info.sender)?;
+
+    CONFIG.update(deps.storage, |config| -> Result<_, ContractError> {
+        Ok(Config {
+            verifier_pubkeys: vec![config.verifier_pubkeys, add]
+                .concat()
+                .into_iter()
+                .filter(|v| !remove.contains(v))
+                .unique()
+                .map(|verifier_pubkey| {
+                    check_verifying_key(verifier_pubkey.as_slice())?;
+                    Ok(verifier_pubkey)
+                })
+                .collect::<Result<_, ContractError>>()?,
+            ..config
+        })
+    })?;
+
+    Ok(Response::new().add_attribute("method", "update_verifier_pubkeys"))
 }
 
 fn execute_set_verification_threshold(
@@ -136,14 +193,13 @@ pub fn execute_claim(
     // add referral count if referral is set
     if let Some(referral) = referral {
         // initialize referral count to 1 if not exists
-        let referral_count = REFERRAL
-            .may_load(deps.storage, referral.to_string())?;
+        let referral_count = REFERRAL.may_load(deps.storage, referral.to_string())?;
         match referral_count {
             Some(count) => {
-                REFERRAL.save(deps.storage, referral.to_string(), &(count + 1))?;
+                REFERRAL.save(deps.storage, referral, &(count + 1))?;
             }
             None => {
-                REFERRAL.save(deps.storage, referral.to_string(), &1)?;
+                REFERRAL.save(deps.storage, referral, &1)?;
             }
         }
     }
@@ -176,21 +232,23 @@ pub fn execute_add_verifier(
     info: MessageInfo,
     verifier_pubkey: Binary,
 ) -> Result<Response, ContractError> {
+    let attrs = vec![
+        attr("method", "add_verifier"),
+        attr("verifier", verifier_pubkey.to_base64()),
+    ];
+
     check_send_from_admin(deps.as_ref(), &info.sender)?;
-    let adding_verifier = verifier_pubkey.to_vec();
+    let adding_verifier = verifier_pubkey;
     check_verifying_key(&adding_verifier)?;
 
     CONFIG.update(deps.storage, |config| -> StdResult<_> {
         Ok(Config {
-            verifier_pubkeys: vec![config.verifier_pubkeys, vec![adding_verifier.to_vec()]]
-                .concat(),
+            verifier_pubkeys: vec![config.verifier_pubkeys, vec![adding_verifier]].concat(),
             ..config
         })
     })?;
 
-    Ok(Response::new()
-        .add_attribute("method", "add_verifier")
-        .add_attribute("verifier", verifier_pubkey.to_base64()))
+    Ok(Response::new().add_attributes(attrs))
 }
 
 pub fn execute_remove_verifier(
@@ -220,8 +278,19 @@ pub fn execute_remove_verifier(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, StdError> {
     match msg {
+        QueryMsg::VerifierPubKeys {} => to_binary(&VerifierPubKeysResponse {
+            verifier_pubkeys: CONFIG.load(deps.storage)?.verifier_pubkeys,
+        }),
+        QueryMsg::VerificationThreshold {} => to_binary(&VerificationThresholdResponse {
+            verification_threshold_percentage: CONFIG
+                .load(deps.storage)?
+                .verification_threshold_percentage,
+        }),
+        QueryMsg::NameNFTAddress {} => to_binary(&NameNFTAddressResponse {
+            name_nft_address: CONFIG.load(deps.storage)?.name_nft.to_string(),
+        }),
         QueryMsg::GetReferralCount { user_name } => query_get_referral_count(deps, user_name),
     }
 }
