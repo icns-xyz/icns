@@ -92,17 +92,27 @@ pub fn execute(
             execute_update_verifier_pubkeys(deps, info, add, remove)
         }
         ExecuteMsg::SetNameNFTAddress { name_nft_address } => {
-            check_send_from_admin(deps.as_ref(), &info.sender)?;
-            CONFIG.update(deps.storage, |config| -> Result<_, ContractError> {
-                Ok(Config {
-                    name_nft: deps.api.addr_validate(&name_nft_address)?,
-                    ..config
-                })
-            })?;
-
-            Ok(Response::new())
+            execute_set_name_nft_address(deps, info, name_nft_address)
         }
     }
+}
+
+fn execute_set_name_nft_address(
+    deps: DepsMut,
+    info: MessageInfo,
+    name_nft_address: String,
+) -> Result<Response, ContractError> {
+    check_send_from_admin(deps.as_ref(), &info.sender)?;
+    CONFIG.update(deps.storage, |config| -> Result<_, ContractError> {
+        Ok(Config {
+            name_nft: deps.api.addr_validate(&name_nft_address)?,
+            ..config
+        })
+    })?;
+
+    Ok(Response::new()
+        .add_attribute("method", "set_name_nft_address")
+        .add_attribute("name_nft_address", name_nft_address))
 }
 
 fn execute_update_verifier_pubkeys(
