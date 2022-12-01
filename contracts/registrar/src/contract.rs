@@ -15,7 +15,7 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, Verification};
 
 use icns_name_nft::msg::ExecuteMsg as NameNFTExecuteMsg;
 
-use crate::state::{Config, CONFIG};
+use crate::state::{Config, CONFIG, REFERRAL};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:icns-registrar";
@@ -71,7 +71,8 @@ pub fn execute(
             name,
             verifying_msg,
             verifications,
-        } => execute_claim(deps, env, info, name, verifying_msg, verifications),
+            referral,
+        } => execute_claim(deps, env, info, name, verifying_msg, verifications, referral),
         ExecuteMsg::AddVerifier {
             verifier_pubkey: verifier_addr,
         } => execute_add_verifier(deps, env, info, verifier_addr),
@@ -115,6 +116,7 @@ pub fn execute_claim(
     name: String,
     verifying_msg_str: String,
     verifications: Vec<Verification>,
+    referral: Option<String>,
 ) -> Result<Response, ContractError> {
     check_verfying_msg(&env, &info, &name, &verifying_msg_str)?;
     check_verification_pass_threshold(
@@ -130,6 +132,21 @@ pub fn execute_claim(
             })
             .collect::<StdResult<Vec<_>>>()?,
     )?;
+
+    // add referral count if referral is set
+    if let Some(referral) = referral {
+        // initialize referral count to 1 if not exists
+        let referral_count = REFERRAL
+            .may_load(deps.storage, referral.to_string())?;
+        match referral_count {
+            Some(count) => {
+                REFERRAL.save(deps.storage, referral.to_string(), &(count + 1))?;
+            }
+            None => {
+                REFERRAL.save(deps.storage, referral.to_string(), &1)?;
+            }
+        }
+    }
 
     // mint name nft
     let config = CONFIG.load(deps.storage)?;

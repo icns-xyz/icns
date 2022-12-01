@@ -1,7 +1,7 @@
 use cosmwasm_schema::cw_serde;
 
 use cosmwasm_std::{Addr, Decimal};
-use cw_storage_plus::Item;
+use cw_storage_plus::{Item, Map};
 
 use crate::ContractError;
 pub static CONFIG_KEY: &[u8] = b"config";
@@ -40,4 +40,6 @@ impl Config {
         Ok(())
     }
 }
+
 pub const CONFIG: Item<Config> = Item::new("config");
+pub const REFERRAL: Map<String, u64> = Map::new("referral");

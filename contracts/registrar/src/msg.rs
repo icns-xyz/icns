@@ -18,6 +18,8 @@ pub enum ExecuteMsg {
         verifying_msg: String,
         // vec of `base64(secp256k1_sign(verifying_msg, verifier_key))`
         verifications: Vec<Verification>,
+
+        referral: Option<String>,
     },
     AddVerifier {
         verifier_pubkey: Binary,
