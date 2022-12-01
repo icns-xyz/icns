@@ -18,7 +18,7 @@ use icns_name_nft::msg::ExecuteMsg as NameNFTExecuteMsg;
 use crate::state::{Config, CONFIG};
 
 // version info for migration info
-const CONTRACT_NAME: &str = "crates.io:icns-default-registrar";
+const CONTRACT_NAME: &str = "crates.io:icns-registrar";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Handling contract instantiation
