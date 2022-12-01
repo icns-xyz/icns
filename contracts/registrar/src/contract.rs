@@ -220,6 +220,17 @@ pub fn execute_remove_verifier(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(_deps: Deps, _env: Env, _msgg: QueryMsg) -> Result<Binary, ContractError> {
-    unimplemented!()
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+    match msg {
+        QueryMsg::GetReferralCount { user_name } => query_get_referral_count(deps, user_name),
+    }
+}
+
+fn query_get_referral_count(deps: Deps, user_name: String) -> StdResult<Binary> {
+    let referral_count = REFERRAL
+        .may_load(deps.storage, user_name.to_string())?;
+    match referral_count {
+        Some(count) => to_binary(&count),
+        None => to_binary(&0),
+    }
 }

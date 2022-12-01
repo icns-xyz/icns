@@ -158,6 +158,7 @@ fn claim_name() {
                 name: bob_name.to_string(),
                 verifying_msg: verifying_msg.clone(),
                 verifications: verify_all(&verifying_msg, vec![verifier1(), verifier3()]),
+                referral: None,
             },
             &[],
         )
@@ -184,6 +185,7 @@ fn claim_name() {
                 name: bob_name.to_string(),
                 verifying_msg: verifying_msg.clone(),
                 verifications: verify_all(&verifying_msg, vec![verifier1(), verifier3()]),
+                referral: None,
             },
             &[],
         )
@@ -209,6 +211,7 @@ fn claim_name() {
                 name: bob_name.to_string(),
                 verifying_msg: verifying_msg.clone(),
                 verifications: verify_all(&verifying_msg, vec![verifier1(), non_verifier()]),
+                referral: None,
             },
             &[],
         )
@@ -234,6 +237,7 @@ fn claim_name() {
                 name: bob_name.to_string(),
                 verifying_msg: verifying_msg.clone(),
                 verifications: verify_all(&verifying_msg, vec![verifier1()]),
+                referral: None,
             },
             &[],
         )
@@ -261,6 +265,7 @@ fn claim_name() {
                 name: bob_name_with_dot.to_string(),
                 verifying_msg: verifying_msg.clone(),
                 verifications: verify_all(&verifying_msg, vec![verifier1(), verifier2()]),
+                referral: None,
             },
             &[],
         )
@@ -284,6 +289,7 @@ fn claim_name() {
             name: bob_name.to_string(),
             verifying_msg: verifying_msg.clone(),
             verifications: verify_all(&verifying_msg, vec![verifier4(), verifier3()]),
+            referral: None,
         },
         &[],
     )
@@ -304,6 +310,7 @@ fn claim_name() {
                 name: bob_name.to_string(),
                 verifying_msg: verifying_msg.clone(),
                 verifications: verify_all(&verifying_msg, vec![verifier4(), verifier3()]),
+                referral: None,
             },
             &[],
         )

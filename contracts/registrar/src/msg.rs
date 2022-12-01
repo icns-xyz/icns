@@ -1,4 +1,4 @@
-use cosmwasm_schema::cw_serde;
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Binary, Decimal};
 
 /// Message type for `instantiate` entry_point
@@ -32,7 +32,17 @@ pub enum ExecuteMsg {
     },
 }
 #[cw_serde]
-pub struct QueryMsg;
+#[derive(QueryResponses)]
+pub enum QueryMsg {
+    #[returns(GetReferralCountResponse)]
+    GetReferralCount { user_name: String },
+}
+
+#[cw_serde]
+pub struct GetReferralCountResponse {
+    pub admins: Vec<String>,
+}
+
 #[cw_serde]
 pub struct Verification {
     pub public_key: Binary,
