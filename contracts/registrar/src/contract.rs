@@ -90,25 +90,7 @@ pub fn execute(
             execute_set_verification_threshold(deps, info, threshold)
         }
         ExecuteMsg::UpdateVerifierPubkeys { add, remove } => {
-            check_send_from_admin(deps.as_ref(), &info.sender)?;
-
-            CONFIG.update(deps.storage, |config| -> Result<_, ContractError> {
-                Ok(Config {
-                    verifier_pubkeys: vec![config.verifier_pubkeys, add]
-                        .concat()
-                        .into_iter()
-                        .filter(|v| !remove.contains(v))
-                        .unique()
-                        .map(|verifier_pubkey| {
-                            check_verifying_key(verifier_pubkey.as_slice())?;
-                            Ok(verifier_pubkey)
-                        })
-                        .collect::<Result<_, ContractError>>()?,
-                    ..config
-                })
-            })?;
-
-            Ok(Response::new().add_attribute("method", "update_verifier_pubkeys"))
+            execute_update_verifier_pubkeys(deps, info, add, remove)
         }
         ExecuteMsg::SetNameNFTAddress { name_nft_address } => {
             check_send_from_admin(deps.as_ref(), &info.sender)?;
@@ -122,6 +104,33 @@ pub fn execute(
             Ok(Response::new())
         }
     }
+}
+
+fn execute_update_verifier_pubkeys(
+    deps: DepsMut,
+    info: MessageInfo,
+    add: Vec<Binary>,
+    remove: Vec<Binary>,
+) -> Result<Response, ContractError> {
+    check_send_from_admin(deps.as_ref(), &info.sender)?;
+
+    CONFIG.update(deps.storage, |config| -> Result<_, ContractError> {
+        Ok(Config {
+            verifier_pubkeys: vec![config.verifier_pubkeys, add]
+                .concat()
+                .into_iter()
+                .filter(|v| !remove.contains(v))
+                .unique()
+                .map(|verifier_pubkey| {
+                    check_verifying_key(verifier_pubkey.as_slice())?;
+                    Ok(verifier_pubkey)
+                })
+                .collect::<Result<_, ContractError>>()?,
+            ..config
+        })
+    })?;
+
+    Ok(Response::new().add_attribute("method", "update_verifier_pubkeys"))
 }
 
 fn execute_set_verification_threshold(
