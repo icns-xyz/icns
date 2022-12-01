@@ -9,7 +9,7 @@ use crate::{entry, msg::{InstantiateMsg, AddressInfo}, contract::execute, contra
 use cw_multi_test::{next_block, App,BasicApp, Contract, BankSudo, ContractWrapper, Executor, SudoMsg};
 use cosmwasm_std::{to_binary, Addr, Coin, Uint128};
 
-use icns_name_nft::{self, msg::ExecuteMsg as NameExecuteMsg};
+use icns_name_nft::{self, msg::ExecuteMsg as NameExecuteMsg, msg::ICNSNameExecuteMsg::SetMinter};
 use cw721_base::{ExecuteMsg as CW721BaseExecuteMsg, Extension, MintMsg};
 
 
@@ -79,14 +79,14 @@ pub fn name_nft_contract() -> Box<dyn Contract<Empty>> {
     Box::new(contract)
 }
 
-pub fn default_set_record() -> ExecuteMsg {
+pub fn default_record_msg() -> ExecuteMsg {
     let original_pubkey_vec = hex!("02394bc53633366a2ab9b5d697a94c8c0121cc5e3f0d554a63167edb318ceae8bc");
-    let original_signature_vec = hex!("69c865c686a4b141297fee846e16a0f9c8df965fe64abea4513f653c8a3b385019f81c93081a2f3c0930c5cd3265bf621af863f48a2a9a54f8883d4a54d2c3d2");
+    let original_signature_vec = hex!("74331c35c9dd49eb3d39f693afc363e77e5541d94839639b7c71e2f18b001295561f123cb169128a34aedb15dddd1caa42e3cbc39104cb07a32658e9de5707a1");
     let pub_key = Binary::from(original_pubkey_vec);
     let signature = Binary::from(original_signature_vec);
 
     ExecuteMsg::SetRecord {
-        user_name: "bob".to_string(),
+        user_name: "tony".to_string(),
         address_info: AddressInfo{
             bech32_address: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string(),
             address_hash: msg::AddressHash::SHA256,
@@ -97,7 +97,27 @@ pub fn default_set_record() -> ExecuteMsg {
         replace_primary_if_exists: false,
         signature_salt: 1323124,
     }
-}   
+}
+
+pub fn default_second_record_msg() -> ExecuteMsg {
+    let original_pubkey_vec = hex!("02394bc53633366a2ab9b5d697a94c8c0121cc5e3f0d554a63167edb318ceae8bc");
+    let original_signature_vec = hex!("1d2048b59cc0fa1799bdc11695fb31d141429ef80c7223afb9eb6581ca7a4e1d38c8e9b70852110efbc41d59b3b0d40a9b0257dd3c34da0243cca60eea35edb1");
+    let pub_key = Binary::from(original_pubkey_vec);
+    let signature = Binary::from(original_signature_vec);
+
+    ExecuteMsg::SetRecord {
+        user_name: "tony".to_string(),
+        address_info: AddressInfo{
+            bech32_address: "juno1d2kh2xaen7c0zv3h7qnmghhwhsmmassqffq35s".to_string(),
+            address_hash: msg::AddressHash::SHA256,
+            pub_key,
+            signature,
+        },
+        bech32_prefix: "juno".to_string(),
+        replace_primary_if_exists: false,
+        signature_salt: 13231,
+    }
+}
 
 pub fn default_setting(
     admins: Vec<String>,
@@ -124,7 +144,14 @@ pub fn default_setting(
     app.execute_contract(
         Addr::unchecked(admins[0].clone()),
         resolver_contract_addr.clone(),
-        &default_set_record(), 
+        &default_record_msg(), 
+        &[],
+    ).unwrap();
+
+    app.execute_contract(
+        Addr::unchecked(admins[0].clone()),
+        resolver_contract_addr.clone(),
+        &default_second_record_msg(), 
         &[],
     ).unwrap();
 
@@ -143,8 +170,7 @@ pub fn instantiate_name_nft(
             name_nft, 
             Addr::unchecked("example"),
                 &icns_name_nft::msg::InstantiateMsg{
-                    // registrar: registrar,
-                    admins: admins,
+                    admins: admins.clone(),
                     transferrable: false,
                 },
                 &[],
@@ -152,6 +178,17 @@ pub fn instantiate_name_nft(
                 None,
         )
         .unwrap();
+    
+    // now that nft contract has been instantiated, set registrar in the nft contract
+    // set minter as registrar
+    app.execute_contract(
+        Addr::unchecked(admins[0].clone()),
+        nft_address.clone(),
+        &NameExecuteMsg::ICNSName(SetMinter { 
+            minter_address: registrar.clone()
+        }),
+        &[],
+    ).unwrap();
     
     (nft_address, app)
 }

@@ -135,12 +135,12 @@ fn adr36_verify() {
     let user_name = "tony".to_string();
     let bech32_prefix = "osmo".to_string();
     let bech32_address = "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string();
-    let chain_id = "osmosis-1".to_string();
-    let contract_address = "osmo1cjta2pw3ltzsvy9phdvtvqprexclt0p3m9aj54".to_string();
+    let chain_id = "cosmos-testnet-14002".to_string();
+    let contract_address = "contract0".to_string();
     let signature_salt = 1323124;
     
     let original_pubkey_vec = hex!("02394bc53633366a2ab9b5d697a94c8c0121cc5e3f0d554a63167edb318ceae8bc");
-    let original_signature_vec = hex!("69c865c686a4b141297fee846e16a0f9c8df965fe64abea4513f653c8a3b385019f81c93081a2f3c0930c5cd3265bf621af863f48a2a9a54f8883d4a54d2c3d2");
+    let original_signature_vec = hex!("79d0a79004a709090d4038e9e0df5e0744c5065bf03fe7a30b60872a414d85de4e023a8c8123cf6519af86cfa996fc24618651bbbf8ab13732cef9d10c577d97");
     let pub_key = Binary::from(original_pubkey_vec);
     let signature = Binary::from(original_signature_vec);
 

@@ -23,7 +23,6 @@ pub fn adr36_verification(
     contract_address: String,
     signature_salt: u128,
 ) -> Result<Response, ContractError> {
-       
     // extract pubkey to bech32 address, check that it matches with the given bech32 address
     let decoded_bech32_addr = pubkey_to_bech32_address(address_info.pub_key.clone(), bech32_prefix.clone());
     if decoded_bech32_addr != address_info.bech32_address.clone() {

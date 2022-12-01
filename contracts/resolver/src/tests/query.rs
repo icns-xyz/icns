@@ -3,7 +3,7 @@
 use crate::{
     msg::{QueryMsg, GetAddressesResponse, GetAddressResponse},
     msg::{AdminResponse, ExecuteMsg},
-    ContractError, contract::is_admin, tests::helpers::default_set_record,
+    ContractError, contract::is_admin, tests::helpers::default_record_msg,
 };
 
 use cosmwasm_std::{Addr, Empty, StdResult};
@@ -59,7 +59,7 @@ fn query_addresses() {
         .query_wasm_smart(
             resolver_contract_addr.clone(),
             &QueryMsg::GetAddresses {
-                user_name: "bob".to_string(),
+                user_name: "tony".to_string(),
             },
         )
         .unwrap();
@@ -67,8 +67,8 @@ fn query_addresses() {
     assert_eq!(
         addresses,
         vec![
-            ("cosmos".to_string(), "cosmos1gf3dm2mvqhymts6ksrstlyuu2m8pw6dhv43wpe".to_string()),
-            ("juno".to_string(), "juno1kn27c8fu9qjmcn9hqytdzlml55mcs7dl2wu2ts".to_string()),
+            ("juno".to_string(), "juno1d2kh2xaen7c0zv3h7qnmghhwhsmmassqffq35s".to_string()),
+            ("osmo".to_string(), "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string())
         ]
     );
 
@@ -86,30 +86,30 @@ fn query_addresses() {
     ).is_err();
     assert_eq!(mint, false);
 
-    app.execute_contract(
-        Addr::unchecked(admins[0].clone()),
-        resolver_contract_addr.clone(),
-        &default_set_record(), 
-        &[],
-    ).unwrap();
+    // app.execute_contract(
+    //     Addr::unchecked(admins[0].clone()),
+    //     resolver_contract_addr.clone(),
+    //     &default_record_msg(), 
+    //     &[],
+    // ).unwrap();
 
-    // query addresses
-    let GetAddressesResponse { addresses } = app
-        .wrap()
-        .query_wasm_smart(
-            resolver_contract_addr.clone(),
-            &QueryMsg::GetAddresses {
-                user_name: "bob".to_string(),
-            },
-        )
-        .unwrap();
+    // // query addresses
+    // let GetAddressesResponse { addresses } = app
+    //     .wrap()
+    //     .query_wasm_smart(
+    //         resolver_contract_addr.clone(),
+    //         &QueryMsg::GetAddresses {
+    //             user_name: "bob".to_string(),
+    //         },
+    //     )
+    //     .unwrap();
 
-    assert_eq!(
-        addresses,
-        vec![
-            ("osmo".to_string(), "osmo1t8qckan2yrygq7kl9apwhzfalwzgc242lk02ch".to_string()),
-        ]
-    );
+    // assert_eq!(
+    //     addresses,
+    //     vec![
+    //         ("osmo".to_string(), "osmo1t8qckan2yrygq7kl9apwhzfalwzgc242lk02ch".to_string()),
+    //     ]
+    // );
 }
 
 #[test]
@@ -127,15 +127,31 @@ fn query_address() {
         .query_wasm_smart(
             resolver_contract_addr.clone(),
             &QueryMsg::GetAddress {
-                user_name: "bob".to_string(),
-                bech32_prefix: "cosmos".to_string(),
+                user_name: "tony".to_string(),
+                bech32_prefix: "osmo".to_string(),
             },
         )
         .unwrap();
 
     assert_eq!(
         address,
-        "cosmos1gf3dm2mvqhymts6ksrstlyuu2m8pw6dhv43wpe".to_string()
+        "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string()
+    );
+
+    let GetAddressResponse { address } = app
+        .wrap()
+        .query_wasm_smart(
+            resolver_contract_addr.clone(),
+            &QueryMsg::GetAddress {
+                user_name: "tony".to_string(),
+                bech32_prefix: "juno".to_string(),
+            },
+        )
+        .unwrap();
+
+    assert_eq!(
+        address,
+        "juno1d2kh2xaen7c0zv3h7qnmghhwhsmmassqffq35s".to_string()
     );
 
     let GetAddressResponse { address } = app
@@ -143,7 +159,7 @@ fn query_address() {
     .query_wasm_smart(
         resolver_contract_addr.clone(),
         &QueryMsg::GetAddress {
-            user_name: "bob".to_string(),
+            user_name: "tony".to_string(),
             bech32_prefix: "random".to_string(),
         },
     )
@@ -168,27 +184,27 @@ fn query_address() {
     ).is_err();
     assert_eq!(mint, false);
 
-    app.execute_contract(
-        Addr::unchecked(admins[0].clone()),
-        resolver_contract_addr.clone(),
-        &default_set_record(), 
-        &[],
-    ).unwrap();
+    // app.execute_contract(
+    //     Addr::unchecked(admins[0].clone()),
+    //     resolver_contract_addr.clone(),
+    //     &default_record_msg(), 
+    //     &[],
+    // ).unwrap();
 
-    // query address
-    let GetAddressResponse {address} = app
-        .wrap()
-        .query_wasm_smart(
-            resolver_contract_addr.clone(),
-            &QueryMsg::GetAddress {
-                user_name: "alice".to_string(),
-                bech32_prefix: "osmo".to_string(),
-            },
-        )
-        .unwrap();
+    // // query address
+    // let GetAddressResponse {address} = app
+    //     .wrap()
+    //     .query_wasm_smart(
+    //         resolver_contract_addr.clone(),
+    //         &QueryMsg::GetAddress {
+    //             user_name: "alice".to_string(),
+    //             bech32_prefix: "osmo".to_string(),
+    //         },
+    //     )
+    //     .unwrap();
 
-    assert_eq!(
-        address,
-        "osmo1t8qckan2yrygq7kl9apwhzfalwzgc242lk02ch".to_string()
-    );
+    // assert_eq!(
+    //     address,
+    //     "osmo1t8qckan2yrygq7kl9apwhzfalwzgc242lk02ch".to_string()
+    // );
 }
