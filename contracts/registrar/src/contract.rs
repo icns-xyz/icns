@@ -36,24 +36,23 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
+    // validate name nft address
     let name_nft_addr = deps.api.addr_validate(&msg.name_nft_addr)?;
-    let verifier_pubkeys = msg
-        .verifier_pubkeys
-        .into_iter()
-        .map(|pubkey| {
-            let pubkey_bytes = pubkey.to_vec();
-            check_verifying_key(&pubkey_bytes)?;
 
-            Ok(pubkey)
-        })
-        .collect::<Result<_, ContractError>>()?;
+    // check each verififying key if there is invalid key
+    msg.verifier_pubkeys
+        .iter()
+        .try_for_each(|pubkey| check_verifying_key(pubkey).map(|_| ()))?;
 
+    // check if threshold is valid (0.0-1.0)
     check_valid_threshold(&msg.verification_threshold)?;
+
+    // save all configs
     CONFIG.save(
         deps.storage,
         &Config {
             name_nft: name_nft_addr,
-            verifier_pubkeys,
+            verifier_pubkeys: msg.verifier_pubkeys,
             verification_threshold_percentage: msg.verification_threshold,
         },
     )?;
