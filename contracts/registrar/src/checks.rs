@@ -307,7 +307,7 @@ mod test {
                         name_nft: Addr::unchecked("namenftaddr"),
                         verifier_pubkeys: vec![verifier1(), verifier2(), verifier3()]
                             .iter()
-                            .map(|sk| sk.public_key().to_bytes())
+                            .map(|sk| Binary(sk.public_key().to_bytes()))
                             .collect(),
                         verification_threshold_percentage: Decimal::percent(pct),
                     },
@@ -409,7 +409,7 @@ mod test {
                     name_nft: Addr::unchecked("namenftaddr"),
                     verifier_pubkeys: vec![verifier1(), verifier2(), verifier3(), verifier4()]
                         .iter()
-                        .map(|sk| sk.public_key().to_bytes())
+                        .map(|sk| Binary(sk.public_key().to_bytes()))
                         .collect(),
                     verification_threshold_percentage: Decimal::percent(50),
                 },

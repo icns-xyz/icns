@@ -1,41 +1,17 @@
 #![cfg(test)]
 
-use cosmrs::{bip32, crypto::secp256k1::SigningKey, tendermint::signature::Secp256k1Signature};
-use cosmwasm_std::{Addr, Binary, Decimal, Empty, StdError, StdResult};
+use crate::tests::helpers::{fixtures::*, ToBinary};
+use cosmrs::crypto::secp256k1::SigningKey;
+use cosmwasm_std::{Addr, Binary, Decimal, StdError, StdResult};
 use cw721::OwnerOfResponse;
-use cw_multi_test::{BasicApp, Contract, ContractWrapper, Executor};
+use cw_multi_test::{BasicApp, Executor};
 use icns_name_nft::msg::ICNSNameExecuteMsg;
 
 use crate::{
     msg::{ExecuteMsg, InstantiateMsg, Verification},
+    tests::helpers::{name_nft_contract, registrar_contract},
     ContractError,
 };
-
-pub fn name_nft_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        icns_name_nft::entry::execute,
-        icns_name_nft::entry::instantiate,
-        icns_name_nft::entry::query,
-    );
-    Box::new(contract)
-}
-
-pub fn registrar_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        crate::contract::execute,
-        crate::contract::instantiate,
-        crate::contract::query,
-    );
-    Box::new(contract)
-}
-
-fn from_mnemonic(phrase: &str, derivation_path: &str) -> SigningKey {
-    let seed = bip32::Mnemonic::new(phrase, bip32::Language::English)
-        .unwrap()
-        .to_seed("");
-    let xprv = bip32::XPrv::derive_from_path(seed, &derivation_path.parse().unwrap()).unwrap();
-    xprv.into()
-}
 
 #[test]
 fn claim_name() {
@@ -73,34 +49,13 @@ fn claim_name() {
     };
 
     // set up verifiers
-    let derivation_path = "m/44'/118'/0'/0/0";
-    let verifier1 = || {
-        from_mnemonic("notice oak worry limit wrap speak medal online prefer cluster roof addict wrist behave treat actual wasp year salad speed social layer crew genius", derivation_path)
-    };
-    let verifier2 = || {
-        from_mnemonic("quality vacuum heart guard buzz spike sight swarm shove special gym robust assume sudden deposit grid alcohol choice devote leader tilt noodle tide penalty", derivation_path)
-    };
-    let verifier3 = || {
-        from_mnemonic("symbol force gallery make bulk round subway violin worry mixture penalty kingdom boring survey tool fringe patrol sausage hard admit remember broken alien absorb", derivation_path)
-    };
-    let verifier4 = || {
-        from_mnemonic("bounce success option birth apple portion aunt rural episode solution hockey pencil lend session cause hedgehog slender journey system canvas decorate razor catch empty", derivation_path)
-    };
-    let non_verifier = || {
-        from_mnemonic("prefer forget visit mistake mixture feel eyebrow autumn shop pair address airport diesel street pass vague innocent poem method awful require hurry unhappy shoulder", derivation_path)
-    };
-
-    let base64_pubkey = |verifier: &SigningKey| Binary(verifier.public_key().to_bytes());
-
-    let base64_signature =
-        |signature: &Secp256k1Signature| Binary(signature.to_der().as_bytes().to_vec());
 
     let verify_all = |verifying_msg: &str, verifiers: Vec<SigningKey>| -> Vec<Verification> {
         verifiers
             .iter()
             .map(|verifier| Verification {
-                public_key: base64_pubkey(verifier),
-                signature: base64_signature(&verifier.sign(verifying_msg.as_bytes()).unwrap()),
+                public_key: verifier.to_binary(),
+                signature: verifier.sign(verifying_msg.as_bytes()).unwrap().to_binary(),
             })
             .collect()
     };
@@ -114,7 +69,7 @@ fn claim_name() {
                 name_nft_addr: name_nft_contract_addr.to_string(),
                 verifier_pubkeys: vec![verifier1(), verifier2(), verifier3(), verifier4()]
                     .iter()
-                    .map(base64_pubkey)
+                    .map(|v| v.to_binary())
                     .collect(),
                 verification_threshold: Decimal::percent(50),
             },
@@ -158,6 +113,7 @@ fn claim_name() {
                 name: bob_name.to_string(),
                 verifying_msg: verifying_msg.clone(),
                 verifications: verify_all(&verifying_msg, vec![verifier1(), verifier3()]),
+                referral: None,
             },
             &[],
         )
@@ -166,7 +122,7 @@ fn claim_name() {
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
         &ContractError::Std(StdError::ParseErr {
-            target_type: "icns_default_registrar::msg::VerifyingMsg".to_string(),
+            target_type: "icns_registrar::msg::VerifyingMsg".to_string(),
             msg: "missing field `claimer`".to_string()
         })
     );
@@ -184,6 +140,7 @@ fn claim_name() {
                 name: bob_name.to_string(),
                 verifying_msg: verifying_msg.clone(),
                 verifications: verify_all(&verifying_msg, vec![verifier1(), verifier3()]),
+                referral: None,
             },
             &[],
         )
@@ -209,6 +166,7 @@ fn claim_name() {
                 name: bob_name.to_string(),
                 verifying_msg: verifying_msg.clone(),
                 verifications: verify_all(&verifying_msg, vec![verifier1(), non_verifier()]),
+                referral: None,
             },
             &[],
         )
@@ -234,6 +192,7 @@ fn claim_name() {
                 name: bob_name.to_string(),
                 verifying_msg: verifying_msg.clone(),
                 verifications: verify_all(&verifying_msg, vec![verifier1()]),
+                referral: None,
             },
             &[],
         )
@@ -261,6 +220,7 @@ fn claim_name() {
                 name: bob_name_with_dot.to_string(),
                 verifying_msg: verifying_msg.clone(),
                 verifications: verify_all(&verifying_msg, vec![verifier1(), verifier2()]),
+                referral: None,
             },
             &[],
         )
@@ -284,6 +244,7 @@ fn claim_name() {
             name: bob_name.to_string(),
             verifying_msg: verifying_msg.clone(),
             verifications: verify_all(&verifying_msg, vec![verifier4(), verifier3()]),
+            referral: None,
         },
         &[],
     )
@@ -304,6 +265,7 @@ fn claim_name() {
                 name: bob_name.to_string(),
                 verifying_msg: verifying_msg.clone(),
                 verifications: verify_all(&verifying_msg, vec![verifier4(), verifier3()]),
+                referral: None,
             },
             &[],
         )

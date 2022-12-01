@@ -1,4 +1,4 @@
-use cosmwasm_schema::cw_serde;
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Binary, Decimal};
 
 /// Message type for `instantiate` entry_point
@@ -21,18 +21,26 @@ pub enum ExecuteMsg {
 
         referral: Option<String>,
     },
-    AddVerifier {
-        verifier_pubkey: Binary,
-    },
-    RemoveVerifier {
-        verifier_pubkey: Binary,
+    UpdateVerifierPubkeys {
+        add: Vec<Binary>,
+        remove: Vec<Binary>,
     },
     SetVerificationThreshold {
         threshold: Decimal,
     },
 }
 #[cw_serde]
-pub struct QueryMsg;
+#[derive(QueryResponses)]
+pub enum QueryMsg {
+    #[returns(VerifierPubKeysResponse)]
+    VerifierPubKeys {},
+}
+
+#[cw_serde]
+pub struct VerifierPubKeysResponse {
+    pub verifier_pubkeys: Vec<Binary>,
+}
+
 #[cw_serde]
 pub struct Verification {
     pub public_key: Binary,
