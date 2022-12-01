@@ -12,24 +12,24 @@ use crate::state::{Config, ADDRESSES, REVERSE_RESOLVER, CONFIG, SIGNATURE};
 
 use cosmwasm_std::{Binary,to_binary, Addr, CosmosMsg, StdResult, WasmMsg, Response, Deps};
 
-use crate::{msg::{ExecuteMsg, AddressInfo}, ContractError};
+use crate::{msg::{ExecuteMsg, Adr36Info}, ContractError};
 
 pub fn adr36_verification(
     deps: Deps,
     user_name: String,
     bech32_prefix: String,
-    address_info: AddressInfo,
+    adr36_info: Adr36Info,
     chain_id: String,
     contract_address: String,
     signature_salt: u128,
 ) -> Result<Response, ContractError> {
     // extract pubkey to bech32 address, check that it matches with the given bech32 address
-    let decoded_bech32_addr = pubkey_to_bech32_address(address_info.pub_key.clone(), bech32_prefix.clone());
-    if decoded_bech32_addr != address_info.bech32_address.clone() {
+    let decoded_bech32_addr = pubkey_to_bech32_address(adr36_info.pub_key.clone(), bech32_prefix.clone());
+    if decoded_bech32_addr != adr36_info.bech32_address.clone() {
         return Err(ContractError::SigntaureMisMatch {  });
     }
 
-    let signtaure = SIGNATURE.may_load(deps.storage, address_info.signature.as_slice())?;
+    let signtaure = SIGNATURE.may_load(deps.storage, adr36_info.signature.as_slice())?;
     if signtaure.is_some() {
         return Err(ContractError::SigntaureAlreadyExists {  });
     }
@@ -37,7 +37,7 @@ pub fn adr36_verification(
    let message = create_adr36_message(
         user_name,
         bech32_prefix,
-        address_info.bech32_address,
+        adr36_info.bech32_address,
         chain_id,
         contract_address,
         signature_salt
@@ -47,7 +47,7 @@ pub fn adr36_verification(
     let message_hash = Sha256::digest(message_bytes);
 
     // verify signature using secp256k1
-    let verified_result = secp256k1_verify(&message_hash, &address_info.signature, &address_info.pub_key)
+    let verified_result = secp256k1_verify(&message_hash, &adr36_info.signature, &adr36_info.pub_key)
        .map_err(|_| ContractError::SigntaureMisMatch {  })?;
     if !verified_result {
         return Err(ContractError::SigntaureMisMatch {  });

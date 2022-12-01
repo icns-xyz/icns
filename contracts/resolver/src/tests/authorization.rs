@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate::{
-    msg::{QueryMsg, GetAddressesResponse, AddressInfo},
+    msg::{QueryMsg, GetAddressesResponse, Adr36Info},
     msg::{AdminResponse, ExecuteMsg, AddressHash},
     ContractError, contract::is_admin, tests::helpers::default_record_msg,
 };

@@ -9,6 +9,9 @@ pub enum ContractError {
     #[error("Unauthorized")]
     Unauthorized {},
 
+    #[error("Storage error")]
+    StorageErr{},
+
     #[error("User Already Registered")]
     UserAlreadyRegistered{ name: String },
 

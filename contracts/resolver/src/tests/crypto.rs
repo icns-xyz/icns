@@ -9,7 +9,7 @@ use bech32::ToBase32;
 use base64::{encode as base64_encode};
 use cosmwasm_std::testing::{mock_dependencies};
 
-use crate::{crypto::{pubkey_to_bech32_address, create_adr36_message, create_adr36_data, adr36_verification}, msg::AddressInfo};
+use crate::{crypto::{pubkey_to_bech32_address, create_adr36_message, create_adr36_data, adr36_verification}, msg::Adr36Info};
 use crate::msg::AddressHash;
 
 #[test]
@@ -145,7 +145,7 @@ fn adr36_verify() {
     let signature = Binary::from(original_signature_vec);
 
     
-    let address_info = AddressInfo {
+    let adr36_info = Adr36Info {
         bech32_address, 
         address_hash: AddressHash::SHA256,
         pub_key: pub_key,
@@ -157,7 +157,7 @@ fn adr36_verify() {
         deps.as_ref(),
         user_name,
         bech32_prefix,
-        address_info,
+        adr36_info,
         chain_id,
         contract_address,
         signature_salt

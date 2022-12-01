@@ -14,8 +14,8 @@ use subtle_encoding::bech32;
 // use cw2::set_contract_version;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, GetAddressResponse, GetAddressesResponse, InstantiateMsg, QueryMsg, AddressInfo, AddressHash};
-use crate::state::{Config, ADDRESSES, REVERSE_RESOLVER, CONFIG, SIGNATURE};
+use crate::msg::{ExecuteMsg, GetAddressResponse, GetAddressesResponse, InstantiateMsg, QueryMsg, Adr36Info, AddressHash};
+use crate::state::{Config, ADDRESSES, REVERSE_RESOLVER, CONFIG, SIGNATURE, AddressInfo};
 use crate::crypto::{pubkey_to_bech32_address, create_adr36_message, adr36_verification};
 use cw721::OwnerOfResponse;
 use icns_name_nft::msg::{AdminResponse, QueryMsg as QueryMsgName};
@@ -52,7 +52,7 @@ pub fn execute(
         ExecuteMsg::SetRecord {
             user_name,
             bech32_prefix,
-            address_info,
+            adr36_info,
             replace_primary_if_exists,
             signature_salt,
         } => execute_set_record(
@@ -61,7 +61,7 @@ pub fn execute(
             info,
             user_name,
             bech32_prefix,
-            address_info,
+            adr36_info,
             replace_primary_if_exists,
             signature_salt,
         ),
@@ -74,7 +74,7 @@ pub fn execute_set_record(
     info: MessageInfo,
     user_name: String,
     bech32_prefix: String,
-    address_info: AddressInfo,
+    adr36_info: Adr36Info,
     replace_primary_if_exists: bool,
     signature_salt: u128,
 ) -> Result<Response, ContractError> {
@@ -88,14 +88,14 @@ pub fn execute_set_record(
     }
 
     // check address hash method, currently only sha256 is supported
-    if address_info.address_hash != AddressHash::SHA256 {
+    if adr36_info.address_hash != AddressHash::SHA256 {
         return Err(ContractError::HashMethodNotSupported {  });
     }
 
     // extract bech32 prefix from given address
-    let bech32_prefix_decoded = bech32::decode(address_info.bech32_address.clone())
+    let bech32_prefix_decoded = bech32::decode(adr36_info.bech32_address.clone())
         .map_err(|_| ContractError::Bech32DecodingErr {
-            addr: address_info.bech32_address.to_string(),
+            addr: adr36_info.bech32_address.to_string(),
         })?
         .0;
 
@@ -103,7 +103,7 @@ pub fn execute_set_record(
     if bech32_prefix != bech32_prefix_decoded {
         return Err(ContractError::Bech32PrefixMismatch {
             prefix: bech32_prefix.to_string(),
-            addr: address_info.bech32_address.to_string(),
+            addr: adr36_info.bech32_address.to_string(),
         });
     }
     
@@ -114,33 +114,48 @@ pub fn execute_set_record(
         deps.as_ref(),
         user_name.clone(),
         bech32_prefix.clone(),
-        address_info.clone(),
+        adr36_info.clone(),
         chain_id,
         contract_address,
         signature_salt
     )?;
 
-    // check if the user_name already exists in the storage
-    // we do this check for the reverse resolver
-    let address = ADDRESSES.may_load(deps.storage, (user_name.clone(), bech32_prefix.clone()))?;
-    match address {
-        Some(_) => {
-            // if user name existed and replace_primary_if_exists is true, replace the primary address in reverse resolver
+    // now append address to the existing reverse resolver list
+    let mut address_info = AddressInfo {
+        user_name: user_name.clone(),
+        bech32_prefix: bech32_prefix.clone(),
+        primary: false
+    };
+
+    let existing_addresses =REVERSE_RESOLVER.may_load(deps.storage,
+        adr36_info.bech32_address.clone()
+    );
+
+    match existing_addresses {
+        Ok(Some(mut existing_addresses)) => {
             if replace_primary_if_exists {
-                REVERSE_RESOLVER.save(
-                    deps.storage, 
-                    address_info.bech32_address.clone(),
-                    &(user_name.clone(), bech32_prefix.clone()),
-                )?;
-            }
-        }
-        None => {
-            // and save the address directly as primary name for reverse resolver
-            REVERSE_RESOLVER.save(
-                deps.storage, 
-                address_info.bech32_address.clone(),
-                &(user_name.clone(), bech32_prefix.clone()),
-            )?;
+                // iterate over all existing addresses and set primary to false
+                for address in existing_addresses.iter_mut() {
+                    if address.primary {
+                        address.primary = false;
+                    }
+                }
+                // set the current one as primary
+                address_info.primary = true;
+            } 
+
+            existing_addresses.push(address_info);
+            REVERSE_RESOLVER.save(deps.storage, adr36_info.bech32_address.clone(), &existing_addresses)?;
+        },
+        Ok(None) => {
+            let mut records = Vec::new();
+            // set this to primary address if it was no address has existed before
+            address_info.primary = true;
+            records.push(address_info);
+            REVERSE_RESOLVER.save(deps.storage, adr36_info.bech32_address.clone(), &records)?;
+        },
+        Err(_) => {
+            return Err(ContractError::StorageErr {});
         }
     }
 
@@ -148,18 +163,19 @@ pub fn execute_set_record(
     ADDRESSES.save(
         deps.storage,
         (user_name.clone(), bech32_prefix.clone()),
-        &address_info.bech32_address.clone()
+        &adr36_info.bech32_address.clone()
     )?;
 
     // save signature to prevent replay attack
     SIGNATURE.save(
         deps.storage,
-        address_info.signature.as_slice(),
+        adr36_info.signature.as_slice(),
         &true,
     )?;
 
     Ok(Response::default())
 }
+
 
 pub fn is_admin(deps: Deps, address: String) -> Result<bool, ContractError> {
     let cfg = CONFIG.load(deps.storage)?;

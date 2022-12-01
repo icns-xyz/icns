@@ -2,7 +2,7 @@
 
 use crate::{
     contract::is_admin,
-    msg::{AdminResponse, ExecuteMsg, AddressInfo, self},
+    msg::{AdminResponse, ExecuteMsg, Adr36Info, self},
     msg::{GetAddressesResponse, QueryMsg},
     ContractError,
 };
@@ -88,7 +88,7 @@ fn bech32_verification() {
     let signature = Binary::from(original_signature_vec);
     let record_msg = ExecuteMsg::SetRecord {
         user_name: "tony".to_string(),
-        address_info: AddressInfo{
+        adr36_info: Adr36Info{
             // invalid address
             bech32_address: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs699".to_string(),
             address_hash: msg::AddressHash::SHA256,
@@ -113,7 +113,7 @@ fn bech32_verification() {
     // now try setting record with unmatching bech32 prefix and address
     let record_msg = ExecuteMsg::SetRecord {
         user_name: "tony".to_string(),
-        address_info: AddressInfo{
+        adr36_info: Adr36Info{
             bech32_address: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string(),
             address_hash: msg::AddressHash::SHA256,
             pub_key: pub_key.clone(),
@@ -136,7 +136,7 @@ fn bech32_verification() {
     // now set record with valid bech32 prefix and addresses, this should succeed
     let record_msg = ExecuteMsg::SetRecord {
         user_name: "tony".to_string(),
-        address_info: AddressInfo{
+        adr36_info: Adr36Info{
             // invalid address
             bech32_address: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string(),
             address_hash: msg::AddressHash::SHA256,

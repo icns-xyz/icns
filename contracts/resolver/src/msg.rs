@@ -12,14 +12,14 @@ pub enum ExecuteMsg {
     SetRecord {
         user_name: String,
         bech32_prefix: String,
-        address_info: AddressInfo,
+        adr36_info: Adr36Info,
         replace_primary_if_exists: bool,
         signature_salt: u128,
     },
 }
 
 #[cw_serde]
-pub struct AddressInfo {
+pub struct Adr36Info {
     pub bech32_address: String,
     pub address_hash: AddressHash,
     // 

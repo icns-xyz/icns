@@ -2,7 +2,7 @@ use std::ops::Add;
 use hex_literal::hex;
 
 use cosmwasm_std::{Empty, Binary};
-use crate::{entry, msg::{InstantiateMsg, AddressInfo}, contract::execute, contract::instantiate, contract::query, msg::{ExecuteMsg, self}};
+use crate::{entry, msg::{InstantiateMsg, Adr36Info}, contract::execute, contract::instantiate, contract::query, msg::{ExecuteMsg, self}};
 // import execute
 
 
@@ -87,7 +87,7 @@ pub fn default_record_msg() -> ExecuteMsg {
 
     ExecuteMsg::SetRecord {
         user_name: "tony".to_string(),
-        address_info: AddressInfo{
+        adr36_info: Adr36Info{
             bech32_address: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string(),
             address_hash: msg::AddressHash::SHA256,
             pub_key,
@@ -107,7 +107,7 @@ pub fn default_second_record_msg() -> ExecuteMsg {
 
     ExecuteMsg::SetRecord {
         user_name: "tony".to_string(),
-        address_info: AddressInfo{
+        adr36_info: Adr36Info{
             bech32_address: "juno1d2kh2xaen7c0zv3h7qnmghhwhsmmassqffq35s".to_string(),
             address_hash: msg::AddressHash::SHA256,
             pub_key,
