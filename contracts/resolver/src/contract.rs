@@ -1,8 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::Order::Ascending;
-use cosmwasm_crypto::{secp256k1_verify};
-
 
 use cosmwasm_std::{
     from_binary, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryRequest, Response,
@@ -13,10 +11,13 @@ use subtle_encoding::bech32;
 
 // use cw2::set_contract_version;
 
+use crate::crypto::adr36_verification;
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, GetAddressResponse, GetAddressesResponse, InstantiateMsg, QueryMsg, Adr36Info, AddressHash};
-use crate::state::{Config, ADDRESSES, REVERSE_RESOLVER, CONFIG, SIGNATURE, AddressInfo};
-use crate::crypto::{pubkey_to_bech32_address, create_adr36_message, adr36_verification};
+use crate::msg::{
+    AddressHash, Adr36Info, ExecuteMsg, GetAddressResponse, GetAddressesResponse, InstantiateMsg,
+    QueryMsg,
+};
+use crate::state::{AddressInfo, Config, ADDRESSES, CONFIG, REVERSE_RESOLVER, SIGNATURE};
 use cw721::OwnerOfResponse;
 use icns_name_nft::msg::{AdminResponse, QueryMsg as QueryMsgName};
 
@@ -89,7 +90,7 @@ pub fn execute_set_record(
 
     // check address hash method, currently only sha256 is supported
     if adr36_info.address_hash != AddressHash::SHA256 {
-        return Err(ContractError::HashMethodNotSupported {  });
+        return Err(ContractError::HashMethodNotSupported {});
     }
 
     // extract bech32 prefix from given address
@@ -102,11 +103,11 @@ pub fn execute_set_record(
     // first check if the user input for prefix + address is valid
     if bech32_prefix != bech32_prefix_decoded {
         return Err(ContractError::Bech32PrefixMismatch {
-            prefix: bech32_prefix.to_string(),
-            addr: adr36_info.bech32_address.to_string(),
+            prefix: bech32_prefix,
+            addr: adr36_info.bech32_address,
         });
     }
-    
+
     // do adr36 verification
     let chain_id = env.block.chain_id;
     let contract_address = env.contract.address.to_string();
@@ -117,19 +118,18 @@ pub fn execute_set_record(
         adr36_info.clone(),
         chain_id,
         contract_address,
-        signature_salt
+        signature_salt,
     )?;
 
     // now append address to the existing reverse resolver list
     let mut address_info = AddressInfo {
         user_name: user_name.clone(),
         bech32_prefix: bech32_prefix.clone(),
-        primary: false
+        primary: false,
     };
 
-    let existing_addresses =REVERSE_RESOLVER.may_load(deps.storage,
-        adr36_info.bech32_address.clone()
-    );
+    let existing_addresses =
+        REVERSE_RESOLVER.may_load(deps.storage, adr36_info.bech32_address.clone());
 
     match existing_addresses {
         Ok(Some(mut existing_addresses)) => {
@@ -142,18 +142,22 @@ pub fn execute_set_record(
                 }
                 // set the current one as primary
                 address_info.primary = true;
-            } 
+            }
 
             existing_addresses.push(address_info);
-            REVERSE_RESOLVER.save(deps.storage, adr36_info.bech32_address.clone(), &existing_addresses)?;
-        },
+            REVERSE_RESOLVER.save(
+                deps.storage,
+                adr36_info.bech32_address.clone(),
+                &existing_addresses,
+            )?;
+        }
         Ok(None) => {
             let mut records = Vec::new();
             // set this to primary address if it was no address has existed before
             address_info.primary = true;
             records.push(address_info);
             REVERSE_RESOLVER.save(deps.storage, adr36_info.bech32_address.clone(), &records)?;
-        },
+        }
         Err(_) => {
             return Err(ContractError::StorageErr {});
         }
@@ -162,20 +166,15 @@ pub fn execute_set_record(
     // now override the address in the storage
     ADDRESSES.save(
         deps.storage,
-        (user_name.clone(), bech32_prefix.clone()),
-        &adr36_info.bech32_address.clone()
+        (user_name, bech32_prefix),
+        &adr36_info.bech32_address,
     )?;
 
     // save signature to prevent replay attack
-    SIGNATURE.save(
-        deps.storage,
-        adr36_info.signature.as_slice(),
-        &true,
-    )?;
+    SIGNATURE.save(deps.storage, adr36_info.signature.as_slice(), &true)?;
 
     Ok(Response::default())
 }
-
 
 pub fn is_admin(deps: Deps, address: String) -> Result<bool, ContractError> {
     let cfg = CONFIG.load(deps.storage)?;
@@ -188,11 +187,7 @@ pub fn is_admin(deps: Deps, address: String) -> Result<bool, ContractError> {
         msg: to_binary(&query_msg)?,
     }))?;
 
-    Ok(res
-        .admins
-        .into_iter()
-        .find(|admin| admin.eq(&address))
-        .is_some())
+    Ok(res.admins.into_iter().any(|admin| admin.eq(&address)))
 }
 
 pub fn admin(deps: Deps) -> Result<Vec<String>, ContractError> {

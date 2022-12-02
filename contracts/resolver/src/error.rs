@@ -10,10 +10,10 @@ pub enum ContractError {
     Unauthorized {},
 
     #[error("Storage error")]
-    StorageErr{},
+    StorageErr {},
 
     #[error("User Already Registered")]
-    UserAlreadyRegistered{ name: String },
+    UserAlreadyRegistered { name: String },
 
     #[error("Bech32 decoding failed for addr: {addr:?}")]
     Bech32DecodingErr { addr: String },

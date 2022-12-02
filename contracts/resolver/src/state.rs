@@ -1,6 +1,6 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Binary};
-use cw_storage_plus::{Item, Map, IndexedMap, UniqueIndex, MultiIndex};
+use cosmwasm_std::Addr;
+use cw_storage_plus::{Item, Map};
 pub static CONFIG_KEY: &[u8] = b"config";
 
 #[cw_serde]

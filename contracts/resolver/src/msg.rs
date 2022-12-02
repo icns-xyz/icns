@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Binary};
+use cosmwasm_std::Binary;
 
 use crate::state::Config;
 #[cw_serde]
@@ -22,7 +22,7 @@ pub enum ExecuteMsg {
 pub struct Adr36Info {
     pub bech32_address: String,
     pub address_hash: AddressHash,
-    // 
+    //
     pub pub_key: Binary,
     pub signature: Binary,
 }

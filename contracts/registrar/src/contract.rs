@@ -296,8 +296,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, StdError> {
 }
 
 fn query_get_referral_count(deps: Deps, user_name: String) -> StdResult<Binary> {
-    let referral_count = REFERRAL
-        .may_load(deps.storage, user_name.to_string())?;
+    let referral_count = REFERRAL.may_load(deps.storage, user_name)?;
     match referral_count {
         Some(count) => to_binary(&count),
         None => to_binary(&0),
