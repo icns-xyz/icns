@@ -16,6 +16,9 @@ pub enum ExecuteMsg {
         replace_primary_if_exists: bool,
         signature_salt: u128, // TODO: change to Uint128
     },
+    SetPrimary {
+        name: String,
+    },
 }
 
 #[cw_serde]

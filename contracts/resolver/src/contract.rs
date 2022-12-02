@@ -66,6 +66,7 @@ pub fn execute(
             replace_primary_if_exists,
             signature_salt,
         ),
+        ExecuteMsg::SetPrimary { name } => execute_set_primary(deps, info, name),
     }
 }
 
@@ -174,6 +175,40 @@ pub fn execute_set_record(
     SIGNATURE.save(deps.storage, adr36_info.signature.as_slice(), &true)?;
 
     Ok(Response::default())
+}
+
+fn execute_set_primary(
+    deps: DepsMut,
+    info: MessageInfo,
+    name: String,
+) -> Result<Response, ContractError> {
+    if !is_owner(deps.as_ref(), name.clone(), info.sender.to_string())? {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    REVERSE_RESOLVER.update(
+        deps.storage,
+        info.sender.to_string(),
+        |address_infos: Option<Vec<AddressInfo>>| -> Result<_, ContractError> {
+            match address_infos {
+                Some(address_infos) => Ok(address_infos
+                    .into_iter()
+                    .map(|address_info| AddressInfo {
+                        primary: address_info.user_name == name,
+                        ..address_info
+                    })
+                    .collect()),
+                None => Err(StdError::NotFound {
+                    kind: "Vec<AddressInfo>".to_string(),
+                }
+                .into()),
+            }
+        },
+    )?;
+
+    Ok(Response::new()
+        .add_attribute("method", "set_primary")
+        .add_attribute("name", name))
 }
 
 pub fn is_admin(deps: Deps, address: String) -> Result<bool, ContractError> {
