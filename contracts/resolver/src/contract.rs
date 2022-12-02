@@ -4,7 +4,7 @@ use cosmwasm_std::Order::Ascending;
 
 use cosmwasm_std::{
     from_binary, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryRequest, Response,
-    StdResult, WasmQuery,
+    StdError, StdResult, WasmQuery,
 };
 use cw2::set_contract_version;
 use subtle_encoding::bech32;
@@ -15,7 +15,7 @@ use crate::crypto::adr36_verification;
 use crate::error::ContractError;
 use crate::msg::{
     AddressHash, Adr36Info, ExecuteMsg, GetAddressResponse, GetAddressesResponse, InstantiateMsg,
-    QueryMsg,
+    PrimaryNameResponse, QueryMsg,
 };
 use crate::state::{AddressInfo, Config, ADDRESSES, CONFIG, REVERSE_RESOLVER, SIGNATURE};
 use cw721::OwnerOfResponse;
@@ -205,19 +205,16 @@ pub fn admin(deps: Deps) -> Result<Vec<String>, ContractError> {
 }
 
 pub fn is_owner(deps: Deps, username: String, sender: String) -> Result<bool, ContractError> {
-    let response = deps
-        .querier
-        .query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: CONFIG.load(deps.storage)?.name_address.to_string(),
-            msg: to_binary(&QueryMsgName::OwnerOf {
-                token_id: username,
-                include_expired: None,
-            })?,
-        }))
-        .map(|res| from_binary(&res).unwrap());
+    let response = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+        contract_addr: CONFIG.load(deps.storage)?.name_address.to_string(),
+        msg: to_binary(&QueryMsgName::OwnerOf {
+            token_id: username,
+            include_expired: None,
+        })?,
+    }));
 
     match response {
-        Ok(OwnerOfResponse { owner, .. }) => Ok(owner.eq(&sender)),
+        Ok(OwnerOfResponse { owner, .. }) => Ok(owner == sender),
         Err(_) => Ok(false),
     }
 }
@@ -232,8 +229,23 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             bech32_prefix,
         } => to_binary(&query_address(deps, env, user_name, bech32_prefix)?),
         QueryMsg::Admin {} => to_binary(&query_admin(deps)?),
+        QueryMsg::PrimaryName { address } => to_binary(&query_primary_name(deps, address)?),
         // TODO: add query to query directly using ICNS (e.g req: tony.eth)
     }
+}
+
+fn query_primary_name(deps: Deps, address: String) -> StdResult<PrimaryNameResponse> {
+    let address_infos = REVERSE_RESOLVER.load(deps.storage, address)?;
+
+    let name = address_infos
+        .into_iter()
+        .find(|info| info.primary)
+        .ok_or_else(|| StdError::NotFound {
+            kind: "primary name".to_string(),
+        })?
+        .user_name;
+
+    Ok(PrimaryNameResponse { name })
 }
 
 fn query_addresses(deps: Deps, _env: Env, name: String) -> StdResult<GetAddressesResponse> {
@@ -241,7 +253,7 @@ fn query_addresses(deps: Deps, _env: Env, name: String) -> StdResult<GetAddresse
         .prefix(name)
         .range(deps.storage, None, None, Ascending)
         .collect::<StdResult<Vec<_>>>()?;
-    if &addresses.len() == &0 {
+    if addresses.is_empty() {
         return Ok(GetAddressesResponse { addresses: vec![] });
     }
     let resp = GetAddressesResponse { addresses };

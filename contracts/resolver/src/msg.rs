@@ -14,7 +14,7 @@ pub enum ExecuteMsg {
         bech32_prefix: String,
         adr36_info: Adr36Info,
         replace_primary_if_exists: bool,
-        signature_salt: u128,
+        signature_salt: u128, // TODO: change to Uint128
     },
 }
 
@@ -48,8 +48,18 @@ pub enum QueryMsg {
         bech32_prefix: String,
     },
 
+    /// An address and hold multiple names, this query returns
+    /// their primary name.
+    #[returns(PrimaryNameResponse)]
+    PrimaryName { address: String },
+
     #[returns(AdminResponse)]
     Admin {},
+}
+
+#[cw_serde]
+pub struct PrimaryNameResponse {
+    pub name: String,
 }
 
 #[cw_serde]

@@ -2,7 +2,7 @@
 
 use crate::{
     msg::{GetAddressesResponse, QueryMsg},
-    tests::helpers::default_record_msg,
+    tests::helpers::default_osmo_set_record_msg,
     ContractError,
 };
 
@@ -40,7 +40,7 @@ fn only_admin_can_set_record() {
         .execute_contract(
             Addr::unchecked("non_admin".to_string()),
             resolver_contract_addr.clone(),
-            &default_record_msg(),
+            &default_osmo_set_record_msg(),
             &[],
         )
         .unwrap_err();
@@ -54,7 +54,7 @@ fn only_admin_can_set_record() {
     app.execute_contract(
         Addr::unchecked(admin1),
         resolver_contract_addr.clone(),
-        &default_record_msg(),
+        &default_osmo_set_record_msg(),
         &[],
     )
     .unwrap();
@@ -107,7 +107,7 @@ fn only_owner_can_set_record() {
         .execute_contract(
             Addr::unchecked("non_owner".to_string()),
             resolver_contract_addr.clone(),
-            &default_record_msg(),
+            &default_osmo_set_record_msg(),
             &[],
         )
         .unwrap_err();
@@ -120,7 +120,7 @@ fn only_owner_can_set_record() {
     app.execute_contract(
         Addr::unchecked(admin1),
         resolver_contract_addr,
-        &default_record_msg(),
+        &default_osmo_set_record_msg(),
         &[],
     )
     .unwrap();
