@@ -20,7 +20,7 @@ use crate::msg::{
 
 use icns_name_nft::msg::ExecuteMsg as NameNFTExecuteMsg;
 
-use crate::state::{Config, CONFIG, REFERRAL};
+use crate::state::{Config, CONFIG, REFERRAL, UNIQUE_TWITTER_ID};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:icns-registrar";
@@ -175,7 +175,7 @@ pub fn execute_claim(
     verifications: Vec<Verification>,
     referral: Option<String>,
 ) -> Result<Response, ContractError> {
-    check_verfying_msg(&env, &info, &name, &verifying_msg_str)?;
+    check_verfying_msg(deps.as_ref(), &env, &info, &name, &verifying_msg_str)?;
     check_verification_pass_threshold(
         deps.as_ref(),
         &verifying_msg_str,
@@ -203,6 +203,9 @@ pub fn execute_claim(
             }
         }
     }
+
+    // save unique twitter id so that we do not have duplicate user
+    UNIQUE_TWITTER_ID.save(deps.storage, name.clone(), &true)?;
 
     // mint name nft
     let config = CONFIG.load(deps.storage)?;

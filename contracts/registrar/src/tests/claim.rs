@@ -49,7 +49,6 @@ fn claim_name() {
     };
 
     // set up verifiers
-
     let verify_all = |verifying_msg: &str, verifiers: Vec<SigningKey>| -> Vec<Verification> {
         verifiers
             .iter()
@@ -93,6 +92,7 @@ fn claim_name() {
     let bob = Addr::unchecked("bobaddr");
     let bob_name = "bob";
     let multitest_chain_id = "cosmos-testnet-14002";
+    let unique_twitter_id = "1234567890";
 
     // "bob" shouldn't be owned by anyone at first
     assert_eq!(
@@ -129,7 +129,7 @@ fn claim_name() {
 
     // execute claim with wrong verifying msg info
     let verifying_msg = format!(
-        r#"{{"name":"alice","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}"}}"#,
+        r#"{{"name":"alice","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}","unique_twitter_id":"{unique_twitter_id}"}}"#,
     );
 
     let err = app
@@ -155,7 +155,7 @@ fn claim_name() {
 
     // execute claim with verification from non-verifier
     let verifying_msg = format!(
-        r#"{{"name":"{bob_name}","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}"}}"#,
+        r#"{{"name":"{bob_name}","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}","unique_twitter_id":"{unique_twitter_id}"}}"#,
     );
 
     let err = app
@@ -181,7 +181,7 @@ fn claim_name() {
 
     // execute claim with non passing verification below threshold
     let verifying_msg = format!(
-        r#"{{"name":"{bob_name}","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}"}}"#,
+        r#"{{"name":"{bob_name}","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}","unique_twitter_id":"{unique_twitter_id}"}}"#,
     );
 
     let err = app
@@ -209,7 +209,7 @@ fn claim_name() {
     // execute claim with . in name
     let bob_name_with_dot = "bob.dylan";
     let verifying_msg = format!(
-        r#"{{"name":"{bob_name_with_dot}","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}"}}"#,
+        r#"{{"name":"{bob_name_with_dot}","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}","unique_twitter_id":"{unique_twitter_id}"}}"#,
     );
 
     let err = app
@@ -234,7 +234,7 @@ fn claim_name() {
 
     // execute claim with passing verification
     let verifying_msg = format!(
-        r#"{{"name":"{bob_name}","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}"}}"#,
+        r#"{{"name":"{bob_name}","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}","unique_twitter_id":"{unique_twitter_id}"}}"#,
     );
 
     app.execute_contract(
@@ -254,7 +254,7 @@ fn claim_name() {
 
     // execute claim with passing but same name -> should error
     let verifying_msg = format!(
-        r#"{{"name":"{bob_name}","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}"}}"#,
+        r#"{{"name":"{bob_name}","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}","unique_twitter_id":"{unique_twitter_id}"}}"#,
     );
 
     let err = app

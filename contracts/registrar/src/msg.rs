@@ -97,4 +97,5 @@ pub struct VerifyingMsg {
     pub claimer: String,
     pub contract_address: String,
     pub chain_id: String,
+    pub unique_twitter_id: String,
 }

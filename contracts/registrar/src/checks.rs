@@ -9,7 +9,7 @@ use cosmwasm_std::{
 use icns_name_nft::msg::{AdminResponse, QueryMsg as NameNFTQueryMsg};
 use itertools::Itertools;
 
-use crate::{msg::VerifyingMsg, state::CONFIG, ContractError};
+use crate::{msg::VerifyingMsg, state::CONFIG, state::UNIQUE_TWITTER_ID, ContractError};
 
 pub fn check_send_from_admin(deps: Deps, sender: &Addr) -> Result<(), ContractError> {
     let AdminResponse { admins } = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
@@ -25,6 +25,7 @@ pub fn check_send_from_admin(deps: Deps, sender: &Addr) -> Result<(), ContractEr
 }
 
 pub fn check_verfying_msg(
+    deps: Deps,
     env: &Env,
     info: &MessageInfo,
     name: &str,
@@ -63,6 +64,17 @@ pub fn check_verfying_msg(
             ),
         });
     }
+
+    // check if unique twitter id is not stored
+    if UNIQUE_TWITTER_ID.may_load(deps.storage, verifying_msg.unique_twitter_id.clone())?.is_some() {
+        return Err(ContractError::InvalidVerifyingMessage {
+            msg: format!(
+                "twitter id `{}` is already used",
+                verifying_msg.unique_twitter_id
+            ),
+        });
+    }
+
     Ok(())
 }
 
@@ -168,22 +180,24 @@ mod test {
 
     #[test]
     fn test_check_verifying_message() {
+        let mut deps = mock_dependencies();
         let env = mock_env();
         let contract_address = &env.contract.address;
         let chain_id = &env.block.chain_id;
         let sender = "sender";
+        let unique_twitter_id = "unique_twitter_id";
         let info = mock_info(sender, &[]);
         let name = "name";
 
         // success case, everything is matched
-        check_verfying_msg(&env, &info, name, &format!(
-            r#"{{"name":"{name}","claimer":"{sender}","contract_address":"{contract_address}","chain_id":"{chain_id}"}}"#,
+        check_verfying_msg(deps.as_ref(),&env, &info, name, &format!(
+            r#"{{"name":"{name}","claimer":"{sender}","contract_address":"{contract_address}","chain_id":"{chain_id}","unique_twitter_id":"{unique_twitter_id}"}}"#,
         )).unwrap();
 
         // name mismatched
         let mismatched_name = "mismatched_name";
-        let err = check_verfying_msg(&env, &info, name, &format!(
-            r#"{{"name":"{mismatched_name}","claimer":"{sender}","contract_address":"{contract_address}","chain_id":"{chain_id}"}}"#,
+        let err = check_verfying_msg(deps.as_ref(),&env, &info, name, &format!(
+            r#"{{"name":"{mismatched_name}","claimer":"{sender}","contract_address":"{contract_address}","chain_id":"{chain_id}","unique_twitter_id":"{unique_twitter_id}"}}"#,
         )).unwrap_err();
 
         assert_eq!(
@@ -198,8 +212,8 @@ mod test {
 
         // claimer is not sender
         let not_a_sender = "not_a_sender";
-        let err = check_verfying_msg(&env, &info, name, &format!(
-            r#"{{"name":"{name}","claimer":"{not_a_sender}","contract_address":"{contract_address}","chain_id":"{chain_id}"}}"#,
+        let err = check_verfying_msg(deps.as_ref(),&env, &info, name, &format!(
+            r#"{{"name":"{name}","claimer":"{not_a_sender}","contract_address":"{contract_address}","chain_id":"{chain_id}","unique_twitter_id":"{unique_twitter_id}"}}"#,
         )).unwrap_err();
 
         assert_eq!(
@@ -214,8 +228,8 @@ mod test {
 
         // wrong contract_address
         let wrong_contract_address = "wrong_contract_address";
-        let err = check_verfying_msg(&env, &info, name, &format!(
-            r#"{{"name":"{name}","claimer":"{sender}","contract_address":"{wrong_contract_address}","chain_id":"{chain_id}"}}"#,
+        let err = check_verfying_msg(deps.as_ref(), &env, &info, name, &format!(
+            r#"{{"name":"{name}","claimer":"{sender}","contract_address":"{wrong_contract_address}","chain_id":"{chain_id}","unique_twitter_id":"{unique_twitter_id}"}}"#,
         )).unwrap_err();
 
         assert_eq!(
@@ -230,8 +244,8 @@ mod test {
 
         // wrong chain_id
         let wrong_chain_id = "wrong_chain_id";
-        let err = check_verfying_msg(&env, &info, name, &format!(
-                    r#"{{"name":"{name}","claimer":"{sender}","contract_address":"{contract_address}","chain_id":"{wrong_chain_id}"}}"#,
+        let err = check_verfying_msg(deps.as_ref(), &env, &info, name, &format!(
+                    r#"{{"name":"{name}","claimer":"{sender}","contract_address":"{contract_address}","chain_id":"{wrong_chain_id}","unique_twitter_id":"{unique_twitter_id}"}}"#,
                 )).unwrap_err();
 
         assert_eq!(
