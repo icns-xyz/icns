@@ -28,14 +28,25 @@ pub enum ExecuteMsg {
         /// icns name of the referer, tracked for future incentivization
         referral: Option<String>,
     },
+
+    /// Update verifiers's public key that can sign verification message
     UpdateVerifierPubkeys {
         add: Vec<Binary>,
         remove: Vec<Binary>,
     },
+
+    /// Set threshold as percentage of verification signature required out of all verifiers
+    /// In order to pass verification and proceed with the claim
     SetVerificationThreshold {
+        /// threshold percentage
+        /// "0" => 0%
+        /// "1000000000000000000" => 100%
         threshold: Decimal,
     },
+
+    /// Set name NFT address to be minted once passing verfication
     SetNameNFTAddress {
+        /// valid contract address of the name nft contract
         name_nft_address: String,
     },
 }
