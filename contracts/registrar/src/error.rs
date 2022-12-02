@@ -49,7 +49,7 @@ pub enum ContractError {
     InvalidVerifyingMessage { msg: String },
 
     #[error("User already registered")]
-    DuplicatedTwitter { msg: String },
+    DuplicatedTwitterId { msg: String },
 
     #[error("No verifier set")]
     NoVerifier {},

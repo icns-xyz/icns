@@ -1,9 +1,11 @@
+use std::collections::btree_set::Union;
+
 use cosmrs::{
     crypto::secp256k1::VerifyingKey,
     tendermint::signature::{Secp256k1Signature, Verifier},
 };
 use cosmwasm_std::{
-    from_slice, to_binary, Addr, Binary, Decimal, Deps, Env, MessageInfo, QueryRequest, WasmQuery,
+    from_slice, to_binary, Addr, Binary, Decimal, Deps, Env, MessageInfo, QueryRequest, WasmQuery, DepsMut,
 };
 
 use icns_name_nft::msg::{AdminResponse, QueryMsg as NameNFTQueryMsg};
@@ -67,11 +69,8 @@ pub fn check_verfying_msg(
 
     // check if unique twitter id is not stored
     if UNIQUE_TWITTER_ID.may_load(deps.storage, verifying_msg.unique_twitter_id.clone())?.is_some() {
-        return Err(ContractError::InvalidVerifyingMessage {
-            msg: format!(
-                "twitter id `{}` is already used",
-                verifying_msg.unique_twitter_id
-            ),
+        return Err(ContractError::DuplicatedTwitterId {
+            msg:  format!("unique twitter id `{}` is already used", verifying_msg.unique_twitter_id),
         });
     }
 
@@ -190,13 +189,13 @@ mod test {
         let name = "name";
 
         // success case, everything is matched
-        check_verfying_msg(deps.as_ref(),&env, &info, name, &format!(
+        check_verfying_msg(deps.as_ref(), &env, &info, name, &format!(
             r#"{{"name":"{name}","claimer":"{sender}","contract_address":"{contract_address}","chain_id":"{chain_id}","unique_twitter_id":"{unique_twitter_id}"}}"#,
         )).unwrap();
 
         // name mismatched
         let mismatched_name = "mismatched_name";
-        let err = check_verfying_msg(deps.as_ref(),&env, &info, name, &format!(
+        let err = check_verfying_msg(deps.as_ref(), &env, &info, name, &format!(
             r#"{{"name":"{mismatched_name}","claimer":"{sender}","contract_address":"{contract_address}","chain_id":"{chain_id}","unique_twitter_id":"{unique_twitter_id}"}}"#,
         )).unwrap_err();
 

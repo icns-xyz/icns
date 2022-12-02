@@ -253,14 +253,15 @@ fn claim_name() {
     assert_eq!(owner(&app, bob_name.to_string()).unwrap(), bob);
 
     // execute claim with passing but same name -> should error
+    let new_twitter_id = "11111";
     let verifying_msg = format!(
-        r#"{{"name":"{bob_name}","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}","unique_twitter_id":"{unique_twitter_id}"}}"#,
+        r#"{{"name":"{bob_name}","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}","unique_twitter_id":"{new_twitter_id}"}}"#,
     );
 
     let err = app
         .execute_contract(
-            bob,
-            registrar_contract_addr,
+            bob.clone(),
+            registrar_contract_addr.clone(),
             &ExecuteMsg::Claim {
                 name: bob_name.to_string(),
                 verifying_msg: verifying_msg.clone(),
@@ -270,10 +271,37 @@ fn claim_name() {
             &[],
         )
         .unwrap_err();
+    
 
     assert_eq!(
         err.downcast_ref::<icns_name_nft::error::ContractError>()
             .unwrap(),
         &(cw721_base::ContractError::Claimed {}.into())
+    );
+
+    // execute claim with passing(different name) but with same unique twitter id -> should error
+    let new_name = "new_name".to_string();
+    let verifying_msg = format!(
+        r#"{{"name":"{new_name}","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}","unique_twitter_id":"{unique_twitter_id}"}}"#,
+    );
+
+    let err = app
+        .execute_contract(
+            bob.clone(),
+            registrar_contract_addr.clone(),
+            &ExecuteMsg::Claim {
+                name: new_name,
+                verifying_msg: verifying_msg.clone(),
+                verifications: verify_all(&verifying_msg, vec![verifier1(), verifier2()]),
+                referral: None,
+            },
+            &[],
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        err.downcast_ref::<ContractError>()
+            .unwrap(),
+        &ContractError::DuplicatedTwitterId { msg: format!("unique twitter id `{}` is already used", unique_twitter_id) }
     );
 }

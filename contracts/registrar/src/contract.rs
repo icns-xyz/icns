@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, to_binary, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Response, StdError,
+    attr, to_binary, Binary, Decimal, Deps, DepsMut, Env, from_slice, MessageInfo, Response, StdError,
     StdResult, WasmMsg,
 };
 use cw2::set_contract_version;
@@ -15,7 +15,7 @@ use crate::checks::{
 use crate::error::ContractError;
 use crate::msg::{
     ExecuteMsg, InstantiateMsg, NameNFTAddressResponse, QueryMsg, Verification,
-    VerificationThresholdResponse, VerifierPubKeysResponse,
+    VerificationThresholdResponse, VerifierPubKeysResponse, VerifyingMsg,
 };
 
 use icns_name_nft::msg::ExecuteMsg as NameNFTExecuteMsg;
@@ -204,8 +204,9 @@ pub fn execute_claim(
         }
     }
 
-    // save unique twitter id so that we do not have duplicate user
-    UNIQUE_TWITTER_ID.save(deps.storage, name.clone(), &true)?;
+    let verifying_msg: VerifyingMsg = from_slice(verifying_msg_str.as_bytes())?;
+    UNIQUE_TWITTER_ID.save(deps.storage, verifying_msg.unique_twitter_id, &true)?;
+
 
     // mint name nft
     let config = CONFIG.load(deps.storage)?;
