@@ -1,5 +1,3 @@
-use hex_literal::hex;
-
 use crate::{
     contract::execute,
     contract::instantiate,
@@ -7,7 +5,9 @@ use crate::{
     msg::{self, ExecuteMsg},
     msg::{Adr36Info, InstantiateMsg},
 };
+use cosmrs::{bip32, crypto::secp256k1::SigningKey, tendermint::signature::Secp256k1Signature};
 use cosmwasm_std::{Binary, Empty};
+use hex_literal::hex;
 // import execute
 
 use cosmwasm_std::Addr;
@@ -15,57 +15,6 @@ use cw_multi_test::{App, BasicApp, Contract, ContractWrapper, Executor};
 
 use cw721_base::{ExecuteMsg as CW721BaseExecuteMsg, Extension, MintMsg};
 use icns_name_nft::{self, msg::ExecuteMsg as NameExecuteMsg, msg::ICNSNameExecuteMsg::SetMinter};
-
-pub struct TestEnv {
-    pub app: BasicApp,
-    pub code_id: u64,
-    pub contract_addr: Addr,
-    pub name_nft: Addr,
-}
-
-pub struct TestEnvBuilder {
-    pub name_nft: Addr,
-}
-
-impl Default for TestEnvBuilder {
-    fn default() -> Self {
-        Self {
-            name_nft: Addr::unchecked("name_nft"),
-        }
-    }
-}
-impl TestEnvBuilder {
-    pub fn with_name_nft_contract(self, name_nft: Addr) -> Self {
-        Self { name_nft }
-    }
-
-    pub fn build(self) -> TestEnv {
-        let mut app = BasicApp::default();
-        let code_id = app.store_code(resolver_contract());
-
-        let sender = Addr::unchecked("sender");
-
-        let contract_addr = app
-            .instantiate_contract(
-                code_id,
-                sender,
-                &InstantiateMsg {
-                    name_address: self.name_nft.to_string(),
-                },
-                &[],
-                "resolver",
-                None,
-            )
-            .unwrap();
-
-        TestEnv {
-            app,
-            code_id,
-            contract_addr,
-            name_nft: self.name_nft,
-        }
-    }
-}
 
 pub fn resolver_contract() -> Box<dyn Contract<Empty>> {
     let contract = ContractWrapper::new(execute, instantiate, query);
@@ -81,7 +30,7 @@ pub fn name_nft_contract() -> Box<dyn Contract<Empty>> {
     Box::new(contract)
 }
 
-pub fn default_record_msg() -> ExecuteMsg {
+pub fn osmo_set_record_msg(replace_primary_if_exists: bool) -> ExecuteMsg {
     let original_pubkey_vec =
         hex!("02394bc53633366a2ab9b5d697a94c8c0121cc5e3f0d554a63167edb318ceae8bc");
     let original_signature_vec = hex!("74331c35c9dd49eb3d39f693afc363e77e5541d94839639b7c71e2f18b001295561f123cb169128a34aedb15dddd1caa42e3cbc39104cb07a32658e9de5707a1");
@@ -97,12 +46,12 @@ pub fn default_record_msg() -> ExecuteMsg {
             signature,
         },
         bech32_prefix: "osmo".to_string(),
-        replace_primary_if_exists: false,
+        replace_primary_if_exists,
         signature_salt: 1323124,
     }
 }
 
-pub fn default_second_record_msg() -> ExecuteMsg {
+pub fn juno_set_record_msg(replace_primary_if_exists: bool) -> ExecuteMsg {
     let original_pubkey_vec =
         hex!("02394bc53633366a2ab9b5d697a94c8c0121cc5e3f0d554a63167edb318ceae8bc");
     let original_signature_vec = hex!("1d2048b59cc0fa1799bdc11695fb31d141429ef80c7223afb9eb6581ca7a4e1d38c8e9b70852110efbc41d59b3b0d40a9b0257dd3c34da0243cca60eea35edb1");
@@ -118,9 +67,17 @@ pub fn default_second_record_msg() -> ExecuteMsg {
             signature,
         },
         bech32_prefix: "juno".to_string(),
-        replace_primary_if_exists: false,
+        replace_primary_if_exists,
         signature_salt: 13231,
     }
+}
+
+pub fn default_osmo_set_record_msg() -> ExecuteMsg {
+    osmo_set_record_msg(false)
+}
+
+pub fn default_juno_set_record_msg() -> ExecuteMsg {
+    juno_set_record_msg(false)
 }
 
 pub fn default_setting(admins: Vec<String>, registrar: String) -> (Addr, Addr, App) {
@@ -128,26 +85,16 @@ pub fn default_setting(admins: Vec<String>, registrar: String) -> (Addr, Addr, A
     let resolver_contract_addr =
         instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
 
-    //  mint name nft to bob
-    let mint = app
-        .execute_contract(
-            Addr::unchecked(registrar),
-            name_nft_contract.clone(),
-            &NameExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
-                token_id: "bob".to_string(),
-                owner: "bob".to_string(),
-                token_uri: None,
-                extension: None,
-            })),
-            &[],
-        )
-        .is_err();
-    assert_eq!(mint, false);
-
+    //  mint name nft to tony
     app.execute_contract(
-        Addr::unchecked(admins[0].clone()),
-        resolver_contract_addr.clone(),
-        &default_record_msg(),
+        Addr::unchecked(registrar),
+        name_nft_contract.clone(),
+        &NameExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+            token_id: "tony".to_string(),
+            owner: "tony".to_string(),
+            token_uri: None,
+            extension: None,
+        })),
         &[],
     )
     .unwrap();
@@ -155,7 +102,15 @@ pub fn default_setting(admins: Vec<String>, registrar: String) -> (Addr, Addr, A
     app.execute_contract(
         Addr::unchecked(admins[0].clone()),
         resolver_contract_addr.clone(),
-        &default_second_record_msg(),
+        &default_osmo_set_record_msg(),
+        &[],
+    )
+    .unwrap();
+
+    app.execute_contract(
+        Addr::unchecked(admins[0].clone()),
+        resolver_contract_addr.clone(),
+        &default_juno_set_record_msg(),
         &[],
     )
     .unwrap();
@@ -212,4 +167,36 @@ pub fn instantiate_resolver_with_name_nft(app: &mut BasicApp, name_nft: Addr) ->
         None,
     )
     .unwrap()
+}
+
+pub fn from_mnemonic(phrase: &str, derivation_path: &str) -> SigningKey {
+    let seed = bip32::Mnemonic::new(phrase, bip32::Language::English)
+        .unwrap()
+        .to_seed("");
+    let xprv = bip32::XPrv::derive_from_path(seed, &derivation_path.parse().unwrap()).unwrap();
+    xprv.into()
+}
+
+pub trait ToBinary {
+    fn to_binary(&self) -> Binary;
+}
+
+impl ToBinary for SigningKey {
+    fn to_binary(&self) -> Binary {
+        Binary(self.public_key().to_bytes())
+    }
+}
+
+impl ToBinary for Secp256k1Signature {
+    fn to_binary(&self) -> Binary {
+        Binary(self.to_vec())
+    }
+}
+
+const DERIVATION_PATH: &str = "m/44'/118'/0'/0/0";
+pub fn signer1() -> SigningKey {
+    from_mnemonic("notice oak worry limit wrap speak medal online prefer cluster roof addict wrist behave treat actual wasp year salad speed social layer crew genius", DERIVATION_PATH)
+}
+pub fn signer2() -> SigningKey {
+    from_mnemonic("quality vacuum heart guard buzz spike sight swarm shove special gym robust assume sudden deposit grid alcohol choice devote leader tilt noodle tide penalty", DERIVATION_PATH)
 }

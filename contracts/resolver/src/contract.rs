@@ -4,7 +4,7 @@ use cosmwasm_std::Order::Ascending;
 
 use cosmwasm_std::{
     from_binary, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryRequest, Response,
-    StdResult, WasmQuery,
+    StdError, StdResult, WasmQuery,
 };
 use cw2::set_contract_version;
 use subtle_encoding::bech32;
@@ -15,7 +15,7 @@ use crate::crypto::adr36_verification;
 use crate::error::ContractError;
 use crate::msg::{
     AddressHash, Adr36Info, ExecuteMsg, GetAddressResponse, GetAddressesResponse, InstantiateMsg,
-    QueryMsg,
+    PrimaryNameResponse, QueryMsg,
 };
 use crate::state::{AddressInfo, Config, ADDRESSES, CONFIG, REVERSE_RESOLVER, SIGNATURE};
 use cw721::OwnerOfResponse;
@@ -66,6 +66,7 @@ pub fn execute(
             replace_primary_if_exists,
             signature_salt,
         ),
+        ExecuteMsg::SetPrimary { name } => execute_set_primary(deps, info, name),
     }
 }
 
@@ -176,6 +177,40 @@ pub fn execute_set_record(
     Ok(Response::default())
 }
 
+fn execute_set_primary(
+    deps: DepsMut,
+    info: MessageInfo,
+    name: String,
+) -> Result<Response, ContractError> {
+    if !is_owner(deps.as_ref(), name.clone(), info.sender.to_string())? {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    REVERSE_RESOLVER.update(
+        deps.storage,
+        info.sender.to_string(),
+        |address_infos: Option<Vec<AddressInfo>>| -> Result<_, ContractError> {
+            match address_infos {
+                Some(address_infos) => Ok(address_infos
+                    .into_iter()
+                    .map(|address_info| AddressInfo {
+                        primary: address_info.user_name == name,
+                        ..address_info
+                    })
+                    .collect()),
+                None => Err(StdError::NotFound {
+                    kind: "Vec<AddressInfo>".to_string(),
+                }
+                .into()),
+            }
+        },
+    )?;
+
+    Ok(Response::new()
+        .add_attribute("method", "set_primary")
+        .add_attribute("name", name))
+}
+
 pub fn is_admin(deps: Deps, address: String) -> Result<bool, ContractError> {
     let cfg = CONFIG.load(deps.storage)?;
     let name_address = cfg.name_address;
@@ -205,19 +240,16 @@ pub fn admin(deps: Deps) -> Result<Vec<String>, ContractError> {
 }
 
 pub fn is_owner(deps: Deps, username: String, sender: String) -> Result<bool, ContractError> {
-    let response = deps
-        .querier
-        .query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: CONFIG.load(deps.storage)?.name_address.to_string(),
-            msg: to_binary(&QueryMsgName::OwnerOf {
-                token_id: username,
-                include_expired: None,
-            })?,
-        }))
-        .map(|res| from_binary(&res).unwrap());
+    let response = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+        contract_addr: CONFIG.load(deps.storage)?.name_address.to_string(),
+        msg: to_binary(&QueryMsgName::OwnerOf {
+            token_id: username,
+            include_expired: None,
+        })?,
+    }));
 
     match response {
-        Ok(OwnerOfResponse { owner, .. }) => Ok(owner.eq(&sender)),
+        Ok(OwnerOfResponse { owner, .. }) => Ok(owner == sender),
         Err(_) => Ok(false),
     }
 }
@@ -232,8 +264,23 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             bech32_prefix,
         } => to_binary(&query_address(deps, env, user_name, bech32_prefix)?),
         QueryMsg::Admin {} => to_binary(&query_admin(deps)?),
+        QueryMsg::PrimaryName { address } => to_binary(&query_primary_name(deps, address)?),
         // TODO: add query to query directly using ICNS (e.g req: tony.eth)
     }
+}
+
+fn query_primary_name(deps: Deps, address: String) -> StdResult<PrimaryNameResponse> {
+    let address_infos = REVERSE_RESOLVER.load(deps.storage, address)?;
+
+    let name = address_infos
+        .into_iter()
+        .find(|info| info.primary)
+        .ok_or_else(|| StdError::NotFound {
+            kind: "primary name".to_string(),
+        })?
+        .user_name;
+
+    Ok(PrimaryNameResponse { name })
 }
 
 fn query_addresses(deps: Deps, _env: Env, name: String) -> StdResult<GetAddressesResponse> {
@@ -241,7 +288,7 @@ fn query_addresses(deps: Deps, _env: Env, name: String) -> StdResult<GetAddresse
         .prefix(name)
         .range(deps.storage, None, None, Ascending)
         .collect::<StdResult<Vec<_>>>()?;
-    if &addresses.len() == &0 {
+    if addresses.is_empty() {
         return Ok(GetAddressesResponse { addresses: vec![] });
     }
     let resp = GetAddressesResponse { addresses };
