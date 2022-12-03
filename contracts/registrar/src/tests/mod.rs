@@ -1,10 +1,10 @@
 #![cfg(test)]
 
+pub mod helpers;
+
 mod claim;
 
 mod verifiers;
-
-mod helpers;
 
 mod threshold;
 

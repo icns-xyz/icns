@@ -40,7 +40,7 @@ impl ToBinary for SigningKey {
 
 impl ToBinary for Secp256k1Signature {
     fn to_binary(&self) -> Binary {
-        Binary(self.to_der().as_bytes().to_vec())
+        Binary(self.to_vec())
     }
 }
 
