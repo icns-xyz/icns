@@ -92,7 +92,6 @@ fn bech32_verification() {
             signature: signature.clone(),
         },
         bech32_prefix: "osmo".to_string(),
-        replace_primary_if_exists: false,
         signature_salt: 1323124u128.into(),
     };
 
@@ -116,7 +115,6 @@ fn bech32_verification() {
             signature: signature.clone(),
         },
         bech32_prefix: "juno".to_string(),
-        replace_primary_if_exists: false,
         signature_salt: 1323124u128.into(),
     };
     let err = app
@@ -140,7 +138,6 @@ fn bech32_verification() {
             signature,
         },
         bech32_prefix: "osmo".to_string(),
-        replace_primary_if_exists: false,
         signature_salt: 1323124u128.into(),
     };
     let err = app
