@@ -25,7 +25,6 @@ pub enum ExecuteMsg {
 pub struct Adr36Info {
     pub bech32_address: String,
     pub address_hash: AddressHash,
-    //
     pub pub_key: Binary,
     pub signature: Binary,
 }
