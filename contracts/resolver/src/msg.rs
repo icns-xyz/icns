@@ -10,7 +10,7 @@ pub struct InstantiateMsg {
 #[cw_serde]
 pub enum ExecuteMsg {
     SetRecord {
-        user_name: String,
+        name: String,
         bech32_prefix: String,
         adr36_info: Adr36Info,
         replace_primary_if_exists: bool,
@@ -41,14 +41,11 @@ pub enum QueryMsg {
     #[returns(Config)]
     Config {},
 
-    #[returns(GetAddressesResponse)]
-    GetAddresses { user_name: String },
+    #[returns(AddressesResponse)]
+    Addresses { name: String },
 
-    #[returns(GetAddressResponse)]
-    GetAddress {
-        user_name: String,
-        bech32_prefix: String,
-    },
+    #[returns(AddressResponse)]
+    Address { name: String, bech32_prefix: String },
 
     /// An address and hold multiple names, this query returns
     /// their primary name.
@@ -70,12 +67,12 @@ pub struct AdminResponse {
 }
 
 #[cw_serde]
-pub struct GetAddressesResponse {
+pub struct AddressesResponse {
     // tuple of (bech32 prefix, address)
     pub addresses: Vec<(String, String)>,
 }
 
 #[cw_serde]
-pub struct GetAddressResponse {
+pub struct AddressResponse {
     pub address: String,
 }

@@ -2,7 +2,7 @@
 
 use crate::{
     msg::AdminResponse,
-    msg::{GetAddressResponse, GetAddressesResponse, QueryMsg},
+    msg::{AddressResponse, AddressesResponse, QueryMsg},
 };
 
 use cosmwasm_std::{Addr, Empty};
@@ -48,12 +48,12 @@ fn query_addresses() {
         default_setting(admins, registrar.clone());
 
     // query addresses
-    let GetAddressesResponse { addresses } = app
+    let AddressesResponse { addresses } = app
         .wrap()
         .query_wasm_smart(
             resolver_contract_addr,
-            &QueryMsg::GetAddresses {
-                user_name: "tony".to_string(),
+            &QueryMsg::Addresses {
+                name: "tony".to_string(),
             },
         )
         .unwrap();
@@ -101,7 +101,7 @@ fn query_addresses() {
     //     .query_wasm_smart(
     //         resolver_contract_addr.clone(),
     //         &QueryMsg::GetAddresses {
-    //             user_name: "bob".to_string(),
+    //             name: "bob".to_string(),
     //         },
     //     )
     //     .unwrap();
@@ -125,12 +125,12 @@ fn query_address() {
         default_setting(admins, registrar.clone());
 
     // query address
-    let GetAddressResponse { address } = app
+    let AddressResponse { address } = app
         .wrap()
         .query_wasm_smart(
             resolver_contract_addr.clone(),
-            &QueryMsg::GetAddress {
-                user_name: "tony".to_string(),
+            &QueryMsg::Address {
+                name: "tony".to_string(),
                 bech32_prefix: "osmo".to_string(),
             },
         )
@@ -141,12 +141,12 @@ fn query_address() {
         "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string()
     );
 
-    let GetAddressResponse { address } = app
+    let AddressResponse { address } = app
         .wrap()
         .query_wasm_smart(
             resolver_contract_addr.clone(),
-            &QueryMsg::GetAddress {
-                user_name: "tony".to_string(),
+            &QueryMsg::Address {
+                name: "tony".to_string(),
                 bech32_prefix: "juno".to_string(),
             },
         )
@@ -157,12 +157,12 @@ fn query_address() {
         "juno1d2kh2xaen7c0zv3h7qnmghhwhsmmassqffq35s".to_string()
     );
 
-    let GetAddressResponse { address } = app
+    let AddressResponse { address } = app
         .wrap()
         .query_wasm_smart(
             resolver_contract_addr,
-            &QueryMsg::GetAddress {
-                user_name: "tony".to_string(),
+            &QueryMsg::Address {
+                name: "tony".to_string(),
                 bech32_prefix: "random".to_string(),
             },
         )
@@ -199,7 +199,7 @@ fn query_address() {
     //     .query_wasm_smart(
     //         resolver_contract_addr.clone(),
     //         &QueryMsg::GetAddress {
-    //             user_name: "alice".to_string(),
+    //             name: "alice".to_string(),
     //             bech32_prefix: "osmo".to_string(),
     //         },
     //     )

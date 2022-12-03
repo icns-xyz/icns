@@ -74,7 +74,7 @@ fn secp256k1_verification() {
 
 #[test]
 fn create_valid_adr36_data() {
-    let user_name = "tony".to_string();
+    let name = "tony".to_string();
     let bech32_prefix = "osmo".to_string();
     let bech32_address = "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string();
     let chain_id = "osmosis-1".to_string();
@@ -82,7 +82,7 @@ fn create_valid_adr36_data() {
     let signature_salt = 1323124;
 
     let message = create_adr36_data(
-        user_name,
+        name,
         bech32_prefix,
         bech32_address,
         chain_id,
@@ -104,7 +104,7 @@ Salt: 1323124"
 
 #[test]
 fn create_valid_adr36_message() {
-    let user_name = "tony".to_string();
+    let name = "tony".to_string();
     let bech32_prefix = "osmo".to_string();
     let bech32_address = "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string();
     let chain_id = "osmosis-1".to_string();
@@ -112,7 +112,7 @@ fn create_valid_adr36_message() {
     let signature_salt = 1323124;
 
     let message = create_adr36_message(
-        user_name,
+        name,
         bech32_prefix,
         bech32_address.clone(),
         chain_id,
@@ -136,7 +136,7 @@ fn create_valid_adr36_message() {
 
 #[test]
 fn adr36_verify() {
-    let user_name = "tony".to_string();
+    let name = "tony".to_string();
     let bech32_prefix = "osmo".to_string();
     let bech32_address = "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string();
     let chain_id = "cosmos-testnet-14002".to_string();
@@ -159,7 +159,7 @@ fn adr36_verify() {
     let deps = mock_dependencies();
     let adr_verification = adr36_verification(
         deps.as_ref(),
-        user_name,
+        name,
         bech32_prefix,
         adr36_info,
         chain_id,

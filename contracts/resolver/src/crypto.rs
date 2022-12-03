@@ -12,7 +12,7 @@ use crate::{msg::Adr36Info, ContractError};
 
 pub fn adr36_verification(
     deps: Deps,
-    user_name: String,
+    name: String,
     bech32_prefix: String,
     adr36_info: Adr36Info,
     chain_id: String,
@@ -32,7 +32,7 @@ pub fn adr36_verification(
     }
 
     let message = create_adr36_message(
-        user_name,
+        name,
         bech32_prefix,
         adr36_info.bech32_address,
         chain_id,
@@ -70,7 +70,7 @@ pub fn pubkey_to_bech32_address(pub_key: Binary, bech32_prefix: String) -> Strin
 }
 
 pub fn create_adr36_message(
-    user_name: String,
+    name: String,
     bech32_prefix: String,
     bech32_address: String,
     chain_id: String,
@@ -79,7 +79,7 @@ pub fn create_adr36_message(
 ) -> String {
     let message_prefix = "{\"account_number\":\"0\",\"chain_id\":\"\",\"fee\":{\"amount\":[],\"gas\":\"0\"},\"memo\":\"\",\"msgs\":[{\"type\":\"sign/MsgSignData\",\"value\":{\"data\":\"";
     let data = create_adr36_data(
-        user_name,
+        name,
         bech32_prefix,
         bech32_address.clone(),
         chain_id,
@@ -97,14 +97,14 @@ pub fn create_adr36_message(
 }
 
 pub fn create_adr36_data(
-    user_name: String,
+    name: String,
     bech32_prefix: String,
     bech32_address: String,
     chain_id: String,
     contract_address: String,
     signature_salt: u128,
 ) -> String {
-    let icns = user_name + "." + &bech32_prefix;
+    let icns = name + "." + &bech32_prefix;
     let address = bech32_address;
     let salt = signature_salt.to_string();
 

@@ -18,7 +18,7 @@ pub const REVERSE_RESOLVER: Map<String, Vec<AddressInfo>> = Map::new("reverse_re
 
 #[cw_serde]
 pub struct AddressInfo {
-    pub user_name: String,
+    pub name: String,
     pub bech32_prefix: String,
     pub primary: bool,
 }
