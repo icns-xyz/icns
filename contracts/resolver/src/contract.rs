@@ -3,7 +3,7 @@ use cosmwasm_std::entry_point;
 use cosmwasm_std::Order::Ascending;
 
 use cosmwasm_std::{
-    from_binary, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryRequest, Response,
+    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryRequest, Response,
     StdError, StdResult, WasmQuery,
 };
 use cw2::set_contract_version;
@@ -64,7 +64,7 @@ pub fn execute(
             bech32_prefix,
             adr36_info,
             replace_primary_if_exists,
-            signature_salt,
+            signature_salt.u128(),
         ),
         ExecuteMsg::SetPrimary { name } => execute_set_primary(deps, info, name),
     }

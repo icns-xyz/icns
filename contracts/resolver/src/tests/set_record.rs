@@ -93,7 +93,7 @@ fn bech32_verification() {
         },
         bech32_prefix: "osmo".to_string(),
         replace_primary_if_exists: false,
-        signature_salt: 1323124,
+        signature_salt: 1323124u128.into(),
     };
 
     let err = app
@@ -117,7 +117,7 @@ fn bech32_verification() {
         },
         bech32_prefix: "juno".to_string(),
         replace_primary_if_exists: false,
-        signature_salt: 1323124,
+        signature_salt: 1323124u128.into(),
     };
     let err = app
         .execute_contract(
@@ -136,12 +136,12 @@ fn bech32_verification() {
             // invalid address
             bech32_address: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string(),
             address_hash: msg::AddressHash::SHA256,
-            pub_key: pub_key,
-            signature: signature,
+            pub_key,
+            signature,
         },
         bech32_prefix: "osmo".to_string(),
         replace_primary_if_exists: false,
-        signature_salt: 1323124,
+        signature_salt: 1323124u128.into(),
     };
     let err = app
         .execute_contract(
