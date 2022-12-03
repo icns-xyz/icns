@@ -47,7 +47,7 @@ pub fn osmo_set_record_msg(replace_primary_if_exists: bool) -> ExecuteMsg {
         },
         bech32_prefix: "osmo".to_string(),
         replace_primary_if_exists,
-        signature_salt: 1323124,
+        signature_salt: 1323124u128.into(),
     }
 }
 
@@ -68,7 +68,7 @@ pub fn juno_set_record_msg(replace_primary_if_exists: bool) -> ExecuteMsg {
         },
         bech32_prefix: "juno".to_string(),
         replace_primary_if_exists,
-        signature_salt: 13231,
+        signature_salt: 13231u128.into(),
     }
 }
 

@@ -1,4 +1,5 @@
 use cosmrs::{
+    bip32::secp256k1::schnorr::signature::Signature,
     crypto::secp256k1::VerifyingKey,
     tendermint::signature::{Secp256k1Signature, Verifier},
 };
@@ -112,7 +113,7 @@ pub fn check_verification_pass_threshold(
 
     if let Some(duplicated_signature) = duplicated_signatures {
         let signature = check_signature(duplicated_signature)?;
-        let signature = Binary(signature.to_der().as_bytes().to_vec());
+        let signature = Binary(signature.to_vec());
         return Err(ContractError::DuplicatedVerification { signature });
     }
 
@@ -133,7 +134,7 @@ pub fn check_verification_pass_threshold(
 
 fn verify_secp256k1_signature(
     msg: &[u8],
-    signature: &[u8], // DER encoded
+    signature: &[u8], // bytes of r/s components
     pubkey: &[u8],    // SEC-1 encoded
 ) -> Result<(), ContractError> {
     let verifying_key = check_verifying_key(pubkey)?;
@@ -149,7 +150,7 @@ pub fn check_verifying_key(pubkey: &[u8]) -> Result<VerifyingKey, ContractError>
 }
 
 pub fn check_signature(signature: &[u8]) -> Result<Secp256k1Signature, ContractError> {
-    Secp256k1Signature::from_der(signature).map_err(|_| ContractError::InvalidSignatureFormat {})
+    Secp256k1Signature::from_bytes(signature).map_err(|_| ContractError::InvalidSignatureFormat {})
 }
 
 pub fn check_valid_threshold(percent: &Decimal) -> Result<(), ContractError> {
@@ -172,6 +173,8 @@ mod test {
         testing::{mock_dependencies, mock_env, mock_info},
         Addr, Decimal, DepsMut,
     };
+
+    use crate::tests::helpers::ToBinary;
 
     fn from_mnemonic(phrase: &str, derivation_path: &str) -> SigningKey {
         let seed = bip32::Mnemonic::new(phrase, bip32::Language::English)
@@ -270,10 +273,10 @@ mod test {
         // all sec1 encoded should be ok
         let pubkey = verifier1.public_key().to_bytes();
         let msg = r#"{"name":"boss"}"#;
-        let signature = verifier1.sign(msg.as_bytes()).unwrap().to_der();
+        let signature = verifier1.sign(msg.as_bytes()).unwrap().to_vec();
 
         assert_eq!(
-            verify_secp256k1_signature(msg.as_bytes(), signature.as_bytes(), &pubkey),
+            verify_secp256k1_signature(msg.as_bytes(), &signature, &pubkey),
             Ok(())
         );
 
@@ -283,16 +286,12 @@ mod test {
         );
 
         assert_eq!(
-            verify_secp256k1_signature(msg.as_bytes(), signature.as_bytes(), &[69, 69, 69]),
+            verify_secp256k1_signature(msg.as_bytes(), &signature, &[69, 69, 69]),
             Err(ContractError::InvalidPublicKeyFormat {})
         );
 
         assert_eq!(
-            verify_secp256k1_signature(
-                r#"{"name":"slave"}"#.as_bytes(),
-                signature.as_bytes(),
-                &pubkey
-            ),
+            verify_secp256k1_signature(r#"{"name":"slave"}"#.as_bytes(), &signature, &pubkey),
             Err(ContractError::InvalidSignature {})
         );
     }
@@ -324,7 +323,7 @@ mod test {
                         name_nft: Addr::unchecked("namenftaddr"),
                         verifier_pubkeys: vec![verifier1(), verifier2(), verifier3()]
                             .iter()
-                            .map(|sk| Binary(sk.public_key().to_bytes()))
+                            .map(|sk| sk.to_binary())
                             .collect(),
                         verification_threshold_percentage: Decimal::percent(pct),
                     },
@@ -338,7 +337,7 @@ mod test {
                 .map(|v| {
                     (
                         v.public_key().to_bytes(),
-                        v.sign(msg.as_bytes()).unwrap().to_der().as_bytes().to_vec(),
+                        v.sign(msg.as_bytes()).unwrap().to_vec(),
                     )
                 })
                 .collect::<Vec<(Vec<u8>, Vec<u8>)>>()

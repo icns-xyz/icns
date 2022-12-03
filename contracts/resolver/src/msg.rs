@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Binary;
+use cosmwasm_std::{Binary, Uint128};
 
 use crate::state::Config;
 #[cw_serde]
@@ -14,7 +14,7 @@ pub enum ExecuteMsg {
         bech32_prefix: String,
         adr36_info: Adr36Info,
         replace_primary_if_exists: bool,
-        signature_salt: u128, // TODO: change to Uint128
+        signature_salt: Uint128,
     },
     SetPrimary {
         name: String,
@@ -25,7 +25,6 @@ pub enum ExecuteMsg {
 pub struct Adr36Info {
     pub bech32_address: String,
     pub address_hash: AddressHash,
-    //
     pub pub_key: Binary,
     pub signature: Binary,
 }
