@@ -14,7 +14,7 @@ use subtle_encoding::bech32;
 use crate::crypto::adr36_verification;
 use crate::error::ContractError;
 use crate::msg::{
-    AddressHash, Adr36Info, ExecuteMsg, GetAddressResponse, GetAddressesResponse, InstantiateMsg,
+    AddressHash, AddressResponse, AddressesResponse, Adr36Info, ExecuteMsg, InstantiateMsg,
     PrimaryNameResponse, QueryMsg,
 };
 use crate::state::{AddressInfo, Config, ADDRESSES, CONFIG, REVERSE_RESOLVER, SIGNATURE};
@@ -258,8 +258,8 @@ pub fn is_owner(deps: Deps, username: String, sender: String) -> Result<bool, Co
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&CONFIG.load(deps.storage)?),
-        QueryMsg::GetAddresses { name } => to_binary(&query_addresses(deps, env, name)?),
-        QueryMsg::GetAddress {
+        QueryMsg::Addresses { name } => to_binary(&query_addresses(deps, env, name)?),
+        QueryMsg::Address {
             name,
             bech32_prefix,
         } => to_binary(&query_address(deps, env, name, bech32_prefix)?),
@@ -283,15 +283,15 @@ fn query_primary_name(deps: Deps, address: String) -> StdResult<PrimaryNameRespo
     Ok(PrimaryNameResponse { name })
 }
 
-fn query_addresses(deps: Deps, _env: Env, name: String) -> StdResult<GetAddressesResponse> {
+fn query_addresses(deps: Deps, _env: Env, name: String) -> StdResult<AddressesResponse> {
     let addresses = ADDRESSES
         .prefix(name)
         .range(deps.storage, None, None, Ascending)
         .collect::<StdResult<Vec<_>>>()?;
     if addresses.is_empty() {
-        return Ok(GetAddressesResponse { addresses: vec![] });
+        return Ok(AddressesResponse { addresses: vec![] });
     }
-    let resp = GetAddressesResponse { addresses };
+    let resp = AddressesResponse { addresses };
 
     Ok(resp)
 }
@@ -301,12 +301,12 @@ fn query_address(
     _env: Env,
     name: String,
     bech32_prefix: String,
-) -> StdResult<GetAddressResponse> {
+) -> StdResult<AddressResponse> {
     let address = ADDRESSES.may_load(deps.storage, (name, bech32_prefix))?;
 
     match address {
-        Some(addr) => Ok(GetAddressResponse { address: addr }),
-        None => Ok(GetAddressResponse {
+        Some(addr) => Ok(AddressResponse { address: addr }),
+        None => Ok(AddressResponse {
             address: "".to_string(),
         }),
     }

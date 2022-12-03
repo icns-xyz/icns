@@ -294,7 +294,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, StdError> {
         QueryMsg::NameNFTAddress {} => to_binary(&NameNFTAddressResponse {
             name_nft_address: CONFIG.load(deps.storage)?.name_nft.to_string(),
         }),
-        QueryMsg::GetReferralCount { name } => query_get_referral_count(deps, name),
+        QueryMsg::ReferralCount { name } => query_get_referral_count(deps, name),
     }
 }
 

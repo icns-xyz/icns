@@ -62,8 +62,8 @@ pub enum QueryMsg {
     #[returns(NameNFTAddressResponse)]
     NameNFTAddress {},
 
-    #[returns(GetReferralCountResponse)]
-    GetReferralCount { name: String },
+    #[returns(ReferralCountResponse)]
+    ReferralCount { name: String },
 }
 
 #[cw_serde]
@@ -81,7 +81,7 @@ pub struct NameNFTAddressResponse {
 }
 
 #[cw_serde]
-pub struct GetReferralCountResponse {
+pub struct ReferralCountResponse {
     pub admins: Vec<String>,
 }
 

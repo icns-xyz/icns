@@ -271,7 +271,6 @@ fn claim_name() {
             &[],
         )
         .unwrap_err();
-    
 
     assert_eq!(
         err.downcast_ref::<icns_name_nft::error::ContractError>()
@@ -287,8 +286,8 @@ fn claim_name() {
 
     let err = app
         .execute_contract(
-            bob.clone(),
-            registrar_contract_addr.clone(),
+            bob,
+            registrar_contract_addr,
             &ExecuteMsg::Claim {
                 name: new_name,
                 verifying_msg: verifying_msg.clone(),
@@ -300,8 +299,9 @@ fn claim_name() {
         .unwrap_err();
 
     assert_eq!(
-        err.downcast_ref::<ContractError>()
-            .unwrap(),
-        &ContractError::DuplicatedTwitterId { msg: format!("unique twitter id `{}` is already used", unique_twitter_id) }
+        err.downcast_ref::<ContractError>().unwrap(),
+        &ContractError::DuplicatedTwitterId {
+            msg: format!("unique twitter id `{}` is already used", unique_twitter_id)
+        }
     );
 }

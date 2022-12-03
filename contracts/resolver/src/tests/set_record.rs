@@ -2,7 +2,7 @@
 
 use crate::{
     msg::{self, Adr36Info, ExecuteMsg},
-    msg::{GetAddressesResponse, QueryMsg},
+    msg::{AddressesResponse, QueryMsg},
 };
 
 use cosmwasm_std::{Addr, Binary, Empty, StdResult};
@@ -23,9 +23,9 @@ fn set_get_single_record() {
 
     let (_, resolver_contract_addr, app) = default_setting(admins, registrar);
     let addresses = |app: &BasicApp, name: String| -> StdResult<_> {
-        let GetAddressesResponse { addresses, .. } = app.wrap().query_wasm_smart(
+        let AddressesResponse { addresses, .. } = app.wrap().query_wasm_smart(
             resolver_contract_addr.clone(),
-            &QueryMsg::GetAddresses { name: name },
+            &QueryMsg::Addresses { name: name },
         )?;
 
         Ok(addresses)
