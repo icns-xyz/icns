@@ -25,7 +25,7 @@ fn set_get_single_record() {
     let addresses = |app: &BasicApp, name: String| -> StdResult<_> {
         let GetAddressesResponse { addresses, .. } = app.wrap().query_wasm_smart(
             resolver_contract_addr.clone(),
-            &QueryMsg::GetAddresses { user_name: name },
+            &QueryMsg::GetAddresses { name: name },
         )?;
 
         Ok(addresses)
@@ -83,7 +83,7 @@ fn bech32_verification() {
     let pub_key = Binary::from(original_pubkey_vec);
     let signature = Binary::from(original_signature_vec);
     let record_msg = ExecuteMsg::SetRecord {
-        user_name: "tony".to_string(),
+        name: "tony".to_string(),
         adr36_info: Adr36Info {
             // invalid address
             bech32_address: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs699".to_string(),
@@ -108,7 +108,7 @@ fn bech32_verification() {
 
     // now try setting record with unmatching bech32 prefix and address
     let record_msg = ExecuteMsg::SetRecord {
-        user_name: "tony".to_string(),
+        name: "tony".to_string(),
         adr36_info: Adr36Info {
             bech32_address: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string(),
             address_hash: msg::AddressHash::SHA256,
@@ -131,7 +131,7 @@ fn bech32_verification() {
 
     // now set record with valid bech32 prefix and addresses, this should succeed
     let record_msg = ExecuteMsg::SetRecord {
-        user_name: "tony".to_string(),
+        name: "tony".to_string(),
         adr36_info: Adr36Info {
             // invalid address
             bech32_address: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string(),

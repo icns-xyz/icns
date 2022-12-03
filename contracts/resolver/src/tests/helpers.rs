@@ -38,7 +38,7 @@ pub fn osmo_set_record_msg(replace_primary_if_exists: bool) -> ExecuteMsg {
     let signature = Binary::from(original_signature_vec);
 
     ExecuteMsg::SetRecord {
-        user_name: "tony".to_string(),
+        name: "tony".to_string(),
         adr36_info: Adr36Info {
             bech32_address: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string(),
             address_hash: msg::AddressHash::SHA256,
@@ -59,7 +59,7 @@ pub fn juno_set_record_msg(replace_primary_if_exists: bool) -> ExecuteMsg {
     let signature = Binary::from(original_signature_vec);
 
     ExecuteMsg::SetRecord {
-        user_name: "tony".to_string(),
+        name: "tony".to_string(),
         adr36_info: Adr36Info {
             bech32_address: "juno1d2kh2xaen7c0zv3h7qnmghhwhsmmassqffq35s".to_string(),
             address_hash: msg::AddressHash::SHA256,

@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, to_binary, Binary, Decimal, Deps, DepsMut, Env, from_slice, MessageInfo, Response, StdError,
-    StdResult, WasmMsg,
+    attr, from_slice, to_binary, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Response,
+    StdError, StdResult, WasmMsg,
 };
 use cw2::set_contract_version;
 use icns_name_nft::MintMsg;
@@ -207,7 +207,6 @@ pub fn execute_claim(
     let verifying_msg: VerifyingMsg = from_slice(verifying_msg_str.as_bytes())?;
     UNIQUE_TWITTER_ID.save(deps.storage, verifying_msg.unique_twitter_id, &true)?;
 
-
     // mint name nft
     let config = CONFIG.load(deps.storage)?;
     let mint_msg = WasmMsg::Execute {
@@ -295,12 +294,12 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, StdError> {
         QueryMsg::NameNFTAddress {} => to_binary(&NameNFTAddressResponse {
             name_nft_address: CONFIG.load(deps.storage)?.name_nft.to_string(),
         }),
-        QueryMsg::GetReferralCount { user_name } => query_get_referral_count(deps, user_name),
+        QueryMsg::GetReferralCount { name } => query_get_referral_count(deps, name),
     }
 }
 
-fn query_get_referral_count(deps: Deps, user_name: String) -> StdResult<Binary> {
-    let referral_count = REFERRAL.may_load(deps.storage, user_name)?;
+fn query_get_referral_count(deps: Deps, name: String) -> StdResult<Binary> {
+    let referral_count = REFERRAL.may_load(deps.storage, name)?;
     match referral_count {
         Some(count) => to_binary(&count),
         None => to_binary(&0),

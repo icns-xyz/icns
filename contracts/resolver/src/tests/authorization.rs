@@ -29,7 +29,7 @@ fn only_admin_can_set_record() {
     let addresses = |app: &BasicApp, name: String| -> StdResult<_> {
         let GetAddressesResponse { addresses, .. } = app.wrap().query_wasm_smart(
             resolver_contract_addr.clone(),
-            &QueryMsg::GetAddresses { user_name: name },
+            &QueryMsg::GetAddresses { name: name },
         )?;
 
         Ok(addresses)

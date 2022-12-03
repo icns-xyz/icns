@@ -63,7 +63,7 @@ pub enum QueryMsg {
     NameNFTAddress {},
 
     #[returns(GetReferralCountResponse)]
-    GetReferralCount { user_name: String },
+    GetReferralCount { name: String },
 }
 
 #[cw_serde]

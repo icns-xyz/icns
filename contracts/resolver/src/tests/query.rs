@@ -53,7 +53,7 @@ fn query_addresses() {
         .query_wasm_smart(
             resolver_contract_addr,
             &QueryMsg::GetAddresses {
-                user_name: "tony".to_string(),
+                name: "tony".to_string(),
             },
         )
         .unwrap();
@@ -101,7 +101,7 @@ fn query_addresses() {
     //     .query_wasm_smart(
     //         resolver_contract_addr.clone(),
     //         &QueryMsg::GetAddresses {
-    //             user_name: "bob".to_string(),
+    //             name: "bob".to_string(),
     //         },
     //     )
     //     .unwrap();
@@ -130,7 +130,7 @@ fn query_address() {
         .query_wasm_smart(
             resolver_contract_addr.clone(),
             &QueryMsg::GetAddress {
-                user_name: "tony".to_string(),
+                name: "tony".to_string(),
                 bech32_prefix: "osmo".to_string(),
             },
         )
@@ -146,7 +146,7 @@ fn query_address() {
         .query_wasm_smart(
             resolver_contract_addr.clone(),
             &QueryMsg::GetAddress {
-                user_name: "tony".to_string(),
+                name: "tony".to_string(),
                 bech32_prefix: "juno".to_string(),
             },
         )
@@ -162,7 +162,7 @@ fn query_address() {
         .query_wasm_smart(
             resolver_contract_addr,
             &QueryMsg::GetAddress {
-                user_name: "tony".to_string(),
+                name: "tony".to_string(),
                 bech32_prefix: "random".to_string(),
             },
         )
@@ -199,7 +199,7 @@ fn query_address() {
     //     .query_wasm_smart(
     //         resolver_contract_addr.clone(),
     //         &QueryMsg::GetAddress {
-    //             user_name: "alice".to_string(),
+    //             name: "alice".to_string(),
     //             bech32_prefix: "osmo".to_string(),
     //         },
     //     )

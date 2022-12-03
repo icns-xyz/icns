@@ -1,11 +1,9 @@
-use std::collections::btree_set::Union;
-
 use cosmrs::{
     crypto::secp256k1::VerifyingKey,
     tendermint::signature::{Secp256k1Signature, Verifier},
 };
 use cosmwasm_std::{
-    from_slice, to_binary, Addr, Binary, Decimal, Deps, Env, MessageInfo, QueryRequest, WasmQuery, DepsMut,
+    from_slice, to_binary, Addr, Binary, Decimal, Deps, Env, MessageInfo, QueryRequest, WasmQuery,
 };
 
 use icns_name_nft::msg::{AdminResponse, QueryMsg as NameNFTQueryMsg};
@@ -68,9 +66,15 @@ pub fn check_verfying_msg(
     }
 
     // check if unique twitter id is not stored
-    if UNIQUE_TWITTER_ID.may_load(deps.storage, verifying_msg.unique_twitter_id.clone())?.is_some() {
+    if UNIQUE_TWITTER_ID
+        .may_load(deps.storage, verifying_msg.unique_twitter_id.clone())?
+        .is_some()
+    {
         return Err(ContractError::DuplicatedTwitterId {
-            msg:  format!("unique twitter id `{}` is already used", verifying_msg.unique_twitter_id),
+            msg: format!(
+                "unique twitter id `{}` is already used",
+                verifying_msg.unique_twitter_id
+            ),
         });
     }
 
@@ -179,7 +183,7 @@ mod test {
 
     #[test]
     fn test_check_verifying_message() {
-        let mut deps = mock_dependencies();
+        let deps = mock_dependencies();
         let env = mock_env();
         let contract_address = &env.contract.address;
         let chain_id = &env.block.chain_id;
