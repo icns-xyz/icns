@@ -25,7 +25,7 @@ fn replace_primary_if_exists() {
     let admins = vec![admin1, admin2];
     let registrar = String::from("default-registrar");
 
-    let (name_nft_contract, mut app) = instantiate_name_nft(admins.clone(), registrar.clone());
+    let (name_nft_contract, mut app) = instantiate_name_nft(admins, registrar.clone());
     let resolver_contract_addr =
         instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
 
@@ -69,7 +69,7 @@ fn replace_primary_if_exists() {
             let signature = signer.sign(msg.as_bytes()).unwrap().to_binary();
 
             let msg = ExecuteMsg::SetRecord {
-                user_name: name.to_string(),
+                name: name.to_string(),
                 adr36_info: Adr36Info {
                     bech32_address: addr.to_string(),
                     address_hash: msg::AddressHash::SHA256,
@@ -78,7 +78,7 @@ fn replace_primary_if_exists() {
                 },
                 bech32_prefix: "osmo".to_string(),
                 replace_primary_if_exists,
-                signature_salt: 12313,
+                signature_salt: 12313u128.into(),
             };
 
             app.execute_contract(
@@ -142,7 +142,7 @@ fn set_primary() {
     let admins = vec![admin1, admin2];
     let registrar = String::from("default-registrar");
 
-    let (name_nft_contract, mut app) = instantiate_name_nft(admins.clone(), registrar.clone());
+    let (name_nft_contract, mut app) = instantiate_name_nft(admins, registrar.clone());
     let resolver_contract_addr =
         instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
 
@@ -186,7 +186,7 @@ fn set_primary() {
             let signature = signer.sign(msg.as_bytes()).unwrap().to_binary();
 
             let msg = ExecuteMsg::SetRecord {
-                user_name: name.to_string(),
+                name: name.to_string(),
                 adr36_info: Adr36Info {
                     bech32_address: addr.to_string(),
                     address_hash: msg::AddressHash::SHA256,
@@ -195,7 +195,7 @@ fn set_primary() {
                 },
                 bech32_prefix: "osmo".to_string(),
                 replace_primary_if_exists,
-                signature_salt: 12313,
+                signature_salt: 12313u128.into(),
             };
 
             app.execute_contract(

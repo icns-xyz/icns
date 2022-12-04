@@ -19,8 +19,8 @@ pub enum ContractError {
     #[error("Custom Error val: {val:?}")]
     CustomError { val: String },
 
-    #[error("Invalid user name: {user_name:?}")]
-    InvalidUserName { user_name: String },
+    #[error("Invalid name: {name:?}")]
+    InvalidName { name: String },
 
     #[error("Verifier already exists")]
     VerifierAlreadyExists {},

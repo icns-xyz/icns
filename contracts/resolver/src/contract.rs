@@ -3,7 +3,7 @@ use cosmwasm_std::entry_point;
 use cosmwasm_std::Order::Ascending;
 
 use cosmwasm_std::{
-    from_binary, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryRequest, Response,
+    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryRequest, Response,
     StdError, StdResult, WasmQuery,
 };
 use cw2::set_contract_version;
@@ -14,7 +14,7 @@ use subtle_encoding::bech32;
 use crate::crypto::adr36_verification;
 use crate::error::ContractError;
 use crate::msg::{
-    AddressHash, Adr36Info, ExecuteMsg, GetAddressResponse, GetAddressesResponse, InstantiateMsg,
+    AddressHash, AddressResponse, AddressesResponse, Adr36Info, ExecuteMsg, InstantiateMsg,
     PrimaryNameResponse, QueryMsg, ReverseResolvedAddressesResponse,
 };
 use crate::state::{AddressInfo, Config, ADDRESSES, CONFIG, REVERSE_RESOLVER, SIGNATURE};
@@ -51,7 +51,7 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::SetRecord {
-            user_name,
+            name,
             bech32_prefix,
             adr36_info,
             replace_primary_if_exists,
@@ -60,11 +60,11 @@ pub fn execute(
             deps,
             env,
             info,
-            user_name,
+            name,
             bech32_prefix,
             adr36_info,
             replace_primary_if_exists,
-            signature_salt,
+            signature_salt.u128(),
         ),
         ExecuteMsg::SetPrimary { name } => execute_set_primary(deps, info, name),
     }
@@ -74,7 +74,7 @@ pub fn execute_set_record(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    user_name: String,
+    name: String,
     bech32_prefix: String,
     adr36_info: Adr36Info,
     replace_primary_if_exists: bool,
@@ -82,7 +82,7 @@ pub fn execute_set_record(
 ) -> Result<Response, ContractError> {
     // check if the msg sender is a registrar or admin. If not, return err
     let is_admin = is_admin(deps.as_ref(), info.sender.to_string())?;
-    let is_owner_nft = is_owner(deps.as_ref(), user_name.clone(), info.sender.to_string())?;
+    let is_owner_nft = is_owner(deps.as_ref(), name.clone(), info.sender.to_string())?;
 
     // if the sender is neither a registrar nor an admin, return error
     if !is_admin && !is_owner_nft {
@@ -114,7 +114,7 @@ pub fn execute_set_record(
     let contract_address = env.contract.address.to_string();
     adr36_verification(
         deps.as_ref(),
-        user_name.clone(),
+        name.clone(),
         bech32_prefix.clone(),
         adr36_info.clone(),
         chain_id,
@@ -124,7 +124,7 @@ pub fn execute_set_record(
 
     // now append address to the existing reverse resolver list
     let mut address_info = AddressInfo {
-        user_name: user_name.clone(),
+        name: name.clone(),
         bech32_prefix: bech32_prefix.clone(),
         primary: false,
     };
@@ -167,7 +167,7 @@ pub fn execute_set_record(
     // now override the address in the storage
     ADDRESSES.save(
         deps.storage,
-        (user_name, bech32_prefix),
+        (name, bech32_prefix),
         &adr36_info.bech32_address,
     )?;
 
@@ -194,7 +194,7 @@ fn execute_set_primary(
                 Some(address_infos) => Ok(address_infos
                     .into_iter()
                     .map(|address_info| AddressInfo {
-                        primary: address_info.user_name == name,
+                        primary: address_info.name == name,
                         ..address_info
                     })
                     .collect()),
@@ -258,11 +258,11 @@ pub fn is_owner(deps: Deps, username: String, sender: String) -> Result<bool, Co
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&CONFIG.load(deps.storage)?),
-        QueryMsg::GetAddresses { user_name } => to_binary(&query_addresses(deps, env, user_name)?),
-        QueryMsg::GetAddress {
-            user_name,
+        QueryMsg::Addresses { name } => to_binary(&query_addresses(deps, env, name)?),
+        QueryMsg::Address {
+            name,
             bech32_prefix,
-        } => to_binary(&query_address(deps, env, user_name, bech32_prefix)?),
+        } => to_binary(&query_address(deps, env, name, bech32_prefix)?),
         QueryMsg::Admin {} => to_binary(&query_admin(deps)?),
         QueryMsg::PrimaryName { address } => to_binary(&query_primary_name(deps, address)?),
         QueryMsg::ReverseResolvedAddresses { address } => {
@@ -281,7 +281,7 @@ fn query_primary_name(deps: Deps, address: String) -> StdResult<PrimaryNameRespo
         .ok_or_else(|| StdError::NotFound {
             kind: "primary name".to_string(),
         })?
-        .user_name;
+        .name;
 
     Ok(PrimaryNameResponse { name })
 }
@@ -295,15 +295,15 @@ fn query_reverse_resolved_addresses(
     Ok(ReverseResolvedAddressesResponse { addresses })
 }
 
-fn query_addresses(deps: Deps, _env: Env, name: String) -> StdResult<GetAddressesResponse> {
+fn query_addresses(deps: Deps, _env: Env, name: String) -> StdResult<AddressesResponse> {
     let addresses = ADDRESSES
         .prefix(name)
         .range(deps.storage, None, None, Ascending)
         .collect::<StdResult<Vec<_>>>()?;
     if addresses.is_empty() {
-        return Ok(GetAddressesResponse { addresses: vec![] });
+        return Ok(AddressesResponse { addresses: vec![] });
     }
-    let resp = GetAddressesResponse { addresses };
+    let resp = AddressesResponse { addresses };
 
     Ok(resp)
 }
@@ -311,14 +311,14 @@ fn query_addresses(deps: Deps, _env: Env, name: String) -> StdResult<GetAddresse
 fn query_address(
     deps: Deps,
     _env: Env,
-    user_name: String,
+    name: String,
     bech32_prefix: String,
-) -> StdResult<GetAddressResponse> {
-    let address = ADDRESSES.may_load(deps.storage, (user_name, bech32_prefix))?;
+) -> StdResult<AddressResponse> {
+    let address = ADDRESSES.may_load(deps.storage, (name, bech32_prefix))?;
 
     match address {
-        Some(addr) => Ok(GetAddressResponse { address: addr }),
-        None => Ok(GetAddressResponse {
+        Some(addr) => Ok(AddressResponse { address: addr }),
+        None => Ok(AddressResponse {
             address: "".to_string(),
         }),
     }
