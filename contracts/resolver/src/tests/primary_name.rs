@@ -38,60 +38,58 @@ fn replace_primary_if_exists() {
         Ok(name)
     };
 
-    let mint_and_set_record =
-        |app: &mut BasicApp, name: &str, signer: &SigningKey, replace_primary_if_exists: bool| {
-            let addr = pubkey_to_bech32_address(signer.to_binary(), "osmo".to_string());
+    let mint_and_set_record = |app: &mut BasicApp, name: &str, signer: &SigningKey| {
+        let addr = pubkey_to_bech32_address(signer.to_binary(), "osmo".to_string());
 
-            app.execute_contract(
-                Addr::unchecked(registrar.clone()),
-                name_nft_contract.clone(),
-                &CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
-                    token_id: name.to_string(),
-                    owner: addr.to_string(),
-                    token_uri: None,
-                    extension: None,
-                }),
-                &[],
-            )
-            .unwrap();
+        app.execute_contract(
+            Addr::unchecked(registrar.clone()),
+            name_nft_contract.clone(),
+            &CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+                token_id: name.to_string(),
+                owner: addr.to_string(),
+                token_uri: None,
+                extension: None,
+            }),
+            &[],
+        )
+        .unwrap();
 
-            let multitest_chain_id = "cosmos-testnet-14002";
+        let multitest_chain_id = "cosmos-testnet-14002";
 
-            let msg = create_adr36_message(
-                name.to_string(),
-                "osmo".to_string(),
-                addr.to_string(),
-                multitest_chain_id.to_string(),
-                resolver_contract_addr.to_string(),
-                12313,
-            );
+        let msg = create_adr36_message(
+            name.to_string(),
+            "osmo".to_string(),
+            addr.to_string(),
+            multitest_chain_id.to_string(),
+            resolver_contract_addr.to_string(),
+            12313,
+        );
 
-            let signature = signer.sign(msg.as_bytes()).unwrap().to_binary();
+        let signature = signer.sign(msg.as_bytes()).unwrap().to_binary();
 
-            let msg = ExecuteMsg::SetRecord {
-                name: name.to_string(),
-                adr36_info: Adr36Info {
-                    bech32_address: addr.to_string(),
-                    address_hash: msg::AddressHash::SHA256,
-                    pub_key: signer.to_binary(),
-                    signature,
-                },
-                bech32_prefix: "osmo".to_string(),
-                replace_primary_if_exists,
-                signature_salt: 12313u128.into(),
-            };
-
-            app.execute_contract(
-                Addr::unchecked(addr),
-                resolver_contract_addr.clone(),
-                &msg,
-                &[],
-            )
-            .unwrap();
+        let msg = ExecuteMsg::SetRecord {
+            name: name.to_string(),
+            adr36_info: Adr36Info {
+                bech32_address: addr.to_string(),
+                address_hash: msg::AddressHash::SHA256,
+                pub_key: signer.to_binary(),
+                signature,
+            },
+            bech32_prefix: "osmo".to_string(),
+            signature_salt: 12313u128.into(),
         };
 
+        app.execute_contract(
+            Addr::unchecked(addr),
+            resolver_contract_addr.clone(),
+            &msg,
+            &[],
+        )
+        .unwrap();
+    };
+
     // if there is single name for an address, then that's primary
-    mint_and_set_record(&mut app, "isabel", &signer1(), false);
+    mint_and_set_record(&mut app, "isabel", &signer1());
     assert_eq!(
         primary_name(
             &app,
@@ -101,19 +99,8 @@ fn replace_primary_if_exists() {
         "isabel".to_string()
     );
 
-    // if there is single name for an address, then that's primary even with replace_primary_if_exists = false
-    mint_and_set_record(&mut app, "marley", &signer2(), true);
-    assert_eq!(
-        primary_name(
-            &app,
-            pubkey_to_bech32_address(signer2().to_binary(), "osmo".to_string())
-        )
-        .unwrap(),
-        "marley".to_string()
-    );
-
-    // does not change primary if replace_primary_if_exists is false on existing address
-    mint_and_set_record(&mut app, "isakaya", &signer1(), false);
+    // does not change primary if there are existing address(es)
+    mint_and_set_record(&mut app, "isakaya", &signer1());
     assert_eq!(
         primary_name(
             &app,
@@ -121,17 +108,6 @@ fn replace_primary_if_exists() {
         )
         .unwrap(),
         "isabel".to_string()
-    );
-
-    // change primary if replace_primary_if_exists is true on existing address
-    mint_and_set_record(&mut app, "isann", &signer1(), true);
-    assert_eq!(
-        primary_name(
-            &app,
-            pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string())
-        )
-        .unwrap(),
-        "isann".to_string()
     );
 }
 
@@ -155,61 +131,59 @@ fn set_primary() {
         Ok(name)
     };
 
-    let mint_and_set_record =
-        |app: &mut BasicApp, name: &str, signer: &SigningKey, replace_primary_if_exists: bool| {
-            let addr = pubkey_to_bech32_address(signer.to_binary(), "osmo".to_string());
+    let mint_and_set_record = |app: &mut BasicApp, name: &str, signer: &SigningKey| {
+        let addr = pubkey_to_bech32_address(signer.to_binary(), "osmo".to_string());
 
-            app.execute_contract(
-                Addr::unchecked(registrar.clone()),
-                name_nft_contract.clone(),
-                &CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
-                    token_id: name.to_string(),
-                    owner: addr.to_string(),
-                    token_uri: None,
-                    extension: None,
-                }),
-                &[],
-            )
-            .unwrap();
+        app.execute_contract(
+            Addr::unchecked(registrar.clone()),
+            name_nft_contract.clone(),
+            &CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+                token_id: name.to_string(),
+                owner: addr.to_string(),
+                token_uri: None,
+                extension: None,
+            }),
+            &[],
+        )
+        .unwrap();
 
-            let multitest_chain_id = "cosmos-testnet-14002";
+        let multitest_chain_id = "cosmos-testnet-14002";
 
-            let msg = create_adr36_message(
-                name.to_string(),
-                "osmo".to_string(),
-                addr.to_string(),
-                multitest_chain_id.to_string(),
-                resolver_contract_addr.to_string(),
-                12313,
-            );
+        let msg = create_adr36_message(
+            name.to_string(),
+            "osmo".to_string(),
+            addr.to_string(),
+            multitest_chain_id.to_string(),
+            resolver_contract_addr.to_string(),
+            12313,
+        );
 
-            let signature = signer.sign(msg.as_bytes()).unwrap().to_binary();
+        let signature = signer.sign(msg.as_bytes()).unwrap().to_binary();
 
-            let msg = ExecuteMsg::SetRecord {
-                name: name.to_string(),
-                adr36_info: Adr36Info {
-                    bech32_address: addr.to_string(),
-                    address_hash: msg::AddressHash::SHA256,
-                    pub_key: signer.to_binary(),
-                    signature,
-                },
-                bech32_prefix: "osmo".to_string(),
-                replace_primary_if_exists,
-                signature_salt: 12313u128.into(),
-            };
-
-            app.execute_contract(
-                Addr::unchecked(addr),
-                resolver_contract_addr.clone(),
-                &msg,
-                &[],
-            )
-            .unwrap();
+        let msg = ExecuteMsg::SetRecord {
+            name: name.to_string(),
+            adr36_info: Adr36Info {
+                bech32_address: addr.to_string(),
+                address_hash: msg::AddressHash::SHA256,
+                pub_key: signer.to_binary(),
+                signature,
+            },
+            bech32_prefix: "osmo".to_string(),
+            signature_salt: 12313u128.into(),
         };
 
-    mint_and_set_record(&mut app, "isabel", &signer1(), false);
-    mint_and_set_record(&mut app, "isakaya", &signer1(), false);
-    mint_and_set_record(&mut app, "isann", &signer1(), false);
+        app.execute_contract(
+            Addr::unchecked(addr),
+            resolver_contract_addr.clone(),
+            &msg,
+            &[],
+        )
+        .unwrap();
+    };
+
+    mint_and_set_record(&mut app, "isabel", &signer1());
+    mint_and_set_record(&mut app, "isakaya", &signer1());
+    mint_and_set_record(&mut app, "isann", &signer1());
 
     assert_eq!(
         primary_name(

@@ -3,21 +3,19 @@ use cosmwasm_std::entry_point;
 use cosmwasm_std::Order::Ascending;
 
 use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryRequest, Response,
-    StdError, StdResult, WasmQuery,
+    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryRequest, Response, StdResult,
+    WasmQuery,
 };
 use cw2::set_contract_version;
 use subtle_encoding::bech32;
-
-// use cw2::set_contract_version;
 
 use crate::crypto::adr36_verification;
 use crate::error::ContractError;
 use crate::msg::{
     AddressHash, AddressResponse, AddressesResponse, Adr36Info, ExecuteMsg, InstantiateMsg,
-    PrimaryNameResponse, QueryMsg, ReverseResolvedAddressesResponse,
+    PrimaryNameResponse, QueryMsg,
 };
-use crate::state::{AddressInfo, Config, ADDRESSES, CONFIG, REVERSE_RESOLVER, SIGNATURE};
+use crate::state::{records, Config, CONFIG, PRIMARY_NAME, SIGNATURE};
 use cw721::OwnerOfResponse;
 use icns_name_nft::msg::{AdminResponse, QueryMsg as QueryMsgName};
 
@@ -54,7 +52,6 @@ pub fn execute(
             name,
             bech32_prefix,
             adr36_info,
-            replace_primary_if_exists,
             signature_salt,
         } => execute_set_record(
             deps,
@@ -63,7 +60,6 @@ pub fn execute(
             name,
             bech32_prefix,
             adr36_info,
-            replace_primary_if_exists,
             signature_salt.u128(),
         ),
         ExecuteMsg::SetPrimary { name } => execute_set_primary(deps, info, name),
@@ -77,7 +73,6 @@ pub fn execute_set_record(
     name: String,
     bech32_prefix: String,
     adr36_info: Adr36Info,
-    replace_primary_if_exists: bool,
     signature_salt: u128,
 ) -> Result<Response, ContractError> {
     // check if the msg sender is a registrar or admin. If not, return err
@@ -122,54 +117,16 @@ pub fn execute_set_record(
         signature_salt,
     )?;
 
-    // now append address to the existing reverse resolver list
-    let mut address_info = AddressInfo {
-        name: name.clone(),
-        bech32_prefix: bech32_prefix.clone(),
-        primary: false,
-    };
+    let addr = deps.api.addr_validate(&adr36_info.bech32_address)?;
 
-    let existing_addresses =
-        REVERSE_RESOLVER.may_load(deps.storage, adr36_info.bech32_address.clone());
+    // save record
+    records().save(deps.storage, (&name, &bech32_prefix), &addr)?;
 
-    match existing_addresses {
-        Ok(Some(mut existing_addresses)) => {
-            if replace_primary_if_exists {
-                // iterate over all existing addresses and set primary to false
-                for address in existing_addresses.iter_mut() {
-                    if address.primary {
-                        address.primary = false;
-                    }
-                }
-                // set the current one as primary
-                address_info.primary = true;
-            }
-
-            existing_addresses.push(address_info);
-            REVERSE_RESOLVER.save(
-                deps.storage,
-                adr36_info.bech32_address.clone(),
-                &existing_addresses,
-            )?;
-        }
-        Ok(None) => {
-            let mut records = Vec::new();
-            // set this to primary address if it was no address has existed before
-            address_info.primary = true;
-            records.push(address_info);
-            REVERSE_RESOLVER.save(deps.storage, adr36_info.bech32_address.clone(), &records)?;
-        }
-        Err(_) => {
-            return Err(ContractError::StorageErr {});
-        }
+    // set name as primary name if it doesn't exists for this address yet
+    let primary_name = PRIMARY_NAME.key(addr);
+    if primary_name.may_load(deps.storage)?.is_none() {
+        primary_name.save(deps.storage, &name)?
     }
-
-    // now override the address in the storage
-    ADDRESSES.save(
-        deps.storage,
-        (name, bech32_prefix),
-        &adr36_info.bech32_address,
-    )?;
 
     // save signature to prevent replay attack
     SIGNATURE.save(deps.storage, adr36_info.signature.as_slice(), &true)?;
@@ -186,25 +143,7 @@ fn execute_set_primary(
         return Err(ContractError::Unauthorized {});
     }
 
-    REVERSE_RESOLVER.update(
-        deps.storage,
-        info.sender.to_string(),
-        |address_infos: Option<Vec<AddressInfo>>| -> Result<_, ContractError> {
-            match address_infos {
-                Some(address_infos) => Ok(address_infos
-                    .into_iter()
-                    .map(|address_info| AddressInfo {
-                        primary: address_info.name == name,
-                        ..address_info
-                    })
-                    .collect()),
-                None => Err(StdError::NotFound {
-                    kind: "Vec<AddressInfo>".to_string(),
-                }
-                .into()),
-            }
-        },
-    )?;
+    PRIMARY_NAME.save(deps.storage, info.sender, &name)?;
 
     Ok(Response::new()
         .add_attribute("method", "set_primary")
@@ -265,47 +204,23 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         } => to_binary(&query_address(deps, env, name, bech32_prefix)?),
         QueryMsg::Admin {} => to_binary(&query_admin(deps)?),
         QueryMsg::PrimaryName { address } => to_binary(&query_primary_name(deps, address)?),
-        QueryMsg::ReverseResolvedAddresses { address } => {
-            to_binary(&query_reverse_resolved_addresses(deps, address)?)
-        }
         // TODO: add query to query directly using ICNS (e.g req: tony.eth)
     }
 }
 
 fn query_primary_name(deps: Deps, address: String) -> StdResult<PrimaryNameResponse> {
-    let address_infos = REVERSE_RESOLVER.load(deps.storage, address)?;
-
-    let name = address_infos
-        .into_iter()
-        .find(|info| info.primary)
-        .ok_or_else(|| StdError::NotFound {
-            kind: "primary name".to_string(),
-        })?
-        .name;
-
-    Ok(PrimaryNameResponse { name })
-}
-
-fn query_reverse_resolved_addresses(
-    deps: Deps,
-    address: String,
-) -> StdResult<ReverseResolvedAddressesResponse> {
-    let addresses = REVERSE_RESOLVER.load(deps.storage, address)?;
-
-    Ok(ReverseResolvedAddressesResponse { addresses })
+    Ok(PrimaryNameResponse {
+        name: PRIMARY_NAME.load(deps.storage, deps.api.addr_validate(&address)?)?,
+    })
 }
 
 fn query_addresses(deps: Deps, _env: Env, name: String) -> StdResult<AddressesResponse> {
-    let addresses = ADDRESSES
-        .prefix(name)
-        .range(deps.storage, None, None, Ascending)
-        .collect::<StdResult<Vec<_>>>()?;
-    if addresses.is_empty() {
-        return Ok(AddressesResponse { addresses: vec![] });
-    }
-    let resp = AddressesResponse { addresses };
-
-    Ok(resp)
+    Ok(AddressesResponse {
+        addresses: records()
+            .prefix(&name)
+            .range(deps.storage, None, None, Ascending)
+            .collect::<StdResult<Vec<_>>>()?,
+    })
 }
 
 fn query_address(
@@ -314,14 +229,9 @@ fn query_address(
     name: String,
     bech32_prefix: String,
 ) -> StdResult<AddressResponse> {
-    let address = ADDRESSES.may_load(deps.storage, (name, bech32_prefix))?;
-
-    match address {
-        Some(addr) => Ok(AddressResponse { address: addr }),
-        None => Ok(AddressResponse {
-            address: "".to_string(),
-        }),
-    }
+    Ok(AddressResponse {
+        address: records().load(deps.storage, (&name, &bech32_prefix))?.to_string(),
+    })
 }
 
 fn query_admin(deps: Deps) -> StdResult<AdminResponse> {

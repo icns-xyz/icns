@@ -5,7 +5,7 @@ use crate::{
     msg::{AddressResponse, AddressesResponse, QueryMsg},
 };
 
-use cosmwasm_std::{Addr, Empty};
+use cosmwasm_std::{Addr, Empty, StdError};
 use cw721_base::{ExecuteMsg as CW721BaseExecuteMsg, Extension, MintMsg};
 use cw_multi_test::Executor;
 use icns_name_nft::msg::ExecuteMsg as NameExecuteMsg;
@@ -63,11 +63,11 @@ fn query_addresses() {
         vec![
             (
                 "juno".to_string(),
-                "juno1d2kh2xaen7c0zv3h7qnmghhwhsmmassqffq35s".to_string()
+                Addr::unchecked("juno1d2kh2xaen7c0zv3h7qnmghhwhsmmassqffq35s")
             ),
             (
                 "osmo".to_string(),
-                "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string()
+                Addr::unchecked("osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697")
             )
         ]
     );
@@ -157,18 +157,23 @@ fn query_address() {
         "juno1d2kh2xaen7c0zv3h7qnmghhwhsmmassqffq35s".to_string()
     );
 
-    let AddressResponse { address } = app
+    let err = app
         .wrap()
-        .query_wasm_smart(
+        .query_wasm_smart::<AddressResponse>(
             resolver_contract_addr,
             &QueryMsg::Address {
                 name: "tony".to_string(),
                 bech32_prefix: "random".to_string(),
             },
         )
-        .unwrap();
+        .unwrap_err();
 
-    assert_eq!(address, "".to_string());
+    assert_eq!(
+        err,
+        StdError::GenericErr {
+            msg: "Querier contract error: cosmwasm_std::addresses::Addr not found".to_string()
+        }
+    );
 
     // now add another user
     let mint = app

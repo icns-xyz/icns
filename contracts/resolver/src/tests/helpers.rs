@@ -30,54 +30,48 @@ pub fn name_nft_contract() -> Box<dyn Contract<Empty>> {
     Box::new(contract)
 }
 
-pub fn osmo_set_record_msg(replace_primary_if_exists: bool) -> ExecuteMsg {
-    let original_pubkey_vec =
-        hex!("02394bc53633366a2ab9b5d697a94c8c0121cc5e3f0d554a63167edb318ceae8bc");
-    let original_signature_vec = hex!("74331c35c9dd49eb3d39f693afc363e77e5541d94839639b7c71e2f18b001295561f123cb169128a34aedb15dddd1caa42e3cbc39104cb07a32658e9de5707a1");
-    let pub_key = Binary::from(original_pubkey_vec);
-    let signature = Binary::from(original_signature_vec);
-
-    ExecuteMsg::SetRecord {
-        name: "tony".to_string(),
-        adr36_info: Adr36Info {
-            bech32_address: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string(),
-            address_hash: msg::AddressHash::SHA256,
-            pub_key,
-            signature,
-        },
-        bech32_prefix: "osmo".to_string(),
-        replace_primary_if_exists,
-        signature_salt: 1323124u128.into(),
-    }
-}
-
-pub fn juno_set_record_msg(replace_primary_if_exists: bool) -> ExecuteMsg {
-    let original_pubkey_vec =
-        hex!("02394bc53633366a2ab9b5d697a94c8c0121cc5e3f0d554a63167edb318ceae8bc");
-    let original_signature_vec = hex!("1d2048b59cc0fa1799bdc11695fb31d141429ef80c7223afb9eb6581ca7a4e1d38c8e9b70852110efbc41d59b3b0d40a9b0257dd3c34da0243cca60eea35edb1");
-    let pub_key = Binary::from(original_pubkey_vec);
-    let signature = Binary::from(original_signature_vec);
-
-    ExecuteMsg::SetRecord {
-        name: "tony".to_string(),
-        adr36_info: Adr36Info {
-            bech32_address: "juno1d2kh2xaen7c0zv3h7qnmghhwhsmmassqffq35s".to_string(),
-            address_hash: msg::AddressHash::SHA256,
-            pub_key,
-            signature,
-        },
-        bech32_prefix: "juno".to_string(),
-        replace_primary_if_exists,
-        signature_salt: 13231u128.into(),
-    }
-}
-
 pub fn default_osmo_set_record_msg() -> ExecuteMsg {
-    osmo_set_record_msg(false)
+    {
+        let original_pubkey_vec =
+            hex!("02394bc53633366a2ab9b5d697a94c8c0121cc5e3f0d554a63167edb318ceae8bc");
+        let original_signature_vec = hex!("74331c35c9dd49eb3d39f693afc363e77e5541d94839639b7c71e2f18b001295561f123cb169128a34aedb15dddd1caa42e3cbc39104cb07a32658e9de5707a1");
+        let pub_key = Binary::from(original_pubkey_vec);
+        let signature = Binary::from(original_signature_vec);
+
+        ExecuteMsg::SetRecord {
+            name: "tony".to_string(),
+            adr36_info: Adr36Info {
+                bech32_address: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string(),
+                address_hash: msg::AddressHash::SHA256,
+                pub_key,
+                signature,
+            },
+            bech32_prefix: "osmo".to_string(),
+            signature_salt: 1323124u128.into(),
+        }
+    }
 }
 
 pub fn default_juno_set_record_msg() -> ExecuteMsg {
-    juno_set_record_msg(false)
+    {
+        let original_pubkey_vec =
+            hex!("02394bc53633366a2ab9b5d697a94c8c0121cc5e3f0d554a63167edb318ceae8bc");
+        let original_signature_vec = hex!("1d2048b59cc0fa1799bdc11695fb31d141429ef80c7223afb9eb6581ca7a4e1d38c8e9b70852110efbc41d59b3b0d40a9b0257dd3c34da0243cca60eea35edb1");
+        let pub_key = Binary::from(original_pubkey_vec);
+        let signature = Binary::from(original_signature_vec);
+
+        ExecuteMsg::SetRecord {
+            name: "tony".to_string(),
+            adr36_info: Adr36Info {
+                bech32_address: "juno1d2kh2xaen7c0zv3h7qnmghhwhsmmassqffq35s".to_string(),
+                address_hash: msg::AddressHash::SHA256,
+                pub_key,
+                signature,
+            },
+            bech32_prefix: "juno".to_string(),
+            signature_salt: 13231u128.into(),
+        }
+    }
 }
 
 pub fn default_setting(admins: Vec<String>, registrar: String) -> (Addr, Addr, App) {
