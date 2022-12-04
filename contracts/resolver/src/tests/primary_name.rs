@@ -240,7 +240,7 @@ fn set_primary() {
         &ContractError::Unauthorized {}
     );
 
-    // owner set primary with name that they not owned is not allowed
+    // set primary with name that they do not own is not allowed
     app.execute_contract(
         Addr::unchecked(registrar.clone()),
         name_nft_contract.clone(),

@@ -15,7 +15,7 @@ use crate::crypto::adr36_verification;
 use crate::error::ContractError;
 use crate::msg::{
     AddressHash, Adr36Info, ExecuteMsg, GetAddressResponse, GetAddressesResponse, InstantiateMsg,
-    PrimaryNameResponse, QueryMsg,
+    PrimaryNameResponse, QueryMsg, ReverseResolvedAddressesResponse,
 };
 use crate::state::{AddressInfo, Config, ADDRESSES, CONFIG, REVERSE_RESOLVER, SIGNATURE};
 use cw721::OwnerOfResponse;
@@ -265,6 +265,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         } => to_binary(&query_address(deps, env, user_name, bech32_prefix)?),
         QueryMsg::Admin {} => to_binary(&query_admin(deps)?),
         QueryMsg::PrimaryName { address } => to_binary(&query_primary_name(deps, address)?),
+        QueryMsg::ReverseResolvedAddresses { address } => {
+            to_binary(&query_reverse_resolved_addresses(deps, address)?)
+        }
         // TODO: add query to query directly using ICNS (e.g req: tony.eth)
     }
 }
@@ -281,6 +284,15 @@ fn query_primary_name(deps: Deps, address: String) -> StdResult<PrimaryNameRespo
         .user_name;
 
     Ok(PrimaryNameResponse { name })
+}
+
+fn query_reverse_resolved_addresses(
+    deps: Deps,
+    address: String,
+) -> StdResult<ReverseResolvedAddressesResponse> {
+    let addresses = REVERSE_RESOLVER.load(deps.storage, address)?;
+
+    Ok(ReverseResolvedAddressesResponse { addresses })
 }
 
 fn query_addresses(deps: Deps, _env: Env, name: String) -> StdResult<GetAddressesResponse> {

@@ -8,3 +8,5 @@ mod query;
 mod set_record;
 
 mod primary_name;
+
+mod reverse_resolver;

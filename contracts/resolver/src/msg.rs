@@ -1,7 +1,7 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Binary;
 
-use crate::state::Config;
+use crate::state::{Config, AddressInfo};
 #[cw_serde]
 pub struct InstantiateMsg {
     pub name_address: String,
@@ -56,6 +56,12 @@ pub enum QueryMsg {
     #[returns(PrimaryNameResponse)]
     PrimaryName { address: String },
 
+    /// An address and hold multiple names, this query returns
+    /// their primary name.
+    #[returns(ReverseResolvedAddressesResponse)]
+    ReverseResolvedAddresses { address: String },
+
+
     #[returns(AdminResponse)]
     Admin {},
 }
@@ -80,3 +86,9 @@ pub struct GetAddressesResponse {
 pub struct GetAddressResponse {
     pub address: String,
 }
+
+#[cw_serde]
+pub struct ReverseResolvedAddressesResponse {
+    pub addresses: Vec<AddressInfo>,
+}
+
