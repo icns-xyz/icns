@@ -12,7 +12,7 @@ use subtle_encoding::bech32;
 use crate::crypto::adr36_verification;
 use crate::error::ContractError;
 use crate::msg::{
-    AddressHash, Adr36Info, ExecuteMsg, GetAddressResponse, GetAddressesResponse, InstantiateMsg,
+    AddressHash, AddressResponse, AddressesResponse, Adr36Info, ExecuteMsg, InstantiateMsg,
     PrimaryNameResponse, QueryMsg,
 };
 use crate::state::{records, Config, CONFIG, PRIMARY_NAME, SIGNATURE};
@@ -49,7 +49,7 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::SetRecord {
-            user_name,
+            name,
             bech32_prefix,
             adr36_info,
             signature_salt,
@@ -57,7 +57,7 @@ pub fn execute(
             deps,
             env,
             info,
-            user_name,
+            name,
             bech32_prefix,
             adr36_info,
             signature_salt.u128(),
@@ -70,14 +70,14 @@ pub fn execute_set_record(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    user_name: String,
+    name: String,
     bech32_prefix: String,
     adr36_info: Adr36Info,
     signature_salt: u128,
 ) -> Result<Response, ContractError> {
     // check if the msg sender is a registrar or admin. If not, return err
     let is_admin = is_admin(deps.as_ref(), info.sender.to_string())?;
-    let is_owner_nft = is_owner(deps.as_ref(), user_name.clone(), info.sender.to_string())?;
+    let is_owner_nft = is_owner(deps.as_ref(), name.clone(), info.sender.to_string())?;
 
     // if the sender is neither a registrar nor an admin, return error
     if !is_admin && !is_owner_nft {
@@ -109,7 +109,7 @@ pub fn execute_set_record(
     let contract_address = env.contract.address.to_string();
     adr36_verification(
         deps.as_ref(),
-        user_name.clone(),
+        name.clone(),
         bech32_prefix.clone(),
         adr36_info.clone(),
         chain_id,
@@ -120,12 +120,12 @@ pub fn execute_set_record(
     let addr = deps.api.addr_validate(&adr36_info.bech32_address)?;
 
     // save record
-    records().save(deps.storage, (&user_name, &bech32_prefix), &addr)?;
+    records().save(deps.storage, (&name, &bech32_prefix), &addr)?;
 
     // set name as primary name if it doesn't exists for this address yet
     let primary_name = PRIMARY_NAME.key(addr);
     if primary_name.may_load(deps.storage)?.is_none() {
-        primary_name.save(deps.storage, &user_name)?
+        primary_name.save(deps.storage, &name)?
     }
 
     // save signature to prevent replay attack
@@ -197,11 +197,11 @@ pub fn is_owner(deps: Deps, username: String, sender: String) -> Result<bool, Co
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&CONFIG.load(deps.storage)?),
-        QueryMsg::GetAddresses { user_name } => to_binary(&query_addresses(deps, env, user_name)?),
-        QueryMsg::GetAddress {
-            user_name,
+        QueryMsg::Addresses { name } => to_binary(&query_addresses(deps, env, name)?),
+        QueryMsg::Address {
+            name,
             bech32_prefix,
-        } => to_binary(&query_address(deps, env, user_name, bech32_prefix)?),
+        } => to_binary(&query_address(deps, env, name, bech32_prefix)?),
         QueryMsg::Admin {} => to_binary(&query_admin(deps)?),
         QueryMsg::PrimaryName { address } => to_binary(&query_primary_name(deps, address)?),
         // TODO: add query to query directly using ICNS (e.g req: tony.eth)
@@ -214,8 +214,8 @@ fn query_primary_name(deps: Deps, address: String) -> StdResult<PrimaryNameRespo
     })
 }
 
-fn query_addresses(deps: Deps, _env: Env, name: String) -> StdResult<GetAddressesResponse> {
-    Ok(GetAddressesResponse {
+fn query_addresses(deps: Deps, _env: Env, name: String) -> StdResult<AddressesResponse> {
+    Ok(AddressesResponse {
         addresses: records()
             .prefix(&name)
             .range(deps.storage, None, None, Ascending)
@@ -226,11 +226,11 @@ fn query_addresses(deps: Deps, _env: Env, name: String) -> StdResult<GetAddresse
 fn query_address(
     deps: Deps,
     _env: Env,
-    user_name: String,
+    name: String,
     bech32_prefix: String,
-) -> StdResult<GetAddressResponse> {
-    Ok(GetAddressResponse {
-        address: records().load(deps.storage, (&user_name, &bech32_prefix))?,
+) -> StdResult<AddressResponse> {
+    Ok(AddressResponse {
+        address: records().load(deps.storage, (&name, &bech32_prefix))?.to_string(),
     })
 }
 

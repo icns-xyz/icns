@@ -36,7 +36,7 @@ pub fn records<'a>() -> IndexedMap<'a, (&'a str, &'a str), Addr, RecordIndexes<'
 pub const PRIMARY_NAME: Map<Addr, String> = Map::new("primary_name");
 #[cw_serde]
 pub struct AddressInfo {
-    pub user_name: String,
+    pub name: String,
     pub bech32_prefix: String,
     pub primary: bool,
 }

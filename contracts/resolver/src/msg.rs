@@ -1,7 +1,7 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Binary, Uint128};
 
-use crate::state::Config;
+use crate::state::{Config, AddressInfo};
 #[cw_serde]
 pub struct InstantiateMsg {
     pub name_address: String,
@@ -10,7 +10,7 @@ pub struct InstantiateMsg {
 #[cw_serde]
 pub enum ExecuteMsg {
     SetRecord {
-        user_name: String,
+        name: String,
         bech32_prefix: String,
         adr36_info: Adr36Info,
         signature_salt: Uint128,
@@ -40,20 +40,17 @@ pub enum QueryMsg {
     #[returns(Config)]
     Config {},
 
-    #[returns(GetAddressesResponse)]
-    GetAddresses { user_name: String },
+    #[returns(AddressesResponse)]
+    Addresses { name: String },
 
-    #[returns(GetAddressResponse)]
-    GetAddress {
-        user_name: String,
-        bech32_prefix: String,
-    },
+    #[returns(AddressResponse)]
+    Address { name: String, bech32_prefix: String },
 
     /// An address and hold multiple names, this query returns
     /// their primary name.
     #[returns(PrimaryNameResponse)]
     PrimaryName { address: String },
-
+    
     #[returns(AdminResponse)]
     Admin {},
 }
@@ -69,12 +66,13 @@ pub struct AdminResponse {
 }
 
 #[cw_serde]
-pub struct GetAddressesResponse {
+pub struct AddressesResponse {
     // tuple of (bech32 prefix, address)
     pub addresses: Vec<(String, Addr)>,
 }
 
 #[cw_serde]
-pub struct GetAddressResponse {
-    pub address: Addr,
+pub struct AddressResponse {
+    pub address: String,
 }
+

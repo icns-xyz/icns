@@ -68,7 +68,7 @@ fn replace_primary_if_exists() {
         let signature = signer.sign(msg.as_bytes()).unwrap().to_binary();
 
         let msg = ExecuteMsg::SetRecord {
-            user_name: name.to_string(),
+            name: name.to_string(),
             adr36_info: Adr36Info {
                 bech32_address: addr.to_string(),
                 address_hash: msg::AddressHash::SHA256,
@@ -161,7 +161,7 @@ fn set_primary() {
         let signature = signer.sign(msg.as_bytes()).unwrap().to_binary();
 
         let msg = ExecuteMsg::SetRecord {
-            user_name: name.to_string(),
+            name: name.to_string(),
             adr36_info: Adr36Info {
                 bech32_address: addr.to_string(),
                 address_hash: msg::AddressHash::SHA256,
@@ -214,7 +214,7 @@ fn set_primary() {
         &ContractError::Unauthorized {}
     );
 
-    // owner set primary with name that they not owned is not allowed
+    // set primary with name that they do not own is not allowed
     app.execute_contract(
         Addr::unchecked(registrar.clone()),
         name_nft_contract.clone(),

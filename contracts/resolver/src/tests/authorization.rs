@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate::{
-    msg::{GetAddressesResponse, QueryMsg},
+    msg::{AddressesResponse, QueryMsg},
     tests::helpers::default_osmo_set_record_msg,
     ContractError,
 };
@@ -27,9 +27,9 @@ fn only_admin_can_set_record() {
     let resolver_contract_addr = instantiate_resolver_with_name_nft(&mut app, name_nft_contract);
 
     let addresses = |app: &BasicApp, name: String| -> StdResult<_> {
-        let GetAddressesResponse { addresses, .. } = app.wrap().query_wasm_smart(
+        let AddressesResponse { addresses, .. } = app.wrap().query_wasm_smart(
             resolver_contract_addr.clone(),
-            &QueryMsg::GetAddresses { user_name: name },
+            &QueryMsg::Addresses { name },
         )?;
 
         Ok(addresses)
