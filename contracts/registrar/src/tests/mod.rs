@@ -9,3 +9,5 @@ mod verifiers;
 mod threshold;
 
 mod name_nft_address;
+
+mod fee;

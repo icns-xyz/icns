@@ -1,6 +1,6 @@
 use cosmwasm_schema::cw_serde;
 
-use cosmwasm_std::{Addr, Binary, Decimal};
+use cosmwasm_std::{Addr, Binary, Coin, Decimal};
 use cw_storage_plus::{Item, Map};
 
 use crate::ContractError;
@@ -8,13 +8,16 @@ pub static CONFIG_KEY: &[u8] = b"config";
 
 #[cw_serde]
 pub struct Config {
-    // name_nft address to send msg to
+    /// name_nft address to send msg to
     pub name_nft: Addr,
-    // sec1 encoded pubkey bytes of verifier, used for signature verfication
+    /// sec1 encoded pubkey bytes of verifier, used for signature verfication
     pub verifier_pubkeys: Vec<Binary>,
-    // number of verification that needs to pass in order to mint name
+    /// number of verification that needs to pass in order to mint name
     pub verification_threshold_percentage: Decimal,
+    /// fee required for claiming name
+    pub fee: Coin,
 }
+
 impl Config {
     pub fn check_pass_threshold(
         &self,

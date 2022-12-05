@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, from_slice, to_binary, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Response,
+    attr, from_slice, to_binary, Binary, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Response,
     StdError, StdResult, WasmMsg,
 };
 use cw2::set_contract_version;
@@ -14,7 +14,7 @@ use crate::checks::{
 };
 use crate::error::ContractError;
 use crate::msg::{
-    ExecuteMsg, InstantiateMsg, NameNFTAddressResponse, QueryMsg, Verification,
+    ExecuteMsg, FeeResponse, InstantiateMsg, NameNFTAddressResponse, QueryMsg, Verification,
     VerificationThresholdResponse, VerifierPubKeysResponse, VerifyingMsg,
 };
 
@@ -54,6 +54,7 @@ pub fn instantiate(
             name_nft: name_nft_addr,
             verifier_pubkeys: msg.verifier_pubkeys,
             verification_threshold_percentage: msg.verification_threshold,
+            fee: Coin::new(0, "uosmo"),
         },
     )?;
 
@@ -94,7 +95,24 @@ pub fn execute(
         ExecuteMsg::SetNameNFTAddress { name_nft_address } => {
             execute_set_name_nft_address(deps, info, name_nft_address)
         }
+        ExecuteMsg::SetFee { fee } => execute_set_fee(deps, info, fee),
     }
+}
+
+fn execute_set_fee(
+    deps: DepsMut,
+    info: MessageInfo,
+    fee: cosmwasm_std::Coin,
+) -> Result<Response, ContractError> {
+    check_send_from_admin(deps.as_ref(), &info.sender)?;
+
+    let attrs = vec![attr("method", "set_fee"), attr("fee", fee.to_string())];
+
+    CONFIG.update(deps.storage, |config| -> StdResult<_> {
+        Ok(Config { fee, ..config })
+    })?;
+
+    Ok(Response::new().add_attributes(attrs))
 }
 
 fn execute_set_name_nft_address(
@@ -295,7 +313,13 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, StdError> {
             name_nft_address: CONFIG.load(deps.storage)?.name_nft.to_string(),
         }),
         QueryMsg::ReferralCount { name } => query_get_referral_count(deps, name),
+        QueryMsg::Fee {} => to_binary(&query_fee(deps)?),
     }
+}
+
+fn query_fee(deps: Deps) -> StdResult<FeeResponse> {
+    let config = CONFIG.load(deps.storage)?;
+    Ok(FeeResponse { fee: config.fee })
 }
 
 fn query_get_referral_count(deps: Deps, name: String) -> StdResult<Binary> {

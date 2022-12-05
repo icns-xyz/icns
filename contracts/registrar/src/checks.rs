@@ -171,7 +171,7 @@ mod test {
     use cosmrs::{bip32, crypto::secp256k1::SigningKey};
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env, mock_info},
-        Addr, Decimal, DepsMut,
+        Addr, Coin, Decimal, DepsMut,
     };
 
     use crate::tests::helpers::ToBinary;
@@ -326,6 +326,7 @@ mod test {
                             .map(|sk| sk.to_binary())
                             .collect(),
                         verification_threshold_percentage: Decimal::percent(pct),
+                        fee: Coin::new(100000, "uosmo"),
                     },
                 )
                 .unwrap();
@@ -428,6 +429,7 @@ mod test {
                         .map(|sk| Binary(sk.public_key().to_bytes()))
                         .collect(),
                     verification_threshold_percentage: Decimal::percent(50),
+                    fee: Coin::new(100000, "uosmo"),
                 },
             )
             .unwrap();
@@ -447,6 +449,7 @@ mod test {
                     name_nft: Addr::unchecked("namenftaddr"),
                     verifier_pubkeys: vec![],
                     verification_threshold_percentage: Decimal::percent(50),
+                    fee: Coin::new(100000, "uosmo"),
                 },
             )
             .unwrap();
