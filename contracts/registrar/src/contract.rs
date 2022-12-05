@@ -14,8 +14,8 @@ use crate::checks::{
 };
 use crate::error::ContractError;
 use crate::msg::{
-    ExecuteMsg, FeeCollectorResponse, FeeResponse, InstantiateMsg, NameNFTAddressResponse,
-    QueryMsg, Verification, VerificationThresholdResponse, VerifierPubKeysResponse, VerifyingMsg,
+    ExecuteMsg, FeeResponse, InstantiateMsg, NameNFTAddressResponse, QueryMsg, Verification,
+    VerificationThresholdResponse, VerifierPubKeysResponse, VerifyingMsg,
 };
 
 use icns_name_nft::msg::ExecuteMsg as NameNFTExecuteMsg;
@@ -54,8 +54,7 @@ pub fn instantiate(
             name_nft: name_nft_addr,
             verifier_pubkeys: msg.verifier_pubkeys,
             verification_threshold_percentage: msg.verification_threshold,
-            fee: None,
-            fee_collector: None,
+            fee: msg.fee,
         },
     )?;
 
@@ -97,40 +96,7 @@ pub fn execute(
             execute_set_name_nft_address(deps, info, name_nft_address)
         }
         ExecuteMsg::SetFee { fee } => execute_set_fee(deps, info, fee),
-        ExecuteMsg::SetFeeCollector { fee_collector } => {
-            execute_set_fee_collector(deps, info, fee_collector)
-        }
     }
-}
-
-fn execute_set_fee_collector(
-    deps: DepsMut,
-    info: MessageInfo,
-    fee_collector: Option<String>,
-) -> Result<Response, ContractError> {
-    check_send_from_admin(deps.as_ref(), &info.sender)?;
-
-    let attrs = vec![
-        attr("method", "set_fee_collector"),
-        attr(
-            "fee_collector",
-            fee_collector
-                .as_ref()
-                .map(|fee| fee.to_string())
-                .unwrap_or_else(|| "no fee".to_string()),
-        ),
-    ];
-
-    CONFIG.update(deps.storage, |config| -> StdResult<_> {
-        Ok(Config {
-            fee_collector: fee_collector
-                .map(|fee_collector| deps.api.addr_validate(&fee_collector))
-                .transpose()?,
-            ..config
-        })
-    })?;
-
-    Ok(Response::new().add_attributes(attrs))
 }
 
 fn execute_set_fee(
@@ -250,6 +216,17 @@ pub fn execute_claim(
             .collect::<StdResult<Vec<_>>>()?,
     )?;
 
+    // TODO: extract to check_fee
+    let config = CONFIG.load(deps.storage)?;
+    if let Some(fee) = config.fee {
+        if info.funds.len() != 1 {
+            return Err(ContractError::InvalidFee { fee_required: fee });
+        }
+        if info.funds[0] != fee {
+            return Err(ContractError::InvalidFee { fee_required: fee });
+        }
+    }
+
     // add referral count if referral is set
     if let Some(referral) = referral {
         // initialize referral count to 1 if not exists
@@ -268,7 +245,7 @@ pub fn execute_claim(
     UNIQUE_TWITTER_ID.save(deps.storage, verifying_msg.unique_twitter_id, &true)?;
 
     // mint name nft
-    let config = CONFIG.load(deps.storage)?;
+
     let mint_msg = WasmMsg::Execute {
         contract_addr: config.name_nft.to_string(),
         msg: to_binary(&NameNFTExecuteMsg::CW721Base(
@@ -356,15 +333,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, StdError> {
         }),
         QueryMsg::ReferralCount { name } => query_get_referral_count(deps, name),
         QueryMsg::Fee {} => to_binary(&query_fee(deps)?),
-        QueryMsg::FeeCollector {} => to_binary(&query_fee_collector(deps)?),
     }
-}
-
-fn query_fee_collector(deps: Deps) -> StdResult<FeeCollectorResponse> {
-    let config = CONFIG.load(deps.storage)?;
-    Ok(FeeCollectorResponse {
-        fee_collector: config.fee_collector,
-    })
 }
 
 fn query_fee(deps: Deps) -> StdResult<FeeResponse> {

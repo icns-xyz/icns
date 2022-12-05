@@ -1,11 +1,12 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Binary, Coin, Decimal};
+use cosmwasm_std::{Binary, Coin, Decimal};
 
 #[cw_serde]
 pub struct InstantiateMsg {
     pub name_nft_addr: String,
     pub verifier_pubkeys: Vec<Binary>,
     pub verification_threshold: Decimal,
+    pub fee: Option<Coin>,
 }
 
 #[cw_serde]
@@ -55,12 +56,6 @@ pub enum ExecuteMsg {
         /// fee required for claim
         fee: Option<Coin>,
     },
-
-    /// Set address of the fee collector
-    SetFeeCollector {
-        /// address of the fee collector
-        fee_collector: Option<String>,
-    },
 }
 #[cw_serde]
 #[derive(QueryResponses)]
@@ -79,9 +74,6 @@ pub enum QueryMsg {
 
     #[returns(FeeResponse)]
     Fee {},
-
-    #[returns(FeeCollectorResponse)]
-    FeeCollector {},
 }
 
 #[cw_serde]
@@ -106,11 +98,6 @@ pub struct ReferralCountResponse {
 #[cw_serde]
 pub struct FeeResponse {
     pub fee: Option<Coin>,
-}
-
-#[cw_serde]
-pub struct FeeCollectorResponse {
-    pub fee_collector: Option<Addr>,
 }
 
 #[cw_serde]
