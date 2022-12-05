@@ -100,7 +100,7 @@ pub struct NameNFTAddressResponse {
 
 #[cw_serde]
 pub struct ReferralCountResponse {
-    pub admins: Vec<String>,
+    pub count: u64,
 }
 
 #[cw_serde]
