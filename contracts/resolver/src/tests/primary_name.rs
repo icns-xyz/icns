@@ -29,28 +29,29 @@ fn set_primary_name_on_set_first_record() {
     let resolver_contract_addr =
         instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
 
+    let signer_bech32_address = "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string();
     // if there is single name for an address, then that's primary
-    mint_and_set_record(&mut app, "isabel", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+    mint_and_set_record(&mut app, "alice",signer_bech32_address.clone(), &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
     assert_eq!(
         primary_name(
             &app,
-            pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string()),
+            pubkey_to_bech32_address(signer1().to_binary(), "cosmos".to_string()),
             resolver_contract_addr.clone(),
         )
         .unwrap(),
-        "isabel".to_string()
+        "alice".to_string()
     );
 
     // does not change primary if there are existing address(es)
-    mint_and_set_record(&mut app, "isakaya", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+    mint_and_set_record(&mut app, "isakaya", signer_bech32_address.clone(),&signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
     assert_eq!(
         primary_name(
             &app,
-            pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string()),
+            pubkey_to_bech32_address(signer1().to_binary(), "cosmos".to_string()),
             resolver_contract_addr.clone()
         )
         .unwrap(),
-        "isabel".to_string()
+        "alice".to_string()
     );
 }
 
@@ -65,14 +66,15 @@ fn set_primary() {
     let resolver_contract_addr =
         instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
 
-    mint_and_set_record(&mut app, "isabel", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
-    mint_and_set_record(&mut app, "isakaya", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
-    mint_and_set_record(&mut app, "isann", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+    let signer_bech32_address = "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string();
+    mint_and_set_record(&mut app, "isabel", signer_bech32_address.clone(),&signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+    mint_and_set_record(&mut app, "isakaya", signer_bech32_address.clone(), &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+    mint_and_set_record(&mut app, "isann", signer_bech32_address.clone(), &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
 
     assert_eq!(
         primary_name(
             &app,
-            pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string()),
+            pubkey_to_bech32_address(signer1().to_binary(), "cosmos".to_string()),
             resolver_contract_addr.clone()
         )
         .unwrap(),
@@ -155,7 +157,7 @@ fn set_primary() {
         resolver_contract_addr.clone(),
         &ExecuteMsg::SetPrimary {
             name: "isann".to_string(),
-            bech32_address: addr1.clone(),
+            bech32_address: signer_bech32_address.clone(),
         },
         &[],
     )
@@ -164,7 +166,7 @@ fn set_primary() {
     assert_eq!(
         primary_name(
             &app,
-            pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string()),
+            pubkey_to_bech32_address(signer1().to_binary(), "cosmos".to_string()),
             resolver_contract_addr.clone()
         )
         .unwrap(),

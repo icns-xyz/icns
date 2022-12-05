@@ -94,49 +94,52 @@ pub fn execute_set_record(
         return Err(ContractError::Unauthorized {});
     }
 
-    // check address hash method, currently only sha256 is supported
-    if adr36_info.address_hash != AddressHash::SHA256 {
-        return Err(ContractError::HashMethodNotSupported {});
+    // if the sender is admin, skip adr 36 verification
+    if !is_admin {
+        // check address hash method, currently only sha256 is supported
+        if adr36_info.address_hash != AddressHash::SHA256 {
+            return Err(ContractError::HashMethodNotSupported {});
+        }
+
+        // extract bech32 prefix from given address
+        let bech32_prefix_decoded = bech32::decode(adr36_info.signer_bech32_address.clone())
+            .map_err(|_| ContractError::Bech32DecodingErr {
+                addr: adr36_info.signer_bech32_address.to_string(),
+            })?
+            .0;
+
+        // first check if the user input for prefix + address is valid
+        if bech32_prefix != bech32_prefix_decoded {
+            return Err(ContractError::Bech32PrefixMismatch {
+                prefix: bech32_prefix,
+                addr: adr36_info.signer_bech32_address,
+            });
+        }
+
+        // do adr36 verification
+        let chain_id = env.block.chain_id;
+        let contract_address = env.contract.address.to_string();
+        adr36_verification(
+            deps.as_ref(),
+            name.clone(),
+            info.sender.into_string(),
+            bech32_prefix.clone(),
+            adr36_info.clone(),
+            chain_id,
+            contract_address,
+            signature_salt,
+        )?;
     }
-
-    // extract bech32 prefix from given address
-    let bech32_prefix_decoded = bech32::decode(adr36_info.bech32_address.clone())
-        .map_err(|_| ContractError::Bech32DecodingErr {
-            addr: adr36_info.bech32_address.to_string(),
-        })?
-        .0;
-
-    // first check if the user input for prefix + address is valid
-    if bech32_prefix != bech32_prefix_decoded {
-        return Err(ContractError::Bech32PrefixMismatch {
-            prefix: bech32_prefix,
-            addr: adr36_info.bech32_address,
-        });
-    }
-
-    // do adr36 verification
-    let chain_id = env.block.chain_id;
-    let contract_address = env.contract.address.to_string();
-    adr36_verification(
-        deps.as_ref(),
-        name.clone(),
-        info.sender.into_string(),
-        bech32_prefix.clone(),
-        adr36_info.clone(),
-        chain_id,
-        contract_address,
-        signature_salt,
-    )?;
-
+    
     // save record
     records().save(
         deps.storage,
         (&name, &bech32_prefix),
-        &adr36_info.bech32_address.clone(),
+        &adr36_info.signer_bech32_address.clone(),
     )?;
 
     // set name as primary name if it doesn't exists for this address yet
-    let primary_name = PRIMARY_NAME.key(adr36_info.bech32_address);
+    let primary_name = PRIMARY_NAME.key(adr36_info.signer_bech32_address);
     if primary_name.may_load(deps.storage)?.is_none() {
         primary_name.save(deps.storage, &name)?
     }
@@ -287,7 +290,7 @@ pub fn is_owner(deps: Deps, username: String, sender: String) -> Result<bool, Co
     let response = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
         contract_addr: CONFIG.load(deps.storage)?.name_address.to_string(),
         msg: to_binary(&QueryMsgName::OwnerOf {
-            token_id: username,
+            token_id: username.clone(),
             include_expired: None,
         })?,
     }));

@@ -58,7 +58,7 @@ fn reverse_resolver() {
         name: "bob".to_string(),
         adr36_info: Adr36Info {
             // invalid address
-            bech32_address: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string(),
+            signer_bech32_address: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string(),
             address_hash: msg::AddressHash::SHA256,
             pub_key,
             signature,

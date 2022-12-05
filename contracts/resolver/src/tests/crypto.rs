@@ -15,7 +15,10 @@ use crate::{
         adr36_verification, create_adr36_data, create_adr36_message, pubkey_to_bech32_address,
     },
     msg::Adr36Info,
+    tests::helpers::{signer1}
 };
+
+use super::helpers::ToBinary;
 
 #[test]
 fn pubkey_to_address() {
@@ -74,56 +77,59 @@ fn secp256k1_verification() {
 
 #[test]
 fn create_valid_adr36_data() {
-    let name = "tony".to_string();
-    let bech32_prefix = "osmo".to_string();
-    let bech32_address = "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string();
-    let chain_id = "osmosis-1".to_string();
-    let contract_address = "osmo1cjta2pw3ltzsvy9phdvtvqprexclt0p3m9aj54".to_string();
-    let signature_salt = 1323124;
+    let name = "alice".to_string();
+    let bech32_prefix = "cosmos".to_string();
+    let owner = "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string();
+    let chain_id = "cosmos-testnet-14002".to_string();
+    let contract_address = "contract1".to_string();
+    let signature_salt = 12313;
 
     let message = create_adr36_data(
         name,
         bech32_prefix,
-        bech32_address,
+        owner,
         chain_id,
         contract_address,
         signature_salt,
     );
 
-    let expected_message = "The following is the information for ICNS registration for tony.osmo.
+    let expected_message = "The following is the information for ICNS registration for alice.cosmos.
 
-Chain id: osmosis-1
-Contract Address: osmo1cjta2pw3ltzsvy9phdvtvqprexclt0p3m9aj54
-Address: osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697
-Salt: 1323124"
+Chain id: cosmos-testnet-14002
+Contract Address: contract1
+Owner: osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697
+Salt: 12313"
         .to_string();
 
     let expected_base_64 = base64_encode(expected_message);
+    println!("expected_base_64: {}", expected_base_64);
     assert_eq!(message, expected_base_64);
 }
 
 #[test]
 fn create_valid_adr36_message() {
-    let name = "tony".to_string();
-    let bech32_prefix = "osmo".to_string();
-    let bech32_address = "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string();
-    let chain_id = "osmosis-1".to_string();
-    let contract_address = "osmo1cjta2pw3ltzsvy9phdvtvqprexclt0p3m9aj54".to_string();
-    let signature_salt = 1323124;
+    let name = "alice".to_string();
+    let bech32_prefix = "cosmos".to_string();
+    let sender = "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string();
+    let signer = "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string();
+    let chain_id = "cosmos-testnet-14002".to_string();
+    let contract_address = "contract1".to_string();
+    let signature_salt = 12313;
 
     let message = create_adr36_message(
         name,
         bech32_prefix,
-        bech32_address.clone(),
+        sender.clone(),
+        signer.clone(),
         chain_id,
         contract_address,
         signature_salt,
     );
 
     let message_prefix = "{\"account_number\":\"0\",\"chain_id\":\"\",\"fee\":{\"amount\":[],\"gas\":\"0\"},\"memo\":\"\",\"msgs\":[{\"type\":\"sign/MsgSignData\",\"value\":{\"data\":\"";
-    let data = "VGhlIGZvbGxvd2luZyBpcyB0aGUgaW5mb3JtYXRpb24gZm9yIElDTlMgcmVnaXN0cmF0aW9uIGZvciB0b255Lm9zbW8uCgpDaGFpbiBpZDogb3Ntb3Npcy0xCkNvbnRyYWN0IEFkZHJlc3M6IG9zbW8xY2p0YTJwdzNsdHpzdnk5cGhkdnR2cXByZXhjbHQwcDNtOWFqNTQKQWRkcmVzczogb3NtbzFkMmtoMnhhZW43YzB6djNoN3FubWdoaHdoc21tYXNzcWhxczY5NwpTYWx0OiAxMzIzMTI0".to_string();
+    let data = "VGhlIGZvbGxvd2luZyBpcyB0aGUgaW5mb3JtYXRpb24gZm9yIElDTlMgcmVnaXN0cmF0aW9uIGZvciBhbGljZS5jb3Ntb3MuCgpDaGFpbiBpZDogY29zbW9zLXRlc3RuZXQtMTQwMDIKQ29udHJhY3QgQWRkcmVzczogY29udHJhY3QxCk93bmVyOiBvc21vMWQya2gyeGFlbjdjMHp2M2g3cW5tZ2hod2hzbW1hc3NxaHFzNjk3ClNhbHQ6IDEyMzEz".to_string();
     let signer_prefix = "\",\"signer\":\"";
-    let signer = bech32_address;
+    let signer = signer;
     let message_suffix = "\"}}],\"sequence\":\"0\"}";
 
     let expected_message = format!(
@@ -136,21 +142,20 @@ fn create_valid_adr36_message() {
 
 #[test]
 fn adr36_verify() {
-    let name = "tony".to_string();
-    let bech32_prefix = "osmo".to_string();
-    let bech32_address = "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string();
+    let name = "alice".to_string();
+    let bech32_prefix = "cosmos".to_string();
+    let owner = "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string();
+    let signer = "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string();
     let chain_id = "cosmos-testnet-14002".to_string();
-    let contract_address = "contract0".to_string();
-    let signature_salt = 1323124;
+    let contract_address = "contract1".to_string();
+    let signature_salt = 12313;
 
-    let original_pubkey_vec =
-        hex!("02394bc53633366a2ab9b5d697a94c8c0121cc5e3f0d554a63167edb318ceae8bc");
-    let original_signature_vec = hex!("79d0a79004a709090d4038e9e0df5e0744c5065bf03fe7a30b60872a414d85de4e023a8c8123cf6519af86cfa996fc24618651bbbf8ab13732cef9d10c577d97");
-    let pub_key = Binary::from(original_pubkey_vec);
+    let original_signature_vec = hex!("624fcd052ed8333fe643140ab5fde6fa308dd02c95cb61dd490ab53afa622db12a79ba2826b7da85d56c53bd4e53947b069cc3fb6fb091ca938f8d1952dfdf50");
+    let pub_key = signer1().to_binary();
     let signature = Binary::from(original_signature_vec);
 
     let adr36_info = Adr36Info {
-        bech32_address,
+        signer_bech32_address: signer.clone(),
         address_hash: AddressHash::SHA256,
         pub_key,
         signature,
@@ -160,6 +165,7 @@ fn adr36_verify() {
     let adr_verification = adr36_verification(
         deps.as_ref(),
         name,
+        owner,
         bech32_prefix,
         adr36_info,
         chain_id,

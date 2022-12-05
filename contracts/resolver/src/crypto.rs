@@ -23,7 +23,7 @@ pub fn adr36_verification(
     // extract pubkey to bech32 address, check that it matches with the given bech32 address
     let decoded_bech32_addr =
         pubkey_to_bech32_address(adr36_info.pub_key.clone(), bech32_prefix.clone());
-    if decoded_bech32_addr != adr36_info.bech32_address {
+    if decoded_bech32_addr != adr36_info.signer_bech32_address {
         return Err(ContractError::SigntaureMisMatch {});
     }
 
@@ -36,7 +36,7 @@ pub fn adr36_verification(
         name,
         bech32_prefix,
         sender,
-        adr36_info.bech32_address,
+        adr36_info.signer_bech32_address,
         chain_id,
         contract_address,
         signature_salt,
@@ -75,7 +75,7 @@ pub fn create_adr36_message(
     name: String,
     bech32_prefix: String,
     sender: String,
-    bech32_address: String,
+    signer_bech32_address: String,
     chain_id: String,
     contract_address: String,
     signature_salt: u128,
@@ -93,7 +93,7 @@ pub fn create_adr36_message(
     let message_suffix = "\"}}],\"sequence\":\"0\"}";
     let message = format!(
         "{}{}{}{}{}",
-        message_prefix, data, signer_prefix, bech32_address, message_suffix
+        message_prefix, data, signer_prefix, signer_bech32_address, message_suffix
     );
 
     message
@@ -116,7 +116,7 @@ pub fn create_adr36_data(
 
 Chain id: {}
 Contract Address: {}
-Address: {}
+Owner: {}
 Salt: {}",
         icns, chain_id, contract_address, address, salt
     );

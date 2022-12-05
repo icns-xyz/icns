@@ -33,44 +33,40 @@ pub fn name_nft_contract() -> Box<dyn Contract<Empty>> {
 
 pub fn default_osmo_set_record_msg() -> ExecuteMsg {
     {
-        let original_pubkey_vec =
-            hex!("02394bc53633366a2ab9b5d697a94c8c0121cc5e3f0d554a63167edb318ceae8bc");
-        let original_signature_vec = hex!("74331c35c9dd49eb3d39f693afc363e77e5541d94839639b7c71e2f18b001295561f123cb169128a34aedb15dddd1caa42e3cbc39104cb07a32658e9de5707a1");
-        let pub_key = Binary::from(original_pubkey_vec);
+        let original_signature_vec = hex!("624fcd052ed8333fe643140ab5fde6fa308dd02c95cb61dd490ab53afa622db12a79ba2826b7da85d56c53bd4e53947b069cc3fb6fb091ca938f8d1952dfdf50");
+        let pub_key = signer1().to_binary();
         let signature = Binary::from(original_signature_vec);
 
         ExecuteMsg::SetRecord {
-            name: "tony".to_string(),
+            name: "alice".to_string(),
             adr36_info: Adr36Info {
-                bech32_address: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string(),
+                signer_bech32_address: "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string(),
                 address_hash: msg::AddressHash::SHA256,
                 pub_key,
                 signature,
             },
-            bech32_prefix: "osmo".to_string(),
-            signature_salt: 1323124u128.into(),
+            bech32_prefix: "cosmos".to_string(),
+            signature_salt: 12313u128.into(),
         }
     }
 }
 
 pub fn default_juno_set_record_msg() -> ExecuteMsg {
     {
-        let original_pubkey_vec =
-            hex!("02394bc53633366a2ab9b5d697a94c8c0121cc5e3f0d554a63167edb318ceae8bc");
         let original_signature_vec = hex!("1d2048b59cc0fa1799bdc11695fb31d141429ef80c7223afb9eb6581ca7a4e1d38c8e9b70852110efbc41d59b3b0d40a9b0257dd3c34da0243cca60eea35edb1");
-        let pub_key = Binary::from(original_pubkey_vec);
+        let pub_key = signer1().to_binary();
         let signature = Binary::from(original_signature_vec);
 
         ExecuteMsg::SetRecord {
-            name: "tony".to_string(),
+            name: "alice".to_string(),
             adr36_info: Adr36Info {
-                bech32_address: "juno1d2kh2xaen7c0zv3h7qnmghhwhsmmassqffq35s".to_string(),
+                signer_bech32_address: "juno1d2kh2xaen7c0zv3h7qnmghhwhsmmassqffq35s".to_string(),
                 address_hash: msg::AddressHash::SHA256,
                 pub_key,
                 signature,
             },
             bech32_prefix: "juno".to_string(),
-            signature_salt: 13231u128.into(),
+            signature_salt: 1231323u128.into(),
         }
     }
 }
@@ -80,13 +76,13 @@ pub fn default_setting(admins: Vec<String>, registrar: String) -> (Addr, Addr, A
     let resolver_contract_addr =
         instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
 
-    //  mint name nft to tony
+    //  mint name nft to alice
     app.execute_contract(
         Addr::unchecked(registrar),
         name_nft_contract.clone(),
         &NameExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
-            token_id: "tony".to_string(),
-            owner: "tony".to_string(),
+            token_id: "alice".to_string(),
+            owner: "alice".to_string(),
             token_uri: None,
             extension: None,
         })),
@@ -200,12 +196,13 @@ pub fn signer2() -> SigningKey {
 pub fn mint_and_set_record(
     app: &mut BasicApp,
     name: &str,
-    signer: &SigningKey,
+    signer_bech32_address: String,
+    signing_key: &SigningKey,
     registrar: String,
     name_nft_contract: Addr,
     resolver_contract_addr: Addr,
 ) {
-    let addr = pubkey_to_bech32_address(signer.to_binary(), "osmo".to_string());
+    let addr = pubkey_to_bech32_address(signing_key.to_binary(), "osmo".to_string());
 
     app.execute_contract(
         Addr::unchecked(registrar.clone()),
@@ -224,24 +221,25 @@ pub fn mint_and_set_record(
 
     let msg = create_adr36_message(
         name.to_string(),
-        "osmo".to_string(),
+        "cosmos".to_string(),
         addr.to_string(),
+        signer_bech32_address.to_string(),
         multitest_chain_id.to_string(),
         resolver_contract_addr.to_string(),
         12313,
     );
 
-    let signature = signer.sign(msg.as_bytes()).unwrap().to_binary();
+    let signature = signing_key.sign(msg.as_bytes()).unwrap().to_binary();
 
     let msg = ExecuteMsg::SetRecord {
         name: name.to_string(),
         adr36_info: Adr36Info {
-            bech32_address: addr.to_string(),
+            signer_bech32_address: signer_bech32_address.to_string(),
             address_hash: msg::AddressHash::SHA256,
-            pub_key: signer.to_binary(),
+            pub_key: signing_key.to_binary(),
             signature,
         },
-        bech32_prefix: "osmo".to_string(),
+        bech32_prefix: "cosmos".to_string(),
         signature_salt: 12313u128.into(),
     };
 

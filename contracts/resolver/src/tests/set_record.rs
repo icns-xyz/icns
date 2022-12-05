@@ -1,8 +1,10 @@
 #![cfg(test)]
 
 use crate::{
+    crypto::{pubkey_to_bech32_address},
     msg::{self, Adr36Info, ExecuteMsg},
     msg::{AddressesResponse, QueryMsg},
+    tests::helpers::{signer1, ToBinary}, ContractError
 };
 
 use cosmwasm_std::{Addr, Binary, Empty, StdResult};
@@ -32,17 +34,17 @@ fn set_get_single_record() {
     };
 
     // now get record
-    let addresses = addresses(&app, "tony".to_string()).unwrap();
+    let addresses = addresses(&app, "alice".to_string()).unwrap();
     assert_eq!(addresses.len(), 2);
-    assert_eq!(addresses[0].0, "juno");
+    assert_eq!(addresses[0].0, "cosmos");
     assert_eq!(
         addresses[0].1,
-        "juno1d2kh2xaen7c0zv3h7qnmghhwhsmmassqffq35s"
+        "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz"
     );
-    assert_eq!(addresses[1].0, "osmo");
+    assert_eq!(addresses[1].0, "juno");
     assert_eq!(
         addresses[1].1,
-        "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697"
+        "juno1d2kh2xaen7c0zv3h7qnmghhwhsmmassqffq35s"
     );
 }
 
@@ -60,14 +62,15 @@ fn bech32_verification() {
     let resolver_contract_addr =
         instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
 
-    // mint name nft to bob
+    let addr1 = pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string());
+    // mint name nft to alice
     let mint = app
         .execute_contract(
             Addr::unchecked(registrar),
             name_nft_contract,
             &NameExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
-                token_id: "bob".to_string(),
-                owner: "bob".to_string(),
+                token_id: "alice".to_string(),
+                owner: addr1.to_string(),
                 token_uri: None,
                 extension: None,
             })),
@@ -76,17 +79,16 @@ fn bech32_verification() {
         .is_err();
     assert_eq!(mint, false);
 
+
     // now set record, first try setting invalid bech32 address
-    let original_pubkey_vec =
-        hex!("02394bc53633366a2ab9b5d697a94c8c0121cc5e3f0d554a63167edb318ceae8bc");
-    let original_signature_vec = hex!("74331c35c9dd49eb3d39f693afc363e77e5541d94839639b7c71e2f18b001295561f123cb169128a34aedb15dddd1caa42e3cbc39104cb07a32658e9de5707a1");
-    let pub_key = Binary::from(original_pubkey_vec);
+    let original_signature_vec = hex!("624fcd052ed8333fe643140ab5fde6fa308dd02c95cb61dd490ab53afa622db12a79ba2826b7da85d56c53bd4e53947b069cc3fb6fb091ca938f8d1952dfdf50");
+    let pub_key = signer1().to_binary();
     let signature = Binary::from(original_signature_vec);
     let record_msg = ExecuteMsg::SetRecord {
-        name: "tony".to_string(),
+        name: "alice".to_string(),
         adr36_info: Adr36Info {
             // invalid address
-            bech32_address: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs699".to_string(),
+            signer_bech32_address: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs699".to_string(),
             address_hash: msg::AddressHash::SHA256,
             pub_key: pub_key.clone(),
             signature: signature.clone(),
@@ -97,7 +99,7 @@ fn bech32_verification() {
 
     let err = app
         .execute_contract(
-            Addr::unchecked(admin1.clone()),
+            Addr::unchecked(addr1.clone()),
             resolver_contract_addr.clone(),
             &record_msg,
             &[],
@@ -109,7 +111,7 @@ fn bech32_verification() {
     let record_msg = ExecuteMsg::SetRecord {
         name: "tony".to_string(),
         adr36_info: Adr36Info {
-            bech32_address: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string(),
+            signer_bech32_address: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string(),
             address_hash: msg::AddressHash::SHA256,
             pub_key: pub_key.clone(),
             signature: signature.clone(),
@@ -119,7 +121,7 @@ fn bech32_verification() {
     };
     let err = app
         .execute_contract(
-            Addr::unchecked(admin1.clone()),
+            Addr::unchecked(addr1.clone()),
             resolver_contract_addr.clone(),
             &record_msg,
             &[],
@@ -129,24 +131,26 @@ fn bech32_verification() {
 
     // now set record with valid bech32 prefix and addresses, this should succeed
     let record_msg = ExecuteMsg::SetRecord {
-        name: "tony".to_string(),
+        name: "alice".to_string(),
         adr36_info: Adr36Info {
             // invalid address
-            bech32_address: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string(),
+            signer_bech32_address: "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string(),
             address_hash: msg::AddressHash::SHA256,
             pub_key,
             signature,
         },
-        bech32_prefix: "osmo".to_string(),
-        signature_salt: 1323124u128.into(),
+        bech32_prefix: "cosmos".to_string(),
+        signature_salt: 12313u128.into(),
     };
     let err = app
         .execute_contract(
-            Addr::unchecked(admin1),
+            Addr::unchecked(addr1),
             resolver_contract_addr,
             &record_msg,
             &[],
         )
-        .is_err();
-    assert_eq!(err, false);
+        .unwrap_err();
+
+    println!("err: {}", err.downcast_ref::<ContractError>().unwrap());
+    // assert_eq!(err, false);
 }

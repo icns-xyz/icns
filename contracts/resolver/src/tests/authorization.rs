@@ -60,13 +60,13 @@ fn only_admin_can_set_record() {
     .unwrap();
 
     // now check if record is set properly in store
-    let addresses = addresses(&app, "tony".to_string()).unwrap();
+    let addresses = addresses(&app, "alice".to_string()).unwrap();
     println!("addresses: {:?}", addresses);
     assert_eq!(
         addresses,
         vec![(
-            "osmo".to_string(),
-            "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string()
+            "cosmos".to_string(),
+            "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string()
         )]
     )
 }

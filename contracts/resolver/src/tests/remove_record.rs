@@ -33,16 +33,16 @@ fn remove_and_replace_with_single_name_for_address() {
         instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
 
     let addr1 = pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string());
-
+    let signer_bech32_address = "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string();
     // make sure primary name is correctly set
-    mint_and_set_record(&mut app, "isabel", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+    mint_and_set_record(&mut app, "isabel", signer_bech32_address.clone(), &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
 
     app.execute_contract(
         Addr::unchecked(addr1.clone()),
         resolver_contract_addr.clone(),
         &ExecuteMsg::RemoveRecord {
             name: "isabel".to_string(),
-            bech32_address: pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string()),
+            bech32_address: signer_bech32_address.clone().to_string(),
             replace_primary_name: None,
         },
         &[],
@@ -84,17 +84,17 @@ fn remove_and_replace_with_two_names_for_address() {
         instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
 
     let addr1 = pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string());
-
+    let signer_bech32_address = "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string();
     // make sure primary name is correctly set
-    mint_and_set_record(&mut app, "isabel", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
-    mint_and_set_record(&mut app, "isabel2", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+    mint_and_set_record(&mut app, "isabel", signer_bech32_address.clone(), &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+    mint_and_set_record(&mut app, "isabel2", signer_bech32_address.clone(), &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
 
     app.execute_contract(
         Addr::unchecked(addr1.clone()),
         resolver_contract_addr.clone(),
         &ExecuteMsg::RemoveRecord {
             name: "isabel".to_string(),
-            bech32_address: pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string()),
+            bech32_address: signer_bech32_address.clone().to_string(),
             replace_primary_name: Some("isabel2".to_string())
         },
         &[],
@@ -104,7 +104,7 @@ fn remove_and_replace_with_two_names_for_address() {
     assert_eq!(
         primary_name(
             &app,
-            addr1.clone(),
+            signer_bech32_address.clone(),
             resolver_contract_addr.clone()
         )
         .unwrap(),
@@ -127,7 +127,7 @@ fn remove_and_replace_with_two_names_for_address() {
             resolver_contract_addr.clone()
         )
         .unwrap(),
-        vec![("osmo".to_string(), addr1.clone())]
+        vec![("cosmos".to_string(), signer_bech32_address.clone())]
     );
 }
 
@@ -144,18 +144,18 @@ fn remove_non_primary_address() {
         instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
 
     let addr1 = pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string());
-
+    let signer_bech32_address = "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string();
     // make sure primary name is correctly set
-    mint_and_set_record(&mut app, "isabel", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
-    mint_and_set_record(&mut app, "isabel2", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
-    mint_and_set_record(&mut app, "isabel3", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+    mint_and_set_record(&mut app, "isabel", signer_bech32_address.clone(), &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+    mint_and_set_record(&mut app, "isabel2", signer_bech32_address.clone(), &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+    mint_and_set_record(&mut app, "isabel3", signer_bech32_address.clone(), &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
     
     app.execute_contract(
         Addr::unchecked(addr1.clone()),
         resolver_contract_addr.clone(),
         &ExecuteMsg::RemoveRecord {
             name: "isabel2".to_string(),
-            bech32_address: pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string()),
+            bech32_address: signer_bech32_address.clone().to_string(),
             replace_primary_name: Some("isabel3".to_string())
         },
         &[],
@@ -165,7 +165,7 @@ fn remove_non_primary_address() {
     assert_eq!(
         primary_name(
             &app,
-            addr1.clone(),
+            signer_bech32_address.clone(),
             resolver_contract_addr.clone()
         )
         .unwrap(),
@@ -195,10 +195,10 @@ fn remove_with_non_existent_name_as_replacement() {
         instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
 
     let addr1 = pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string());
-
+    let signer_bech32_address = "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string();
     // make sure primary name is correctly set
-    mint_and_set_record(&mut app, "isabel", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
-    mint_and_set_record(&mut app, "isabel2", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+    mint_and_set_record(&mut app, "isabel", signer_bech32_address.clone(), &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+    mint_and_set_record(&mut app, "isabel2", signer_bech32_address.clone(), &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
 
     
     let err = app.execute_contract(
@@ -206,7 +206,7 @@ fn remove_with_non_existent_name_as_replacement() {
         resolver_contract_addr.clone(),
         &ExecuteMsg::RemoveRecord {
             name: "isabel".to_string(),
-            bech32_address: pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string()),
+            bech32_address: signer_bech32_address.clone().to_string(),
             replace_primary_name: Some("non existent name".to_string())
         },
         &[],
@@ -215,7 +215,7 @@ fn remove_with_non_existent_name_as_replacement() {
 
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
-        &ContractError::ReplacePrimaryAddressNotSet { name: "isabel".to_string(), address: addr1.clone() }
+        &ContractError::ReplacePrimaryAddressNotSet { name: "isabel".to_string(), address: signer_bech32_address.clone() }
     );
 }
 
@@ -231,10 +231,10 @@ fn remove_primary_with_no_replacement_name() {
         instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
 
     let addr1 = pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string());
-
+    let signer_bech32_address = "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string();
     // make sure primary name is correctly set
-    mint_and_set_record(&mut app, "isabel", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
-    mint_and_set_record(&mut app, "isabel2", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+    mint_and_set_record(&mut app, "isabel", signer_bech32_address.clone(), &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+    mint_and_set_record(&mut app, "isabel2", signer_bech32_address.clone(), &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
 
     
     let err = app.execute_contract(
@@ -242,7 +242,7 @@ fn remove_primary_with_no_replacement_name() {
         resolver_contract_addr.clone(),
         &ExecuteMsg::RemoveRecord {
             name: "isabel".to_string(),
-            bech32_address: pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string()),
+            bech32_address: signer_bech32_address.clone(),
             replace_primary_name: None
         },
         &[],
@@ -251,7 +251,7 @@ fn remove_primary_with_no_replacement_name() {
 
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
-        &ContractError::ReplacePrimaryAddressNotSet { name: "isabel".to_string(), address: addr1.clone() }
+        &ContractError::ReplacePrimaryAddressNotSet { name: "isabel".to_string(), address: signer_bech32_address.clone() }
     );
 }
 
@@ -268,10 +268,10 @@ fn remove_as_non_owner() {
 
     let addr1 = pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string());
     let addr2 = pubkey_to_bech32_address(signer2().to_binary(), "osmo".to_string());
-
+    let signer_bech32_address = "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string();
     // make sure primary name is correctly set
-    mint_and_set_record(&mut app, "isabel", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
-    mint_and_set_record(&mut app, "isabel2", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+    mint_and_set_record(&mut app, "isabel", signer_bech32_address.clone(), &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+    mint_and_set_record(&mut app, "isabel2", signer_bech32_address.clone(), &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
 
     
     let err = app.execute_contract(
@@ -279,7 +279,7 @@ fn remove_as_non_owner() {
         resolver_contract_addr.clone(),
         &ExecuteMsg::RemoveRecord {
             name: "isabel".to_string(),
-            bech32_address: pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string()),
+            bech32_address: signer_bech32_address.clone(),
             replace_primary_name: None
         },
         &[],
