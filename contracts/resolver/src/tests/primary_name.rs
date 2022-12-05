@@ -19,7 +19,7 @@ use cw_multi_test::{BasicApp, Executor};
 use super::helpers::{signer1, ToBinary};
 
 #[test]
-fn replace_primary_if_exists() {
+fn set_primary_name_on_set_first_record() {
     let admin1 = String::from("admin1");
     let admin2 = String::from("admin2");
     let admins = vec![admin1, admin2];
