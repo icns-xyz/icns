@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, from_slice, to_binary, Binary, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Response,
-    StdError, StdResult, WasmMsg,
+    attr, from_slice, to_binary, BankMsg, Binary, Coin, Decimal, Deps, DepsMut, Env, MessageInfo,
+    Response, StdError, StdResult, WasmMsg,
 };
 use cw2::set_contract_version;
 use icns_name_nft::MintMsg;
@@ -96,7 +96,36 @@ pub fn execute(
             execute_set_name_nft_address(deps, info, name_nft_address)
         }
         ExecuteMsg::SetFee { fee } => execute_set_fee(deps, info, fee),
+        ExecuteMsg::WithdrawFunds { amount, to_address } => {
+            execute_withdraw_funds(deps, info, amount, to_address)
+        }
     }
+}
+
+fn execute_withdraw_funds(
+    deps: DepsMut,
+    info: MessageInfo,
+    amount: Vec<Coin>,
+    to_address: String,
+) -> Result<Response, ContractError> {
+    check_send_from_admin(deps.as_ref(), &info.sender)?;
+    deps.api.addr_validate(&to_address)?;
+    let attrs = vec![
+        attr("method", "withraw_funds"),
+        attr("to_address", &to_address),
+        attr(
+            "amount",
+            amount
+                .iter()
+                .map(|amount| amount.to_string())
+                .collect::<Vec<_>>()
+                .join(","),
+        ),
+    ];
+
+    Ok(Response::new()
+        .add_attributes(attrs)
+        .add_message(BankMsg::Send { to_address, amount }))
 }
 
 fn execute_set_fee(

@@ -56,6 +56,14 @@ pub enum ExecuteMsg {
         /// fee required for claim
         fee: Option<Coin>,
     },
+
+    /// Withdraw funds from this contract
+    WithdrawFunds {
+        /// amount to withdraw
+        amount: Vec<Coin>,
+        /// address to withdraw fudn to
+        to_address: String,
+    },
 }
 #[cw_serde]
 #[derive(QueryResponses)]
