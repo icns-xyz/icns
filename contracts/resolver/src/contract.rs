@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::Order::Ascending;
@@ -63,6 +65,7 @@ pub fn execute(
             signature_salt.u128(),
         ),
         ExecuteMsg::SetPrimary { name, bech32_address } => execute_set_primary(deps, info, name, bech32_address),
+        ExecuteMsg::RemoveRecord { name, replace_primary_address, bech32_address } => execute_remove_record(deps, info, name, bech32_address ,replace_primary_address),
     }
 }
 
@@ -163,6 +166,65 @@ fn execute_set_primary(
 
     Ok(Response::new()
         .add_attribute("method", "set_primary")
+        .add_attribute("name", name))
+}
+
+fn execute_remove_record(
+    deps: DepsMut,
+    info: MessageInfo,
+    name: String,
+    bech32_address: String,
+    replace_primary_address: Option<String>,
+) -> Result<Response, ContractError> {
+    // check if the msg sender is the owner of the name or an admin. If not, return err
+    if !is_owner(deps.as_ref(), name.clone(), info.sender.to_string())? || !is_admin(deps.as_ref(), info.sender.to_string())? {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    // check if the name exists
+    // extract bech32 prefix from given address
+    let bech32_prefix_decoded = bech32::decode(bech32_address.clone())
+    .map_err(|_| ContractError::Bech32DecodingErr {
+        addr: bech32_address.to_string(),
+    })?
+    .0;
+    let bech32_address_stored = records().may_load(deps.storage, (&name, &bech32_prefix_decoded))?;
+    
+    // check if bech32 address is set for this name
+    if bech32_address_stored.is_none() || bech32_address_stored.unwrap() != bech32_address {
+        return Err(ContractError::Bech32AddressNotSet {
+            name: name.clone(),
+            address: bech32_address.clone(),
+        });
+    }
+
+    // check if the name is primary for any address
+    let primary_name = PRIMARY_NAME.may_load(deps.storage, bech32_address.clone())?;
+    if primary_name.is_some() && primary_name.unwrap() == name {
+        let records_len = records()
+            .idx
+            .address
+            .prefix(bech32_address.clone())
+            .range(deps.storage, None, None, Ascending)
+            .count();
+
+        if records_len == 1 {
+            // if the name is the only record for this address, remove the primary name
+            PRIMARY_NAME.remove(deps.storage, bech32_address.clone());
+        } else {
+            if replace_primary_address.is_none() {
+                return Err(ContractError::ReplacePrimaryAddressNotSet { name: name.clone(), address: bech32_address.clone() });
+            }
+
+            // set the replace primary address as primary name
+            PRIMARY_NAME.save(deps.storage, bech32_address.clone(), &replace_primary_address.unwrap())?;
+        }
+    } else {
+        PRIMARY_NAME.remove(deps.storage, bech32_address.clone());
+    }
+
+    Ok(Response::new()
+        .add_attribute("method", "remove_record")
         .add_attribute("name", name))
 }
 

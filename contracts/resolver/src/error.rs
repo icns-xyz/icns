@@ -32,4 +32,9 @@ pub enum ContractError {
 
     #[error("Bech32 Address not set for name: {name:?}, address: {address:?}")]
     Bech32AddressNotSet { name: String, address: String },
+
+    #[error("Replace address is not set for name: {name:?}, address: {address:?}")]
+    ReplacePrimaryAddressNotSet { name: String, address: String },
+
+    
 }

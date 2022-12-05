@@ -19,6 +19,11 @@ pub enum ExecuteMsg {
         name: String,
         bech32_address: String,
     },
+    RemoveRecord {
+        name: String,
+        bech32_address: String,
+        replace_primary_address: Option<String>,
+    },
 }
 
 #[cw_serde]
