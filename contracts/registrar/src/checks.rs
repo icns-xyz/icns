@@ -326,7 +326,7 @@ mod test {
                             .map(|sk| sk.to_binary())
                             .collect(),
                         verification_threshold_percentage: Decimal::percent(pct),
-                        fee: Coin::new(100000, "uosmo"),
+                        fee: Some(Coin::new(100000, "uosmo")),
                     },
                 )
                 .unwrap();
@@ -429,7 +429,7 @@ mod test {
                         .map(|sk| Binary(sk.public_key().to_bytes()))
                         .collect(),
                     verification_threshold_percentage: Decimal::percent(50),
-                    fee: Coin::new(100000, "uosmo"),
+                    fee: Some(Coin::new(100000, "uosmo")),
                 },
             )
             .unwrap();
@@ -449,7 +449,7 @@ mod test {
                     name_nft: Addr::unchecked("namenftaddr"),
                     verifier_pubkeys: vec![],
                     verification_threshold_percentage: Decimal::percent(50),
-                    fee: Coin::new(100000, "uosmo"),
+                    fee: Some(Coin::new(100000, "uosmo")),
                 },
             )
             .unwrap();

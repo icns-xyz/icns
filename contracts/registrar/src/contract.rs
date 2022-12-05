@@ -54,7 +54,7 @@ pub fn instantiate(
             name_nft: name_nft_addr,
             verifier_pubkeys: msg.verifier_pubkeys,
             verification_threshold_percentage: msg.verification_threshold,
-            fee: Coin::new(0, "uosmo"),
+            fee: None,
         },
     )?;
 
@@ -102,11 +102,19 @@ pub fn execute(
 fn execute_set_fee(
     deps: DepsMut,
     info: MessageInfo,
-    fee: cosmwasm_std::Coin,
+    fee: Option<Coin>,
 ) -> Result<Response, ContractError> {
     check_send_from_admin(deps.as_ref(), &info.sender)?;
 
-    let attrs = vec![attr("method", "set_fee"), attr("fee", fee.to_string())];
+    let attrs = vec![
+        attr("method", "set_fee"),
+        attr(
+            "fee",
+            fee.as_ref()
+                .map(|fee| fee.to_string())
+                .unwrap_or_else(|| "no fee".to_string()),
+        ),
+    ];
 
     CONFIG.update(deps.storage, |config| -> StdResult<_> {
         Ok(Config { fee, ..config })

@@ -1,7 +1,10 @@
 #![cfg(test)]
 
+use std::fmt::Debug;
+
 use cosmwasm_std::{Addr, Coin, Decimal};
 use cw_multi_test::{BasicApp, Executor};
+use serde::de::DeserializeOwned;
 
 use crate::{
     msg::{ExecuteMsg, FeeResponse, InstantiateMsg, QueryMsg},
@@ -10,8 +13,10 @@ use crate::{
 
 use super::helpers::{fixtures::*, name_nft_contract, registrar_contract, ToBinary};
 
-#[test]
-fn only_admin_can_set_fee() {
+fn test_only_admin<T>(execute_msg: ExecuteMsg, query_msg: QueryMsg, initial: T, updated: T)
+where
+    T: DeserializeOwned + PartialEq + Debug,
+{
     // setup contracts
     let mut app = BasicApp::default();
     let name_nft_code_id = app.store_code(name_nft_contract());
@@ -48,21 +53,19 @@ fn only_admin_can_set_fee() {
         )
         .unwrap();
 
-    let FeeResponse { fee } = app
+    let response: T = app
         .wrap()
-        .query_wasm_smart(registrar_contract_addr.clone(), &QueryMsg::Fee {})
+        .query_wasm_smart(registrar_contract_addr.clone(), &query_msg)
         .unwrap();
 
-    assert_eq!(fee, Coin::new(0, "uosmo"));
+    assert_eq!(response, initial);
 
     // unauthorized if not admin
     let err = app
         .execute_contract(
             Addr::unchecked("random_guy"),
             registrar_contract_addr.clone(),
-            &ExecuteMsg::SetFee {
-                fee: Coin::new(10000000, "uosmo"),
-            },
+            &execute_msg,
             &[],
         )
         .unwrap_err();
@@ -72,21 +75,56 @@ fn only_admin_can_set_fee() {
         &ContractError::Unauthorized {}
     );
 
+    let response: T = app
+        .wrap()
+        .query_wasm_smart(registrar_contract_addr.clone(), &query_msg)
+        .unwrap();
+
+    assert_eq!(response, initial);
+
     // authorized if admin
     app.execute_contract(
         Addr::unchecked(admins[0].clone()),
         registrar_contract_addr.clone(),
-        &ExecuteMsg::SetFee {
-            fee: Coin::new(999999999, "uosmo"),
-        },
+        &execute_msg,
         &[],
     )
     .unwrap();
 
-    let FeeResponse { fee } = app
+    let response: T = app
         .wrap()
-        .query_wasm_smart(registrar_contract_addr, &QueryMsg::Fee {})
+        .query_wasm_smart(registrar_contract_addr, &query_msg)
         .unwrap();
 
-    assert_eq!(fee, Coin::new(999999999, "uosmo"));
+    assert_eq!(response, updated);
 }
+
+#[test]
+fn only_admin_can_set_fee() {
+    test_only_admin(
+        ExecuteMsg::SetFee {
+            fee: Some(Coin::new(999999999, "uosmo")),
+        },
+        QueryMsg::Fee {},
+        FeeResponse { fee: None },
+        FeeResponse {
+            fee: Some(Coin::new(999999999, "uosmo")),
+        },
+    );
+}
+
+// #[test]
+// fn only_admin_can_set_fee() {
+//     test_only_admin(
+//         ExecuteMsg::SetFeeCollector {
+//             fee_collector: "collector".to_string(),
+//         },
+//         QueryMsg::FeeCollector {},
+//         FeeCollectorResponse {
+//             fee_collector: "collector".to_string(),
+//         },
+//         FeeCollectorResponse {
+//             fee_collector: "collector".to_string(),
+//         },
+//     );
+// }

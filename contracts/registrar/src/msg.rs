@@ -53,7 +53,7 @@ pub enum ExecuteMsg {
     /// Set fee required for claim
     SetFee {
         /// fee required for claim
-        fee: Coin,
+        fee: Option<Coin>,
     },
 }
 #[cw_serde]
@@ -96,7 +96,7 @@ pub struct ReferralCountResponse {
 
 #[cw_serde]
 pub struct FeeResponse {
-    pub fee: Coin,
+    pub fee: Option<Coin>,
 }
 
 #[cw_serde]

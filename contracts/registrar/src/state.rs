@@ -15,7 +15,7 @@ pub struct Config {
     /// number of verification that needs to pass in order to mint name
     pub verification_threshold_percentage: Decimal,
     /// fee required for claiming name
-    pub fee: Coin,
+    pub fee: Option<Coin>,
 }
 
 impl Config {
