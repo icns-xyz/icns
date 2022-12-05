@@ -151,8 +151,8 @@ fn execute_set_primary(
 
     // bech32 address needs to be already set in the records(for adr36 veficiation)
     // check in state if this is already set
-    let bech32_address_store = records().may_load(deps.storage, (&name, &bech32_prefix_decoded))?;
-    if bech32_address_store.is_none() {
+    let bech32_address_stored = records().may_load(deps.storage, (&name, &bech32_prefix_decoded))?;
+    if bech32_address_stored.is_none() || bech32_address_stored.unwrap() != bech32_address {
         return Err(ContractError::Bech32AddressNotSet {
             name: name.clone(),
             address: bech32_address.clone(),

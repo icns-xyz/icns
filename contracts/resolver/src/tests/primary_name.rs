@@ -2,7 +2,7 @@
 
 use crate::{
     crypto::{create_adr36_message, pubkey_to_bech32_address},
-    msg::{self, Adr36Info, ExecuteMsg},
+    msg::{self, Adr36Info, ExecuteMsg, AddressesResponse},
     msg::{PrimaryNameResponse, QueryMsg},
     tests::helpers::{instantiate_name_nft, instantiate_resolver_with_name_nft, signer2},
     ContractError,
@@ -200,7 +200,7 @@ fn set_primary() {
     // non-owner can't set primary
     let err = app
         .execute_contract(
-            Addr::unchecked(addr2),
+            Addr::unchecked(addr2.clone()),
             resolver_contract_addr.clone(),
             &ExecuteMsg::SetPrimary {
                 name: "isann".to_string(),
@@ -243,6 +243,21 @@ fn set_primary() {
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
         &ContractError::Unauthorized {}
+    );
+
+    let err = app.execute_contract(
+        Addr::unchecked(addr1.clone()),
+        resolver_contract_addr.clone(),
+        &ExecuteMsg::SetPrimary {
+            name: "isann".to_string(),
+            bech32_address: addr2.clone(),
+        },
+        &[],
+    )
+    .unwrap_err();
+    assert_eq!(
+        err.downcast_ref::<ContractError>().unwrap(),
+        &ContractError::Bech32AddressNotSet { name: "isann".to_string(), address: addr2.clone() }
     );
 
     // only owner can set primary
