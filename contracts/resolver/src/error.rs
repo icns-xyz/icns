@@ -29,4 +29,7 @@ pub enum ContractError {
 
     #[error("Bech32 prefix mismatch between prefix: {prefix:?} and addr: {addr:?}")]
     Bech32PrefixMismatch { prefix: String, addr: String },
+
+    #[error("Bech32 Address not set for name: {name:?}, address: {address:?}")]
+    Bech32AddressNotSet { name: String, address: String },
 }

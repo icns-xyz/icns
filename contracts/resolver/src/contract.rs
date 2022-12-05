@@ -62,7 +62,7 @@ pub fn execute(
             adr36_info,
             signature_salt.u128(),
         ),
-        ExecuteMsg::SetPrimary { name } => execute_set_primary(deps, info, name),
+        ExecuteMsg::SetPrimary { name, bech32_address } => execute_set_primary(deps, info, name, bech32_address),
     }
 }
 
@@ -138,9 +138,27 @@ fn execute_set_primary(
     deps: DepsMut,
     info: MessageInfo,
     name: String,
+    bech32_address: String,
 ) -> Result<Response, ContractError> {
     if !is_owner(deps.as_ref(), name.clone(), info.sender.to_string())? {
         return Err(ContractError::Unauthorized {});
+    }
+
+    // extract bech32 prefix from given address
+    let bech32_prefix_decoded = bech32::decode(bech32_address.clone())
+    .map_err(|_| ContractError::Bech32DecodingErr {
+        addr: bech32_address.to_string(),
+    })?
+    .0;
+
+    // bech32 address needs to be already set in the records(for adr36 veficiation)
+    // check in state if this is already set
+    let bech32_address_store = records().may_load(deps.storage, (&name, &bech32_prefix_decoded))?;
+    if bech32_address_store.is_none() {
+        return Err(ContractError::Bech32AddressNotSet {
+            name: name.clone(),
+            address: bech32_address.clone(),
+        });
     }
 
     PRIMARY_NAME.save(deps.storage, info.sender, &name)?;

@@ -17,6 +17,7 @@ pub enum ExecuteMsg {
     },
     SetPrimary {
         name: String,
+        bech32_address: String,
     },
 }
 
