@@ -518,9 +518,5 @@ fn claim_name_with_fee() {
     )
     .unwrap();
 
-    assert_eq!(
-        err.downcast_ref::<ContractError>().unwrap(),
-        &ContractError::InvalidFee { fee_required: fee }
-    );
     assert_eq!(owner(&app, bob_name.to_string()).unwrap(), bob);
 }
