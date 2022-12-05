@@ -117,13 +117,11 @@ pub fn execute_set_record(
         signature_salt,
     )?;
 
-    let addr = deps.api.addr_validate(&adr36_info.bech32_address)?;
-
     // save record
-    records().save(deps.storage, (&name, &bech32_prefix), &addr)?;
+    records().save(deps.storage, (&name, &bech32_prefix), &adr36_info.bech32_address.clone())?;
 
     // set name as primary name if it doesn't exists for this address yet
-    let primary_name = PRIMARY_NAME.key(addr);
+    let primary_name = PRIMARY_NAME.key(adr36_info.bech32_address);
     if primary_name.may_load(deps.storage)?.is_none() {
         primary_name.save(deps.storage, &name)?
     }
@@ -161,7 +159,7 @@ fn execute_set_primary(
         });
     }
 
-    PRIMARY_NAME.save(deps.storage, info.sender, &name)?;
+    PRIMARY_NAME.save(deps.storage, bech32_address, &name)?;
 
     Ok(Response::new()
         .add_attribute("method", "set_primary")
@@ -228,7 +226,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 fn query_primary_name(deps: Deps, address: String) -> StdResult<PrimaryNameResponse> {
     Ok(PrimaryNameResponse {
-        name: PRIMARY_NAME.load(deps.storage, deps.api.addr_validate(&address)?)?,
+        name: PRIMARY_NAME.load(deps.storage, address)?,
     })
 }
 

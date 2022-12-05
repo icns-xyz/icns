@@ -63,11 +63,11 @@ fn query_addresses() {
         vec![
             (
                 "juno".to_string(),
-                Addr::unchecked("juno1d2kh2xaen7c0zv3h7qnmghhwhsmmassqffq35s")
+                "juno1d2kh2xaen7c0zv3h7qnmghhwhsmmassqffq35s".to_string()
             ),
             (
                 "osmo".to_string(),
-                Addr::unchecked("osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697")
+                "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string()
             )
         ]
     );
@@ -171,7 +171,7 @@ fn query_address() {
     assert_eq!(
         err,
         StdError::GenericErr {
-            msg: "Querier contract error: cosmwasm_std::addresses::Addr not found".to_string()
+            msg: "Querier contract error: alloc::string::String not found".to_string()
         }
     );
 

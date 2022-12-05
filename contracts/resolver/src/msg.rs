@@ -69,7 +69,7 @@ pub struct AdminResponse {
 #[cw_serde]
 pub struct AddressesResponse {
     // tuple of (bech32 prefix, address)
-    pub addresses: Vec<(String, Addr)>,
+    pub addresses: Vec<(String, String)>,
 }
 
 #[cw_serde]

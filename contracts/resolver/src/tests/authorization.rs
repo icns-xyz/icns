@@ -66,7 +66,7 @@ fn only_admin_can_set_record() {
         addresses,
         vec![(
             "osmo".to_string(),
-            Addr::unchecked("osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697")
+            "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string()
         )]
     )
 }

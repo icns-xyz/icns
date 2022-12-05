@@ -11,29 +11,30 @@ pub struct Config {
 pub const CONFIG: Item<Config> = Item::new("config");
 
 pub struct RecordIndexes<'a> {
-    pub address: MultiIndex<'a, Addr,  F, String>,
+    pub address: MultiIndex<'a, String, String, String>,
 }
 
-impl<'a> IndexList<Addr> for RecordIndexes<'a> {
-    fn get_indexes(&'_ self) -> Box<dyn Iterator<Item = &'_ dyn Index<Addr>> + '_> {
-        let v: Vec<&dyn Index<Addr>> = vec![&self.address];
+impl<'a> IndexList<String> for RecordIndexes<'a> {
+    fn get_indexes(&'_ self) -> Box<dyn Iterator<Item = &'_ dyn Index<String>> + '_> {
+        let v: Vec<&dyn Index<String>> = vec![&self.address];
         Box::new(v.into_iter())
     }
 }
 
 // indexed map of (username, bech32 prefix) -> address
-pub fn records<'a>() -> IndexedMap<'a, (&'a str, &'a str), Addr, RecordIndexes<'a>> {
+pub fn records<'a>() -> IndexedMap<'a, (&'a str, &'a str), String, RecordIndexes<'a>> {
     let indexes = RecordIndexes {
         address: MultiIndex::new(
-            |_pk, addr: &Addr| addr.clone(),
+            |_pk, addr: &String| addr.clone(),
             "records",
             "records__address",
         ),
     };
     IndexedMap::new("records", indexes)
 }
+// map of bech32 address -> user name
+pub const PRIMARY_NAME: Map<String, String> = Map::new("primary_name");
 
-pub const PRIMARY_NAME: Map<Addr, String> = Map::new("primary_name");
 #[cw_serde]
 pub struct AddressInfo {
     pub name: String,

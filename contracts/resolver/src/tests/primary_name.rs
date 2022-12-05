@@ -204,6 +204,7 @@ fn set_primary() {
             resolver_contract_addr.clone(),
             &ExecuteMsg::SetPrimary {
                 name: "isann".to_string(),
+                bech32_address: addr1.clone(),
             },
             &[],
         )
@@ -234,6 +235,7 @@ fn set_primary() {
             resolver_contract_addr.clone(),
             &ExecuteMsg::SetPrimary {
                 name: "others_name".to_string(),
+                bech32_address: addr1.clone(),
             },
             &[],
         )
@@ -245,10 +247,11 @@ fn set_primary() {
 
     // only owner can set primary
     app.execute_contract(
-        Addr::unchecked(addr1),
+        Addr::unchecked(addr1.clone()),
         resolver_contract_addr.clone(),
         &ExecuteMsg::SetPrimary {
             name: "isann".to_string(),
+            bech32_address: addr1.clone(),
         },
         &[],
     )
