@@ -35,11 +35,4 @@ pub fn records<'a>() -> IndexedMap<'a, (&'a str, &'a str), String, RecordIndexes
 // map of bech32 address -> user name
 pub const PRIMARY_NAME: Map<String, String> = Map::new("primary_name");
 
-#[cw_serde]
-pub struct AddressInfo {
-    pub name: String,
-    pub bech32_prefix: String,
-    pub primary: bool,
-}
-
 pub const SIGNATURE: Map<&[u8], bool> = Map::new("signature");

@@ -2,11 +2,12 @@ use crate::{
     contract::execute,
     contract::instantiate,
     contract::query,
+    crypto::{create_adr36_message, pubkey_to_bech32_address},
     msg::{self, ExecuteMsg},
-    msg::{Adr36Info, InstantiateMsg},
+    msg::{Adr36Info, InstantiateMsg, PrimaryNameResponse, QueryMsg, AddressesResponse},
 };
 use cosmrs::{bip32, crypto::secp256k1::SigningKey, tendermint::signature::Secp256k1Signature};
-use cosmwasm_std::{Binary, Empty};
+use cosmwasm_std::{Binary, Empty, StdResult};
 use hex_literal::hex;
 // import execute
 
@@ -193,4 +194,80 @@ pub fn signer1() -> SigningKey {
 }
 pub fn signer2() -> SigningKey {
     from_mnemonic("quality vacuum heart guard buzz spike sight swarm shove special gym robust assume sudden deposit grid alcohol choice devote leader tilt noodle tide penalty", DERIVATION_PATH)
+}
+
+
+pub fn mint_and_set_record(
+    app: &mut BasicApp,
+    name: &str,
+    signer: &SigningKey,
+    registrar: String,
+    name_nft_contract: Addr,
+    resolver_contract_addr: Addr,
+) {
+    let addr = pubkey_to_bech32_address(signer.to_binary(), "osmo".to_string());
+
+    app.execute_contract(
+        Addr::unchecked(registrar.clone()),
+        name_nft_contract.clone(),
+        &CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+            token_id: name.to_string(),
+            owner: addr.to_string(),
+            token_uri: None,
+            extension: None,
+        }),
+        &[],
+    )
+    .unwrap();
+
+    let multitest_chain_id = "cosmos-testnet-14002";
+
+    let msg = create_adr36_message(
+        name.to_string(),
+        "osmo".to_string(),
+        addr.to_string(),
+        multitest_chain_id.to_string(),
+        resolver_contract_addr.to_string(),
+        12313,
+    );
+
+    let signature = signer.sign(msg.as_bytes()).unwrap().to_binary();
+
+    let msg = ExecuteMsg::SetRecord {
+        name: name.to_string(),
+        adr36_info: Adr36Info {
+            bech32_address: addr.to_string(),
+            address_hash: msg::AddressHash::SHA256,
+            pub_key: signer.to_binary(),
+            signature,
+        },
+        bech32_prefix: "osmo".to_string(),
+        signature_salt: 12313u128.into(),
+    };
+
+    app.execute_contract(
+        Addr::unchecked(addr),
+        resolver_contract_addr.clone(),
+        &msg,
+        &[],
+    )
+    .unwrap();
+}
+
+pub fn primary_name(app: &BasicApp, address: String, resolver_contract_addr: Addr) -> StdResult<String> {
+    let PrimaryNameResponse { name } = app.wrap().query_wasm_smart(
+        resolver_contract_addr.clone(),
+        &QueryMsg::PrimaryName { address },
+    )?;
+
+    Ok(name)
+}
+
+pub fn addresses(app: &BasicApp, name: String, resolver_contract_addr: Addr) -> StdResult<Vec<(String, String)>> {
+    let AddressesResponse { addresses } = app.wrap().query_wasm_smart(
+        resolver_contract_addr.clone(),
+        &QueryMsg::Addresses { name },
+    )?;
+
+    Ok(addresses)
 }

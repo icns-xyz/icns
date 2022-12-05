@@ -65,7 +65,7 @@ pub fn execute(
             signature_salt.u128(),
         ),
         ExecuteMsg::SetPrimary { name, bech32_address } => execute_set_primary(deps, info, name, bech32_address),
-        ExecuteMsg::RemoveRecord { name, replace_primary_address, bech32_address } => execute_remove_record(deps, info, name, bech32_address ,replace_primary_address),
+        ExecuteMsg::RemoveRecord { name, replace_primary_name, bech32_address } => execute_remove_record(deps, info, name, bech32_address ,replace_primary_name),
     }
 }
 
@@ -174,10 +174,10 @@ fn execute_remove_record(
     info: MessageInfo,
     name: String,
     bech32_address: String,
-    replace_primary_address: Option<String>,
+    replace_primary_name: Option<String>,
 ) -> Result<Response, ContractError> {
     // check if the msg sender is the owner of the name or an admin. If not, return err
-    if !is_owner(deps.as_ref(), name.clone(), info.sender.to_string())? || !is_admin(deps.as_ref(), info.sender.to_string())? {
+    if !is_owner(deps.as_ref(), name.clone(), info.sender.to_string())? && !is_admin(deps.as_ref(), info.sender.to_string())? {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -212,16 +212,21 @@ fn execute_remove_record(
             // if the name is the only record for this address, remove the primary name
             PRIMARY_NAME.remove(deps.storage, bech32_address.clone());
         } else {
-            if replace_primary_address.is_none() {
+            if replace_primary_name.is_none() {
                 return Err(ContractError::ReplacePrimaryAddressNotSet { name: name.clone(), address: bech32_address.clone() });
             }
+            let replace_primary_name  = replace_primary_name.unwrap();
 
+            let replace_primary_name_found = records().may_load(deps.storage, (&replace_primary_name, &bech32_prefix_decoded.clone()))?;
+            if replace_primary_name_found.is_none()  {
+                return Err(ContractError::ReplacePrimaryAddressNotSet { name: name.clone(), address: bech32_address.clone() });
+            }
             // set the replace primary address as primary name
-            PRIMARY_NAME.save(deps.storage, bech32_address.clone(), &replace_primary_address.unwrap())?;
+            PRIMARY_NAME.save(deps.storage, bech32_address.clone(), &replace_primary_name)?;
         }
-    } else {
-        PRIMARY_NAME.remove(deps.storage, bech32_address.clone());
     }
+    
+    records().remove(deps.storage, (&name, &bech32_prefix_decoded))?;
 
     Ok(Response::new()
         .add_attribute("method", "remove_record")
@@ -287,9 +292,15 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 fn query_primary_name(deps: Deps, address: String) -> StdResult<PrimaryNameResponse> {
-    Ok(PrimaryNameResponse {
-        name: PRIMARY_NAME.load(deps.storage, address)?,
-    })
+    let primary_name = PRIMARY_NAME.may_load(deps.storage, address.clone())?;
+    match primary_name {
+        Some(name) => Ok(PrimaryNameResponse {
+            name,
+        }),
+        None => Ok(PrimaryNameResponse {
+            name: "".to_string(),
+        }),
+    }
 }
 
 fn query_addresses(deps: Deps, _env: Env, name: String) -> StdResult<AddressesResponse> {

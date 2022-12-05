@@ -22,7 +22,7 @@ pub enum ExecuteMsg {
     RemoveRecord {
         name: String,
         bech32_address: String,
-        replace_primary_address: Option<String>,
+        replace_primary_name: Option<String>,
     },
 }
 

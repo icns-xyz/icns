@@ -4,7 +4,9 @@ use crate::{
     crypto::{create_adr36_message, pubkey_to_bech32_address},
     msg::{self, Adr36Info, ExecuteMsg, AddressesResponse},
     msg::{PrimaryNameResponse, QueryMsg},
-    tests::helpers::{instantiate_name_nft, instantiate_resolver_with_name_nft, signer2},
+    tests::helpers::{instantiate_name_nft, 
+        instantiate_resolver_with_name_nft, signer2,
+        mint_and_set_record, primary_name, addresses},
     ContractError,
 };
 
@@ -18,8 +20,9 @@ use cw_multi_test::{BasicApp, Executor};
 
 use super::helpers::{signer1, ToBinary};
 
+
 #[test]
-fn set_primary_name_on_set_first_record() {
+fn remove_and_replace_with_single_name_for_address() {
     let admin1 = String::from("admin1");
     let admin2 = String::from("admin2");
     let admins = vec![admin1, admin2];
@@ -29,80 +32,262 @@ fn set_primary_name_on_set_first_record() {
     let resolver_contract_addr =
         instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
 
-    let primary_name = |app: &BasicApp, address: String| -> StdResult<_> {
-        let PrimaryNameResponse { name } = app.wrap().query_wasm_smart(
-            resolver_contract_addr.clone(),
-            &QueryMsg::PrimaryName { address },
-        )?;
-
-        Ok(name)
-    };
-
-    let mint_and_set_record = |app: &mut BasicApp, name: &str, signer: &SigningKey| {
-        let addr = pubkey_to_bech32_address(signer.to_binary(), "osmo".to_string());
-
-        app.execute_contract(
-            Addr::unchecked(registrar.clone()),
-            name_nft_contract.clone(),
-            &CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
-                token_id: name.to_string(),
-                owner: addr.to_string(),
-                token_uri: None,
-                extension: None,
-            }),
-            &[],
-        )
-        .unwrap();
-
-        let multitest_chain_id = "cosmos-testnet-14002";
-
-        let msg = create_adr36_message(
-            name.to_string(),
-            "osmo".to_string(),
-            addr.to_string(),
-            multitest_chain_id.to_string(),
-            resolver_contract_addr.to_string(),
-            12313,
-        );
-
-        let signature = signer.sign(msg.as_bytes()).unwrap().to_binary();
-
-        let msg = ExecuteMsg::SetRecord {
-            name: name.to_string(),
-            adr36_info: Adr36Info {
-                bech32_address: addr.to_string(),
-                address_hash: msg::AddressHash::SHA256,
-                pub_key: signer.to_binary(),
-                signature,
-            },
-            bech32_prefix: "osmo".to_string(),
-            signature_salt: 12313u128.into(),
-        };
-
-        app.execute_contract(
-            Addr::unchecked(addr),
-            resolver_contract_addr.clone(),
-            &msg,
-            &[],
-        )
-        .unwrap();
-    };
+    let addr1 = pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string());
 
     // make sure primary name is correctly set
-    mint_and_set_record(&mut app, "isabel", &signer1());
+    mint_and_set_record(&mut app, "isabel", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+
+    app.execute_contract(
+        Addr::unchecked(addr1.clone()),
+        resolver_contract_addr.clone(),
+        &ExecuteMsg::RemoveRecord {
+            name: "isabel".to_string(),
+            bech32_address: pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string()),
+            replace_primary_name: None,
+        },
+        &[],
+    )
+    .unwrap();
+
+    // now check primary name and addresses
     assert_eq!(
         primary_name(
             &app,
-            pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string())
+            addr1.clone(),
+            resolver_contract_addr.clone()
+        )
+        .unwrap(),
+        "".to_string()
+    );
+
+    // should have nothing as addresses
+    assert_eq!(
+        addresses(
+            &app,
+            "isabel".to_string(),
+            resolver_contract_addr.clone()
+        )
+        .unwrap(),
+        Vec::<(String, String)>::new()
+    );
+}
+
+#[test]
+fn remove_and_replace_with_two_names_for_address() {
+    let admin1 = String::from("admin1");
+    let admin2 = String::from("admin2");
+    let admins = vec![admin1, admin2];
+    let registrar = String::from("default-registrar");
+
+    let (name_nft_contract, mut app) = instantiate_name_nft(admins, registrar.clone());
+    let resolver_contract_addr =
+        instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
+
+    let addr1 = pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string());
+
+    // make sure primary name is correctly set
+    mint_and_set_record(&mut app, "isabel", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+    mint_and_set_record(&mut app, "isabel2", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+
+    app.execute_contract(
+        Addr::unchecked(addr1.clone()),
+        resolver_contract_addr.clone(),
+        &ExecuteMsg::RemoveRecord {
+            name: "isabel".to_string(),
+            bech32_address: pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string()),
+            replace_primary_name: Some("isabel2".to_string())
+        },
+        &[],
+    )
+    .unwrap();
+
+    assert_eq!(
+        primary_name(
+            &app,
+            addr1.clone(),
+            resolver_contract_addr.clone()
+        )
+        .unwrap(),
+        "isabel2".to_string()
+    );
+
+    assert_eq!(
+        addresses(
+            &app,
+            "isabel".to_string(),
+            resolver_contract_addr.clone()
+        )
+        .unwrap(),
+        Vec::<(String, String)>::new()
+    );
+    assert_eq!(
+        addresses(
+            &app,
+            "isabel2".to_string(),
+            resolver_contract_addr.clone()
+        )
+        .unwrap(),
+        vec![("osmo".to_string(), addr1.clone())]
+    );
+}
+
+
+#[test]
+fn remove_non_primary_address() {
+    let admin1 = String::from("admin1");
+    let admin2 = String::from("admin2");
+    let admins = vec![admin1, admin2];
+    let registrar = String::from("default-registrar");
+
+    let (name_nft_contract, mut app) = instantiate_name_nft(admins, registrar.clone());
+    let resolver_contract_addr =
+        instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
+
+    let addr1 = pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string());
+
+    // make sure primary name is correctly set
+    mint_and_set_record(&mut app, "isabel", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+    mint_and_set_record(&mut app, "isabel2", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+    mint_and_set_record(&mut app, "isabel3", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+    
+    app.execute_contract(
+        Addr::unchecked(addr1.clone()),
+        resolver_contract_addr.clone(),
+        &ExecuteMsg::RemoveRecord {
+            name: "isabel2".to_string(),
+            bech32_address: pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string()),
+            replace_primary_name: Some("isabel3".to_string())
+        },
+        &[],
+    )
+    .unwrap();
+
+    assert_eq!(
+        primary_name(
+            &app,
+            addr1.clone(),
+            resolver_contract_addr.clone()
         )
         .unwrap(),
         "isabel".to_string()
     );
 
-    // let msg = ExecuteMsg::RemoveRecord {
-    //     name: "isabel".to_string(),
-    //     bech32_address: pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string()),
-    //     replace_primary_address: 
-    // };
+    assert_eq!(
+        addresses(
+            &app,
+            "isabel2".to_string(),
+            resolver_contract_addr.clone()
+        )
+        .unwrap(),
+        Vec::<(String, String)>::new()
+    );
+}
 
+#[test]
+fn remove_with_non_existent_name_as_replacement() {
+    let admin1 = String::from("admin1");
+    let admin2 = String::from("admin2");
+    let admins = vec![admin1, admin2];
+    let registrar = String::from("default-registrar");
+
+    let (name_nft_contract, mut app) = instantiate_name_nft(admins, registrar.clone());
+    let resolver_contract_addr =
+        instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
+
+    let addr1 = pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string());
+
+    // make sure primary name is correctly set
+    mint_and_set_record(&mut app, "isabel", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+    mint_and_set_record(&mut app, "isabel2", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+
+    
+    let err = app.execute_contract(
+        Addr::unchecked(addr1.clone()),
+        resolver_contract_addr.clone(),
+        &ExecuteMsg::RemoveRecord {
+            name: "isabel".to_string(),
+            bech32_address: pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string()),
+            replace_primary_name: Some("non existent name".to_string())
+        },
+        &[],
+    )
+    .unwrap_err();
+
+    assert_eq!(
+        err.downcast_ref::<ContractError>().unwrap(),
+        &ContractError::ReplacePrimaryAddressNotSet { name: "isabel".to_string(), address: addr1.clone() }
+    );
+}
+
+#[test]
+fn remove_primary_with_no_replacement_name() {
+    let admin1 = String::from("admin1");
+    let admin2 = String::from("admin2");
+    let admins = vec![admin1, admin2];
+    let registrar = String::from("default-registrar");
+
+    let (name_nft_contract, mut app) = instantiate_name_nft(admins, registrar.clone());
+    let resolver_contract_addr =
+        instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
+
+    let addr1 = pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string());
+
+    // make sure primary name is correctly set
+    mint_and_set_record(&mut app, "isabel", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+    mint_and_set_record(&mut app, "isabel2", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+
+    
+    let err = app.execute_contract(
+        Addr::unchecked(addr1.clone()),
+        resolver_contract_addr.clone(),
+        &ExecuteMsg::RemoveRecord {
+            name: "isabel".to_string(),
+            bech32_address: pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string()),
+            replace_primary_name: None
+        },
+        &[],
+    )
+    .unwrap_err();
+
+    assert_eq!(
+        err.downcast_ref::<ContractError>().unwrap(),
+        &ContractError::ReplacePrimaryAddressNotSet { name: "isabel".to_string(), address: addr1.clone() }
+    );
+}
+
+#[test]
+fn remove_as_non_owner() {
+    let admin1 = String::from("admin1");
+    let admin2 = String::from("admin2");
+    let admins = vec![admin1, admin2];
+    let registrar = String::from("default-registrar");
+
+    let (name_nft_contract, mut app) = instantiate_name_nft(admins, registrar.clone());
+    let resolver_contract_addr =
+        instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
+
+    let addr1 = pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string());
+    let addr2 = pubkey_to_bech32_address(signer2().to_binary(), "osmo".to_string());
+
+    // make sure primary name is correctly set
+    mint_and_set_record(&mut app, "isabel", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+    mint_and_set_record(&mut app, "isabel2", &signer1(), registrar.clone(), name_nft_contract.clone(), resolver_contract_addr.clone());
+
+    
+    let err = app.execute_contract(
+        Addr::unchecked(addr2.clone()),
+        resolver_contract_addr.clone(),
+        &ExecuteMsg::RemoveRecord {
+            name: "isabel".to_string(),
+            bech32_address: pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string()),
+            replace_primary_name: None
+        },
+        &[],
+    )
+    .unwrap_err();
+
+    assert_eq!(
+        err.downcast_ref::<ContractError>().unwrap(),
+        &ContractError::Unauthorized {  }
+    );
 }
