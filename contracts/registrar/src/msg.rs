@@ -6,6 +6,7 @@ pub struct InstantiateMsg {
     pub name_nft_addr: String,
     pub verifier_pubkeys: Vec<Binary>,
     pub verification_threshold: Decimal,
+    pub fee: Option<Coin>,
 }
 
 #[cw_serde]

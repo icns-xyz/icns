@@ -54,7 +54,7 @@ pub fn instantiate(
             name_nft: name_nft_addr,
             verifier_pubkeys: msg.verifier_pubkeys,
             verification_threshold_percentage: msg.verification_threshold,
-            fee: None,
+            fee: msg.fee,
         },
     )?;
 
@@ -216,6 +216,17 @@ pub fn execute_claim(
             .collect::<StdResult<Vec<_>>>()?,
     )?;
 
+    // TODO: extract to check_fee
+    let config = CONFIG.load(deps.storage)?;
+    if let Some(fee) = config.fee {
+        if info.funds.len() != 1 {
+            return Err(ContractError::InvalidFee { fee_required: fee });
+        }
+        if info.funds[0] != fee {
+            return Err(ContractError::InvalidFee { fee_required: fee });
+        }
+    }
+
     // add referral count if referral is set
     if let Some(referral) = referral {
         // initialize referral count to 1 if not exists
@@ -234,7 +245,7 @@ pub fn execute_claim(
     UNIQUE_TWITTER_ID.save(deps.storage, verifying_msg.unique_twitter_id, &true)?;
 
     // mint name nft
-    let config = CONFIG.load(deps.storage)?;
+
     let mint_msg = WasmMsg::Execute {
         contract_addr: config.name_nft.to_string(),
         msg: to_binary(&NameNFTExecuteMsg::CW721Base(

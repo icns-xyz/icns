@@ -61,6 +61,7 @@ where
                 name_nft_addr: name_nft_contract_addr.to_string(),
                 verifier_pubkeys: vec![verifier2().to_binary()],
                 verification_threshold: Decimal::percent(50),
+                fee: None,
             },
             &[],
             "registar",

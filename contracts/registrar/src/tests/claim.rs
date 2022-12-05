@@ -2,9 +2,9 @@
 
 use crate::tests::helpers::{fixtures::*, ToBinary};
 use cosmrs::crypto::secp256k1::SigningKey;
-use cosmwasm_std::{Addr, Binary, Decimal, StdError, StdResult};
+use cosmwasm_std::{Addr, Binary, Coin, Decimal, StdError, StdResult};
 use cw721::OwnerOfResponse;
-use cw_multi_test::{BasicApp, Executor};
+use cw_multi_test::{AppBuilder, BasicApp, Executor};
 use icns_name_nft::msg::ICNSNameExecuteMsg;
 
 use crate::{
@@ -71,6 +71,7 @@ fn claim_name() {
                     .map(|v| v.to_binary())
                     .collect(),
                 verification_threshold: Decimal::percent(50),
+                fee: None,
             },
             &[],
             "registar",
@@ -304,4 +305,222 @@ fn claim_name() {
             msg: format!("unique twitter id `{}` is already used", unique_twitter_id)
         }
     );
+}
+
+#[test]
+fn claim_name_with_fee() {
+    let bob = Addr::unchecked("bobaddr");
+    // setup contracts
+    let mut app = AppBuilder::default().build(|router, _, storage| {
+        router
+            .bank
+            .init_balance(
+                storage,
+                &bob,
+                vec![
+                    Coin::new(100_000_000_000, "uosmo"),
+                    Coin::new(100_000_000_000, "uion"),
+                ],
+            )
+            .unwrap();
+    });
+    let name_nft_code_id = app.store_code(name_nft_contract());
+    let registrar_code_id = app.store_code(registrar_contract());
+    let admins = vec!["admin1".to_string(), "admin2".to_string()];
+
+    // setup name nft contract
+    let name_nft_contract_addr = app
+        .instantiate_contract(
+            name_nft_code_id,
+            Addr::unchecked(admins[0].clone()),
+            &icns_name_nft::InstantiateMsg {
+                admins: admins.clone(),
+                transferrable: false,
+            },
+            &[],
+            "name",
+            None,
+        )
+        .unwrap();
+
+    let owner = |app: &BasicApp, name: String| -> StdResult<_> {
+        let OwnerOfResponse { owner, .. } = app.wrap().query_wasm_smart(
+            name_nft_contract_addr.clone(),
+            &icns_name_nft::QueryMsg::OwnerOf {
+                token_id: name,
+                include_expired: None,
+            },
+        )?;
+
+        Ok(owner)
+    };
+
+    // set up verifiers
+    let verify_all = |verifying_msg: &str, verifiers: Vec<SigningKey>| -> Vec<Verification> {
+        verifiers
+            .iter()
+            .map(|verifier| Verification {
+                public_key: verifier.to_binary(),
+                signature: verifier.sign(verifying_msg.as_bytes()).unwrap().to_binary(),
+            })
+            .collect()
+    };
+
+    let fee = Coin::new(1_000_000_000, "uosmo");
+
+    // set up reigistrar contract
+    let registrar_contract_addr = app
+        .instantiate_contract(
+            registrar_code_id,
+            Addr::unchecked(admins[0].clone()),
+            &InstantiateMsg {
+                name_nft_addr: name_nft_contract_addr.to_string(),
+                verifier_pubkeys: vec![verifier1(), verifier2(), verifier3(), verifier4()]
+                    .iter()
+                    .map(|v| v.to_binary())
+                    .collect(),
+                verification_threshold: Decimal::percent(50),
+                fee: Some(fee.clone()),
+            },
+            &[],
+            "registar",
+            None,
+        )
+        .unwrap();
+
+    // set registrar as name nft minter
+    app.execute_contract(
+        Addr::unchecked(admins[0].clone()),
+        name_nft_contract_addr.clone(),
+        &icns_name_nft::msg::ExecuteMsg::ICNSName(ICNSNameExecuteMsg::SetMinter {
+            minter_address: registrar_contract_addr.to_string(),
+        }),
+        &[],
+    )
+    .unwrap();
+
+    let bob_name = "bob";
+    let multitest_chain_id = "cosmos-testnet-14002";
+    let unique_twitter_id = "1234567890";
+
+    // "bob" shouldn't be owned by anyone at first
+    assert_eq!(
+        owner(&app, bob_name.to_string()).unwrap_err(),
+        StdError::GenericErr {
+            msg: "Querier contract error: cw721_base::state::TokenInfo<core::option::Option<cosmwasm_std::results::empty::Empty>> not found".to_string()
+        }
+    );
+
+    // execute claim invalid fee
+    let verifying_msg = format!(
+        r#"{{"name":"{bob_name}","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}","unique_twitter_id":"{unique_twitter_id}"}}"#,
+    );
+
+    // no funds
+    let err = app
+        .execute_contract(
+            bob.clone(),
+            registrar_contract_addr.clone(),
+            &ExecuteMsg::Claim {
+                name: bob_name.to_string(),
+                verifying_msg: verifying_msg.clone(),
+                verifications: verify_all(&verifying_msg, vec![verifier4(), verifier3()]),
+                referral: None,
+            },
+            &[],
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        err.downcast_ref::<ContractError>().unwrap(),
+        &ContractError::InvalidFee {
+            fee_required: fee.clone()
+        }
+    );
+
+    // wrong denom
+    let err = app
+        .execute_contract(
+            bob.clone(),
+            registrar_contract_addr.clone(),
+            &ExecuteMsg::Claim {
+                name: bob_name.to_string(),
+                verifying_msg: verifying_msg.clone(),
+                verifications: verify_all(&verifying_msg, vec![verifier4(), verifier3()]),
+                referral: None,
+            },
+            &[Coin::new(100, "uion")],
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        err.downcast_ref::<ContractError>().unwrap(),
+        &ContractError::InvalidFee {
+            fee_required: fee.clone()
+        }
+    );
+
+    // over paid
+    let err = app
+        .execute_contract(
+            bob.clone(),
+            registrar_contract_addr.clone(),
+            &ExecuteMsg::Claim {
+                name: bob_name.to_string(),
+                verifying_msg: verifying_msg.clone(),
+                verifications: verify_all(&verifying_msg, vec![verifier4(), verifier3()]),
+                referral: None,
+            },
+            &[Coin::new(100_000_000_000, "uosmo")],
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        err.downcast_ref::<ContractError>().unwrap(),
+        &ContractError::InvalidFee {
+            fee_required: fee.clone()
+        }
+    );
+
+    // under paid
+    let err = app
+        .execute_contract(
+            bob.clone(),
+            registrar_contract_addr.clone(),
+            &ExecuteMsg::Claim {
+                name: bob_name.to_string(),
+                verifying_msg: verifying_msg.clone(),
+                verifications: verify_all(&verifying_msg, vec![verifier4(), verifier3()]),
+                referral: None,
+            },
+            &[Coin::new(1, "uosmo")],
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        err.downcast_ref::<ContractError>().unwrap(),
+        &ContractError::InvalidFee {
+            fee_required: fee.clone()
+        }
+    );
+
+    // exact fee
+    app.execute_contract(
+        bob.clone(),
+        registrar_contract_addr,
+        &ExecuteMsg::Claim {
+            name: bob_name.to_string(),
+            verifying_msg: verifying_msg.clone(),
+            verifications: verify_all(&verifying_msg, vec![verifier4(), verifier3()]),
+            referral: None,
+        },
+        &[fee.clone()],
+    )
+    .unwrap();
+
+    assert_eq!(
+        err.downcast_ref::<ContractError>().unwrap(),
+        &ContractError::InvalidFee { fee_required: fee }
+    );
+    assert_eq!(owner(&app, bob_name.to_string()).unwrap(), bob);
 }

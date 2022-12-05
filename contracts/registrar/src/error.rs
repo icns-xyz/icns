@@ -1,4 +1,4 @@
-use cosmwasm_std::{Binary, Decimal, StdError};
+use cosmwasm_std::{Binary, Coin, Decimal, StdError};
 use cw_utils::ThresholdError;
 use thiserror::Error;
 
@@ -59,4 +59,7 @@ pub enum ContractError {
 
     #[error("Invalid voting threshold percentage, must be in the 0-1.0 range")]
     InvalidThreshold {},
+
+    #[error("Invalid fee: required exactly {fee_required}")]
+    InvalidFee { fee_required: Coin },
 }
