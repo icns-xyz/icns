@@ -1,6 +1,14 @@
 use cosmrs::{bip32, crypto::secp256k1::SigningKey, tendermint::signature::Secp256k1Signature};
-use cosmwasm_std::{Binary, Empty};
-use cw_multi_test::{Contract, ContractWrapper};
+use cosmwasm_std::{Addr, Binary, Decimal, Empty};
+use cw_multi_test::{BasicApp, Contract, ContractWrapper, Executor};
+use serde::de::DeserializeOwned;
+use std::fmt::Debug;
+
+use crate::{
+    msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
+    tests::helpers::fixtures::verifier2,
+    ContractError,
+};
 
 pub fn name_nft_contract() -> Box<dyn Contract<Empty>> {
     let contract = ContractWrapper::new(
@@ -18,6 +26,92 @@ pub fn registrar_contract() -> Box<dyn Contract<Empty>> {
         crate::contract::query,
     );
     Box::new(contract)
+}
+
+pub fn test_only_admin<T>(execute_msg: ExecuteMsg, query_msg: QueryMsg, initial: T, updated: T)
+where
+    T: DeserializeOwned + PartialEq + Debug,
+{
+    // setup contracts
+    let mut app = BasicApp::default();
+    let name_nft_code_id = app.store_code(name_nft_contract());
+    let registrar_code_id = app.store_code(registrar_contract());
+    let admins = vec!["admin1".to_string(), "admin2".to_string()];
+
+    // setup contracts
+    let name_nft_contract_addr = app
+        .instantiate_contract(
+            name_nft_code_id,
+            Addr::unchecked(admins[0].clone()),
+            &icns_name_nft::InstantiateMsg {
+                admins: admins.clone(),
+                transferrable: false,
+            },
+            &[],
+            "name",
+            None,
+        )
+        .unwrap();
+
+    let registrar_contract_addr = app
+        .instantiate_contract(
+            registrar_code_id,
+            Addr::unchecked(admins[0].clone()),
+            &InstantiateMsg {
+                name_nft_addr: name_nft_contract_addr.to_string(),
+                verifier_pubkeys: vec![verifier2().to_binary()],
+                verification_threshold: Decimal::percent(50),
+            },
+            &[],
+            "registar",
+            None,
+        )
+        .unwrap();
+
+    let response: T = app
+        .wrap()
+        .query_wasm_smart(registrar_contract_addr.clone(), &query_msg)
+        .unwrap();
+
+    assert_eq!(response, initial);
+
+    // unauthorized if not admin
+    let err = app
+        .execute_contract(
+            Addr::unchecked("random_guy"),
+            registrar_contract_addr.clone(),
+            &execute_msg,
+            &[],
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        err.downcast_ref::<ContractError>().unwrap(),
+        &ContractError::Unauthorized {}
+    );
+
+    let response: T = app
+        .wrap()
+        .query_wasm_smart(registrar_contract_addr.clone(), &query_msg)
+        .unwrap();
+
+    assert_eq!(response, initial);
+
+    // authorized if admin
+    app.execute_contract(
+        Addr::unchecked(admins[0].clone()),
+        registrar_contract_addr.clone(),
+        &execute_msg,
+        &[],
+    )
+    .unwrap();
+
+    let response: T = app
+        .wrap()
+        .query_wasm_smart(registrar_contract_addr, &query_msg)
+        .unwrap();
+
+    assert_eq!(response, updated);
 }
 
 pub fn from_mnemonic(phrase: &str, derivation_path: &str) -> SigningKey {
