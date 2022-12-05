@@ -327,6 +327,7 @@ mod test {
                             .collect(),
                         verification_threshold_percentage: Decimal::percent(pct),
                         fee: Some(Coin::new(100000, "uosmo")),
+                        fee_collector: None,
                     },
                 )
                 .unwrap();
@@ -430,6 +431,7 @@ mod test {
                         .collect(),
                     verification_threshold_percentage: Decimal::percent(50),
                     fee: Some(Coin::new(100000, "uosmo")),
+                    fee_collector: None,
                 },
             )
             .unwrap();
@@ -450,6 +452,7 @@ mod test {
                     verifier_pubkeys: vec![],
                     verification_threshold_percentage: Decimal::percent(50),
                     fee: Some(Coin::new(100000, "uosmo")),
+                    fee_collector: None,
                 },
             )
             .unwrap();

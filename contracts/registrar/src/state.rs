@@ -16,6 +16,8 @@ pub struct Config {
     pub verification_threshold_percentage: Decimal,
     /// fee required for claiming name
     pub fee: Option<Coin>,
+    /// address that can collect fee
+    pub fee_collector: Option<Addr>,
 }
 
 impl Config {

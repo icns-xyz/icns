@@ -7,7 +7,7 @@ use cw_multi_test::{BasicApp, Executor};
 use serde::de::DeserializeOwned;
 
 use crate::{
-    msg::{ExecuteMsg, FeeResponse, InstantiateMsg, QueryMsg},
+    msg::{ExecuteMsg, FeeCollectorResponse, FeeResponse, InstantiateMsg, QueryMsg},
     ContractError,
 };
 
@@ -113,18 +113,18 @@ fn only_admin_can_set_fee() {
     );
 }
 
-// #[test]
-// fn only_admin_can_set_fee() {
-//     test_only_admin(
-//         ExecuteMsg::SetFeeCollector {
-//             fee_collector: "collector".to_string(),
-//         },
-//         QueryMsg::FeeCollector {},
-//         FeeCollectorResponse {
-//             fee_collector: "collector".to_string(),
-//         },
-//         FeeCollectorResponse {
-//             fee_collector: "collector".to_string(),
-//         },
-//     );
-// }
+#[test]
+fn only_admin_can_set_fee_collector() {
+    test_only_admin(
+        ExecuteMsg::SetFeeCollector {
+            fee_collector: Some("collector".to_string()),
+        },
+        QueryMsg::FeeCollector {},
+        FeeCollectorResponse {
+            fee_collector: None,
+        },
+        FeeCollectorResponse {
+            fee_collector: Some(Addr::unchecked("collector")),
+        },
+    );
+}
