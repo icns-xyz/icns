@@ -64,8 +64,15 @@ pub fn execute(
             adr36_info,
             signature_salt.u128(),
         ),
-        ExecuteMsg::SetPrimary { name, bech32_address } => execute_set_primary(deps, info, name, bech32_address),
-        ExecuteMsg::RemoveRecord { name, replace_primary_address, bech32_address } => execute_remove_record(deps, info, name, bech32_address ,replace_primary_address),
+        ExecuteMsg::SetPrimary {
+            name,
+            bech32_address,
+        } => execute_set_primary(deps, info, name, bech32_address),
+        ExecuteMsg::RemoveRecord {
+            name,
+            replace_primary_address,
+            bech32_address,
+        } => execute_remove_record(deps, info, name, bech32_address, replace_primary_address),
     }
 }
 
@@ -121,7 +128,11 @@ pub fn execute_set_record(
     )?;
 
     // save record
-    records().save(deps.storage, (&name, &bech32_prefix), &adr36_info.bech32_address.clone())?;
+    records().save(
+        deps.storage,
+        (&name, &bech32_prefix),
+        &adr36_info.bech32_address.clone(),
+    )?;
 
     // set name as primary name if it doesn't exists for this address yet
     let primary_name = PRIMARY_NAME.key(adr36_info.bech32_address);
@@ -147,18 +158,20 @@ fn execute_set_primary(
 
     // extract bech32 prefix from given address
     let bech32_prefix_decoded = bech32::decode(bech32_address.clone())
-    .map_err(|_| ContractError::Bech32DecodingErr {
-        addr: bech32_address.to_string(),
-    })?
-    .0;
+        .map_err(|_| ContractError::Bech32DecodingErr {
+            addr: bech32_address.to_string(),
+        })?
+        .0;
 
     // bech32 address needs to be already set in the records(for adr36 veficiation)
     // check in state if this is already set
-    let bech32_address_stored = records().may_load(deps.storage, (&name, &bech32_prefix_decoded))?;
-    if bech32_address_stored.is_none() || bech32_address_stored.unwrap() != bech32_address {
+    let bech32_address_stored =
+        records().may_load(deps.storage, (&name, &bech32_prefix_decoded))?;
+
+    if bech32_address_stored.as_ref() != Some(&bech32_address) {
         return Err(ContractError::Bech32AddressNotSet {
-            name: name.clone(),
-            address: bech32_address.clone(),
+            name,
+            address: bech32_address,
         });
     }
 
@@ -177,19 +190,22 @@ fn execute_remove_record(
     replace_primary_address: Option<String>,
 ) -> Result<Response, ContractError> {
     // check if the msg sender is the owner of the name or an admin. If not, return err
-    if !is_owner(deps.as_ref(), name.clone(), info.sender.to_string())? || !is_admin(deps.as_ref(), info.sender.to_string())? {
+    if !is_owner(deps.as_ref(), name.clone(), info.sender.to_string())?
+        || !is_admin(deps.as_ref(), info.sender.to_string())?
+    {
         return Err(ContractError::Unauthorized {});
     }
 
     // check if the name exists
     // extract bech32 prefix from given address
     let bech32_prefix_decoded = bech32::decode(bech32_address.clone())
-    .map_err(|_| ContractError::Bech32DecodingErr {
-        addr: bech32_address.to_string(),
-    })?
-    .0;
-    let bech32_address_stored = records().may_load(deps.storage, (&name, &bech32_prefix_decoded))?;
-    
+        .map_err(|_| ContractError::Bech32DecodingErr {
+            addr: bech32_address.to_string(),
+        })?
+        .0;
+    let bech32_address_stored =
+        records().may_load(deps.storage, (&name, &bech32_prefix_decoded))?;
+
     // check if bech32 address is set for this name
     if bech32_address_stored.is_none() || bech32_address_stored.unwrap() != bech32_address {
         return Err(ContractError::Bech32AddressNotSet {
@@ -213,11 +229,18 @@ fn execute_remove_record(
             PRIMARY_NAME.remove(deps.storage, bech32_address.clone());
         } else {
             if replace_primary_address.is_none() {
-                return Err(ContractError::ReplacePrimaryAddressNotSet { name: name.clone(), address: bech32_address.clone() });
+                return Err(ContractError::ReplacePrimaryAddressNotSet {
+                    name: name.clone(),
+                    address: bech32_address.clone(),
+                });
             }
 
             // set the replace primary address as primary name
-            PRIMARY_NAME.save(deps.storage, bech32_address.clone(), &replace_primary_address.unwrap())?;
+            PRIMARY_NAME.save(
+                deps.storage,
+                bech32_address.clone(),
+                &replace_primary_address.unwrap(),
+            )?;
         }
     } else {
         PRIMARY_NAME.remove(deps.storage, bech32_address.clone());
@@ -308,7 +331,9 @@ fn query_address(
     bech32_prefix: String,
 ) -> StdResult<AddressResponse> {
     Ok(AddressResponse {
-        address: records().load(deps.storage, (&name, &bech32_prefix))?.to_string(),
+        address: records()
+            .load(deps.storage, (&name, &bech32_prefix))?
+            .to_string(),
     })
 }
 
