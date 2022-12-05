@@ -4,7 +4,8 @@ use cosmrs::{
     tendermint::signature::{Secp256k1Signature, Verifier},
 };
 use cosmwasm_std::{
-    from_slice, to_binary, Addr, Binary, Decimal, Deps, Env, MessageInfo, QueryRequest, WasmQuery,
+    from_slice, to_binary, Addr, Binary, Coin, Decimal, Deps, Env, MessageInfo, QueryRequest,
+    WasmQuery,
 };
 
 use icns_name_nft::msg::{AdminResponse, QueryMsg as NameNFTQueryMsg};
@@ -20,6 +21,18 @@ pub fn check_send_from_admin(deps: Deps, sender: &Addr) -> Result<(), ContractEr
 
     if !admins.contains(&sender.to_string()) {
         return Err(ContractError::Unauthorized {});
+    }
+
+    Ok(())
+}
+
+pub fn check_fee(deps: Deps, funds: &[Coin]) -> Result<(), ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+
+    if let Some(fee) = config.fee {
+        if funds != [fee.to_owned()] {
+            return Err(ContractError::InvalidFee { fee_required: fee });
+        }
     }
 
     Ok(())
