@@ -13,6 +13,7 @@ use crate::{msg::Adr36Info, ContractError};
 pub fn adr36_verification(
     deps: Deps,
     name: String,
+    sender: String,
     bech32_prefix: String,
     adr36_info: Adr36Info,
     chain_id: String,
@@ -34,6 +35,7 @@ pub fn adr36_verification(
     let message = create_adr36_message(
         name,
         bech32_prefix,
+        sender,
         adr36_info.bech32_address,
         chain_id,
         contract_address,
@@ -72,6 +74,7 @@ pub fn pubkey_to_bech32_address(pub_key: Binary, bech32_prefix: String) -> Strin
 pub fn create_adr36_message(
     name: String,
     bech32_prefix: String,
+    sender: String,
     bech32_address: String,
     chain_id: String,
     contract_address: String,
@@ -81,7 +84,7 @@ pub fn create_adr36_message(
     let data = create_adr36_data(
         name,
         bech32_prefix,
-        bech32_address.clone(),
+        sender.clone(),
         chain_id,
         contract_address,
         signature_salt,
@@ -99,13 +102,13 @@ pub fn create_adr36_message(
 pub fn create_adr36_data(
     name: String,
     bech32_prefix: String,
-    bech32_address: String,
+    sender: String,
     chain_id: String,
     contract_address: String,
     signature_salt: u128,
 ) -> String {
     let icns = name + "." + &bech32_prefix;
-    let address = bech32_address;
+    let address = sender;
     let salt = signature_salt.to_string();
 
     let data_string = format!(

@@ -120,6 +120,7 @@ pub fn execute_set_record(
     adr36_verification(
         deps.as_ref(),
         name.clone(),
+        info.sender.into_string(),
         bech32_prefix.clone(),
         adr36_info.clone(),
         chain_id,
