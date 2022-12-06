@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate::{
-    crypto::pubkey_to_bech32_address,
+    crypto::cosmos_pubkey_to_bech32_address,
     msg::ExecuteMsg,
     tests::helpers::{
         addresses, instantiate_name_nft, instantiate_resolver_with_name_nft, mint_and_set_record,
@@ -27,7 +27,7 @@ fn remove_with_single_name_for_address() {
     let resolver_contract_addr =
         instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
 
-    let addr1 = pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string());
+    let addr1 = cosmos_pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string());
     let signer_bech32_address = "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string();
     // make sure primary name is correctly set
     mint_and_set_record(
@@ -77,7 +77,7 @@ fn remove_primary_and_non_primary_address() {
     let resolver_contract_addr =
         instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
 
-    let addr1 = pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string());
+    let addr1 = cosmos_pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string());
     let signer_bech32_address = "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string();
     // make sure primary name is correctly set
     mint_and_set_record(
@@ -188,7 +188,7 @@ fn remove_by_admin() {
     let resolver_contract_addr =
         instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
 
-    let addr2 = pubkey_to_bech32_address(signer2().to_binary(), "osmo".to_string());
+    let addr2 = cosmos_pubkey_to_bech32_address(signer2().to_binary(), "osmo".to_string());
     let signer_bech32_address = "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string();
     // make sure primary name is correctly set
     mint_and_set_record(

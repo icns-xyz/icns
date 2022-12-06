@@ -2,7 +2,7 @@ use crate::{
     contract::execute,
     contract::instantiate,
     contract::query,
-    crypto::{create_adr36_message, pubkey_to_bech32_address},
+    crypto::{create_adr36_message, cosmos_pubkey_to_bech32_address},
     msg::{self, ExecuteMsg},
     msg::{AddressesResponse, Adr36Info, InstantiateMsg, PrimaryNameResponse, QueryMsg},
 };
@@ -201,7 +201,7 @@ pub fn mint_and_set_record(
     name_nft_contract: Addr,
     resolver_contract_addr: Addr,
 ) {
-    let addr = pubkey_to_bech32_address(signing_key.to_binary(), "osmo".to_string());
+    let addr = cosmos_pubkey_to_bech32_address(signing_key.to_binary(), "osmo".to_string());
 
     app.execute_contract(
         Addr::unchecked(registrar),

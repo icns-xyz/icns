@@ -8,9 +8,11 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use cw_storage_plus::KeyDeserialize;
+use sha2::Digest;
 use subtle_encoding::bech32;
+use sha3::Keccak256;
 
-use crate::crypto::adr36_verification;
+use crate::crypto::{adr36_verification, cosmos_pubkey_to_bech32_address, eth_pubkey_to_bech32_address};
 use crate::error::ContractError;
 use crate::msg::{
     AddressHash, AddressResponse, AddressesResponse, Adr36Info, ExecuteMsg, InstantiateMsg,
@@ -94,23 +96,45 @@ pub fn execute_set_record(
 
     // if the sender is admin, skip adr 36 verification
     if !is_admin {
-        if adr36_info.address_hash != AddressHash::Cosmos {
+        if adr36_info.address_hash == AddressHash::Cosmos {
+            // if address hash is for Cosmos, first verify that pub key is 33 bytes
+            if adr36_info.pub_key.len() != 33 {
+                return Err(ContractError::InvalidPubKey { pub_key: adr36_info.pub_key.to_string() });
+            }
+
+            // extract bech32 prefix from given address
+            let bech32_prefix_decoded = bech32::decode(adr36_info.signer_bech32_address.clone())
+                .map_err(|_| ContractError::Bech32DecodingErr {
+                    addr: adr36_info.signer_bech32_address.to_string(),
+                })?
+                .0;
+
+            // check if the user input for prefix + address is valid
+            if bech32_prefix != bech32_prefix_decoded {
+                return Err(ContractError::Bech32PrefixMismatch {
+                    prefix: bech32_prefix,
+                    addr: adr36_info.signer_bech32_address,
+                });
+            }
+
+            // extract pubkey to bech32 address, check that it matches with the given bech32 address
+            let decoded_bech32_addr =
+                cosmos_pubkey_to_bech32_address(adr36_info.pub_key.clone(), bech32_prefix.clone());
+            if decoded_bech32_addr != adr36_info.signer_bech32_address {
+                return Err(ContractError::SignatureMisMatch {});
+            }
+        } else if adr36_info.address_hash == AddressHash::Ethereum {
+            if adr36_info.pub_key.len() != 65 {
+                return Err(ContractError::InvalidPubKey { pub_key: adr36_info.pub_key.to_string() });
+            }
+
+            let decoded_bech32_addr = 
+                eth_pubkey_to_bech32_address(adr36_info.pub_key.clone(), bech32_prefix.clone());
+            if decoded_bech32_addr != adr36_info.signer_bech32_address {
+                return Err(ContractError::SignatureMisMatch {});
+            }
+        } else {
             return Err(ContractError::HashMethodNotSupported {});
-        }
-
-        // extract bech32 prefix from given address
-        let bech32_prefix_decoded = bech32::decode(adr36_info.signer_bech32_address.clone())
-            .map_err(|_| ContractError::Bech32DecodingErr {
-                addr: adr36_info.signer_bech32_address.to_string(),
-            })?
-            .0;
-
-        // first check if the user input for prefix + address is valid
-        if bech32_prefix != bech32_prefix_decoded {
-            return Err(ContractError::Bech32PrefixMismatch {
-                prefix: bech32_prefix,
-                addr: adr36_info.signer_bech32_address,
-            });
         }
 
         // do adr36 verification

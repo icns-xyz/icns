@@ -61,7 +61,6 @@ fn only_admin_can_set_record() {
 
     // now check if record is set properly in store
     let addresses = addresses(&app, "alice".to_string()).unwrap();
-    println!("addresses: {:?}", addresses);
     assert_eq!(
         addresses,
         vec![(
@@ -99,7 +98,6 @@ fn only_owner_can_set_record() {
             &[],
         )
         .is_err();
-    // println!("{:?}", mint);
     assert_eq!(mint, false);
 
     // try setting record with non owner, should fail

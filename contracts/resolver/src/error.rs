@@ -27,6 +27,9 @@ pub enum ContractError {
     #[error("signature already exists")]
     SigntaureAlreadyExists {},
 
+    #[error("invalid pub key: {pub_key:?}")]
+    InvalidPubKey { pub_key: String},
+
     #[error("Bech32 prefix mismatch between prefix: {prefix:?} and addr: {addr:?}")]
     Bech32PrefixMismatch { prefix: String, addr: String },
 

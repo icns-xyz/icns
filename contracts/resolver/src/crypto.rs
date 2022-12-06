@@ -4,6 +4,8 @@ use bech32::ToBase32;
 use cosmwasm_crypto::secp256k1_verify;
 use ripemd::{Digest as RipemdDigest, Ripemd160};
 use sha2::Sha256;
+use subtle_encoding::bech32::encode as bech32_encode;
+use sha3::Keccak256;
 use std::ops::Deref;
 
 use cosmwasm_std::{Binary, Deps, Response};
@@ -20,13 +22,7 @@ pub fn adr36_verification(
     contract_address: String,
     signature_salt: u128,
 ) -> Result<Response, ContractError> {
-    // extract pubkey to bech32 address, check that it matches with the given bech32 address
-    let decoded_bech32_addr =
-        pubkey_to_bech32_address(adr36_info.pub_key.clone(), bech32_prefix.clone());
-    if decoded_bech32_addr != adr36_info.signer_bech32_address {
-        return Err(ContractError::SignatureMisMatch {});
-    }
-
+    // check if signature already exists
     let signtaure = SIGNATURE.may_load(deps.storage, adr36_info.signature.as_slice())?;
     if signtaure.is_some() {
         return Err(ContractError::SigntaureAlreadyExists {});
@@ -56,7 +52,7 @@ pub fn adr36_verification(
     Ok(Response::default())
 }
 
-pub fn pubkey_to_bech32_address(pub_key: Binary, bech32_prefix: String) -> String {
+pub fn cosmos_pubkey_to_bech32_address(pub_key: Binary, bech32_prefix: String) -> String {
     let decoded_pub_key = pub_key.as_slice();
     let sha256 = Sha256::digest(decoded_pub_key);
     let result = Ripemd160::digest(sha256);
@@ -67,6 +63,16 @@ pub fn pubkey_to_bech32_address(pub_key: Binary, bech32_prefix: String) -> Strin
         bech32::Variant::Bech32,
     )
     .unwrap();
+
+    bech32_address
+}
+
+pub fn eth_pubkey_to_bech32_address(pub_key: Binary, bech32_prefix: String) -> String {
+    // remove first byte(prefix) from public key
+    let xy = &pub_key.as_slice()[1..];
+
+    let hashed = Keccak256::digest(xy).as_slice()[12..].to_vec();
+    let bech32_address = bech32_encode(&bech32_prefix, hashed);
 
     bech32_address
 }

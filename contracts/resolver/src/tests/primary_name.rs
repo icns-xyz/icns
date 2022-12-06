@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate::{
-    crypto::pubkey_to_bech32_address,
+    crypto::cosmos_pubkey_to_bech32_address,
     msg::ExecuteMsg,
     tests::helpers::{
         instantiate_name_nft, instantiate_resolver_with_name_nft, mint_and_set_record,
@@ -44,7 +44,7 @@ fn set_primary_name_on_set_first_record() {
     assert_eq!(
         primary_name(
             &app,
-            pubkey_to_bech32_address(signer1().to_binary(), "cosmos".to_string()),
+            cosmos_pubkey_to_bech32_address(signer1().to_binary(), "cosmos".to_string()),
             resolver_contract_addr.clone(),
         )
         .unwrap(),
@@ -64,7 +64,7 @@ fn set_primary_name_on_set_first_record() {
     assert_eq!(
         primary_name(
             &app,
-            pubkey_to_bech32_address(signer1().to_binary(), "cosmos".to_string()),
+            cosmos_pubkey_to_bech32_address(signer1().to_binary(), "cosmos".to_string()),
             resolver_contract_addr
         )
         .unwrap(),
@@ -115,15 +115,15 @@ fn set_primary() {
     assert_eq!(
         primary_name(
             &app,
-            pubkey_to_bech32_address(signer1().to_binary(), "cosmos".to_string()),
+            cosmos_pubkey_to_bech32_address(signer1().to_binary(), "cosmos".to_string()),
             resolver_contract_addr.clone()
         )
         .unwrap(),
         "isabel".to_string()
     );
 
-    let addr1 = pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string());
-    let addr2 = pubkey_to_bech32_address(signer2().to_binary(), "osmo".to_string());
+    let addr1 = cosmos_pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string());
+    let addr2 = cosmos_pubkey_to_bech32_address(signer2().to_binary(), "osmo".to_string());
 
     // non-owner can't set primary
     let err = app
@@ -207,7 +207,7 @@ fn set_primary() {
     assert_eq!(
         primary_name(
             &app,
-            pubkey_to_bech32_address(signer1().to_binary(), "cosmos".to_string()),
+            cosmos_pubkey_to_bech32_address(signer1().to_binary(), "cosmos".to_string()),
             resolver_contract_addr
         )
         .unwrap(),
