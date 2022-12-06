@@ -262,7 +262,7 @@ pub fn execute_claim(
     }
 
     let verifying_msg: VerifyingMsg = from_slice(verifying_msg_str.as_bytes())?;
-    UNIQUE_TWITTER_ID.save(deps.storage, verifying_msg.unique_twitter_id, &true)?;
+    UNIQUE_TWITTER_ID.save(deps.storage, verifying_msg.unique_twitter_id, &name)?;
 
     // mint name nft
     let config = CONFIG.load(deps.storage)?;
