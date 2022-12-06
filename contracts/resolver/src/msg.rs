@@ -13,7 +13,6 @@ pub enum ExecuteMsg {
         name: String,
         bech32_prefix: String,
         adr36_info: Adr36Info,
-        signature_salt: Uint128,
     },
     SetPrimary {
         name: String,
@@ -31,6 +30,7 @@ pub struct Adr36Info {
     pub address_hash: AddressHash,
     pub pub_key: Binary,
     pub signature: Binary,
+    pub signature_salt: Uint128,
 }
 
 #[cw_serde]

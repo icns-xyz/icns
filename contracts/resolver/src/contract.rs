@@ -55,7 +55,6 @@ pub fn execute(
             name,
             bech32_prefix,
             adr36_info,
-            signature_salt,
         } => execute_set_record(
             deps,
             env,
@@ -63,7 +62,6 @@ pub fn execute(
             name,
             bech32_prefix,
             adr36_info,
-            signature_salt.u128(),
         ),
         ExecuteMsg::SetPrimary {
             name,
@@ -83,7 +81,6 @@ pub fn execute_set_record(
     name: String,
     bech32_prefix: String,
     adr36_info: Adr36Info,
-    signature_salt: u128,
 ) -> Result<Response, ContractError> {
     // check if the msg sender is a registrar or admin. If not, return err
     let is_admin = is_admin(deps.as_ref(), info.sender.to_string())?;
@@ -148,7 +145,6 @@ pub fn execute_set_record(
             adr36_info.clone(),
             chain_id,
             contract_address,
-            signature_salt,
         )?;
     }
 

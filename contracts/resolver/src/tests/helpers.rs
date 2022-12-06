@@ -44,9 +44,9 @@ pub fn default_osmo_set_record_msg() -> ExecuteMsg {
                 address_hash: msg::AddressHash::Cosmos,
                 pub_key,
                 signature,
+                signature_salt: 12313u128.into(),
             },
             bech32_prefix: "cosmos".to_string(),
-            signature_salt: 12313u128.into(),
         }
     }
 }
@@ -64,9 +64,9 @@ pub fn default_juno_set_record_msg() -> ExecuteMsg {
                 address_hash: msg::AddressHash::Cosmos,
                 pub_key,
                 signature,
+                signature_salt: 1231323u128.into(),
             },
             bech32_prefix: "juno".to_string(),
-            signature_salt: 1231323u128.into(),
         }
     }
 }
@@ -237,9 +237,9 @@ pub fn mint_and_set_record(
             address_hash: msg::AddressHash::Cosmos,
             pub_key: signing_key.to_binary(),
             signature,
+            signature_salt: 12313u128.into(),
         },
         bech32_prefix: "cosmos".to_string(),
-        signature_salt: 12313u128.into(),
     };
 
     app.execute_contract(Addr::unchecked(addr), resolver_contract_addr, &msg, &[])

@@ -174,9 +174,9 @@ fn bech32_verification() {
             address_hash: msg::AddressHash::Cosmos,
             pub_key: pub_key.clone(),
             signature: signature.clone(),
+            signature_salt: 1323124u128.into(),
         },
         bech32_prefix: "osmo".to_string(),
-        signature_salt: 1323124u128.into(),
     };
 
     let err = app
@@ -197,9 +197,9 @@ fn bech32_verification() {
             address_hash: msg::AddressHash::Cosmos,
             pub_key: pub_key.clone(),
             signature: signature.clone(),
+            signature_salt: 1323124u128.into(),
         },
         bech32_prefix: "juno".to_string(),
-        signature_salt: 1323124u128.into(),
     };
     let err = app
         .execute_contract(
@@ -220,9 +220,9 @@ fn bech32_verification() {
             address_hash: msg::AddressHash::Cosmos,
             pub_key,
             signature,
+            signature_salt: 12313u128.into(),
         },
         bech32_prefix: "cosmos".to_string(),
-        signature_salt: 12313u128.into(),
     };
     let err = app
         .execute_contract(
@@ -292,8 +292,8 @@ fn eth_address_set_record() {
             address_hash: msg::AddressHash::Ethereum,
             pub_key: pub_key_binary.clone(),
             signature: signature,
+            signature_salt: 12313u128.into(),
         }, 
-        signature_salt: 12313u128.into(),
     };
 
     app

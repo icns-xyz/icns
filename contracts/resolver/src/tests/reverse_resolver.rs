@@ -62,9 +62,9 @@ fn reverse_resolver() {
             address_hash: msg::AddressHash::Cosmos,
             pub_key,
             signature,
+            signature_salt: 13231u128.into(),
         },
         bech32_prefix: "osmo".to_string(),
-        signature_salt: 13231u128.into(),
     };
 
     let err = app

@@ -154,7 +154,7 @@ fn adr36_verify_cosmos() {
     let signer = "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string();
     let chain_id = "cosmos-testnet-14002".to_string();
     let contract_address = "contract1".to_string();
-    let signature_salt = 12313;
+    let signature_salt = 12313u128.into();
 
     let original_signature_vec = hex!("624fcd052ed8333fe643140ab5fde6fa308dd02c95cb61dd490ab53afa622db12a79ba2826b7da85d56c53bd4e53947b069cc3fb6fb091ca938f8d1952dfdf50");
     let pub_key = signer1().to_binary();
@@ -165,6 +165,7 @@ fn adr36_verify_cosmos() {
         address_hash: AddressHash::Cosmos,
         pub_key,
         signature,
+        signature_salt,
     };
 
     let deps = mock_dependencies();
@@ -176,7 +177,6 @@ fn adr36_verify_cosmos() {
         adr36_info,
         chain_id,
         contract_address,
-        signature_salt,
     )
     .is_err();
     assert!(!adr_verification)
@@ -205,6 +205,6 @@ fn eth_pubkey_to_bech32_address_encoding() {
 
     assert_eq!(
         bech32_address,
-        "evmos1d2kh2xaen7c0zv3h7qnmghhwhsmmassq8q2x2a"
+        "evmos16wx7ye3ce060tjvmmpu8lm0ak5xr7gm238xyss"
     );
 }

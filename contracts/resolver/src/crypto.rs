@@ -20,7 +20,6 @@ pub fn adr36_verification(
     adr36_info: Adr36Info,
     chain_id: String,
     contract_address: String,
-    signature_salt: u128,
 ) -> Result<Response, ContractError> {
     // check if signature already exists
     let signtaure = SIGNATURE.may_load(deps.storage, adr36_info.signature.as_slice())?;
@@ -35,7 +34,7 @@ pub fn adr36_verification(
         adr36_info.signer_bech32_address,
         chain_id,
         contract_address,
-        signature_salt,
+        adr36_info.signature_salt.u128(),
     );
 
     let message_bytes = message.as_bytes();
