@@ -35,4 +35,7 @@ pub enum ContractError {
 
     #[error("Removing primary address not allowed when address has more than 1 name, consider setting primary address to another address")]
     RemovingPrimaryAddressNotAllowed {},
+
+    #[error("Invalid ICNS")]
+    InvalidICNS {},
 }

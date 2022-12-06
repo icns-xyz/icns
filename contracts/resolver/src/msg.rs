@@ -34,6 +34,7 @@ pub struct Adr36Info {
 }
 
 #[cw_serde]
+#[serde(rename = "name")]
 pub enum AddressHash {
     SHA256,
     Keccak256,
@@ -62,6 +63,9 @@ pub enum QueryMsg {
 
     #[returns(AdminResponse)]
     Admin {},
+    
+    #[returns(AddressByIcnsResponse)]
+    AddressByIcns { icns: String },
 }
 
 #[cw_serde]
@@ -88,6 +92,11 @@ pub struct AddressesResponse {
 #[cw_serde]
 pub struct AddressResponse {
     pub address: String,
+}
+
+#[cw_serde]
+pub struct AddressByIcnsResponse {
+    pub bech32_address: String,
 }
 
 #[cw_serde]

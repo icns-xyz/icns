@@ -4,7 +4,7 @@ use cosmwasm_std::Order::Ascending;
 
 use cosmwasm_std::{
     to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryRequest, Response, StdResult,
-    WasmQuery,
+    WasmQuery, StdError,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::KeyDeserialize;
@@ -14,7 +14,7 @@ use crate::crypto::adr36_verification;
 use crate::error::ContractError;
 use crate::msg::{
     AddressHash, AddressResponse, AddressesResponse, Adr36Info, ExecuteMsg, InstantiateMsg,
-    MigrateMsg, NamesResponse, PrimaryNameResponse, QueryMsg,
+    MigrateMsg, NamesResponse, PrimaryNameResponse, QueryMsg, AddressByIcnsResponse,
 };
 use crate::state::{records, Config, CONFIG, PRIMARY_NAME, SIGNATURE};
 use cw721::OwnerOfResponse;
@@ -303,7 +303,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Admin {} => to_binary(&query_admin(deps)?),
         QueryMsg::PrimaryName { address } => to_binary(&query_primary_name(deps, address)?),
         QueryMsg::Names { address } => to_binary(&query_names(deps, address)?),
-        // TODO: add query to query directly using ICNS (e.g req: tony.eth)
+        QueryMsg::AddressByIcns { icns } => to_binary(&query_address_by_icns(deps, icns)?),
     }
 }
 
@@ -367,6 +367,22 @@ fn query_admin(deps: Deps) -> StdResult<AdminResponse> {
             admins: vec![String::from("")],
         }),
     }
+}
+
+fn query_address_by_icns(deps: Deps, icns: String) -> StdResult<AddressByIcnsResponse> {
+    let split:Vec<&str> = icns.split(".").collect();
+    
+    // check if split length is 2
+    if split.len() != 2 {
+        return Err(StdError::generic_err("Invalid ICNS"))
+    }
+
+    let name = split[0];
+    let bech32_prefix = split[1];
+
+    Ok(AddressByIcnsResponse {
+        bech32_address: records().load(deps.storage, (&name, &bech32_prefix))?,
+    })
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
