@@ -1,6 +1,9 @@
 #![cfg(test)]
 
-use crate::tests::helpers::{fixtures::*, ToBinary};
+use crate::{
+    msg::{NameByTwitterIdResponse, QueryMsg},
+    tests::helpers::{fixtures::*, ToBinary},
+};
 use cosmrs::crypto::secp256k1::SigningKey;
 use cosmwasm_std::{Addr, Binary, Coin, Decimal, StdError, StdResult};
 use cw721::OwnerOfResponse;
@@ -79,6 +82,15 @@ fn claim_name() {
         )
         .unwrap();
 
+    let name_by_twitter_id = |app: &BasicApp, twitter_id: String| -> StdResult<_> {
+        let NameByTwitterIdResponse { name } = app.wrap().query_wasm_smart(
+            registrar_contract_addr.clone(),
+            &QueryMsg::NameByTwitterId { twitter_id },
+        )?;
+
+        Ok(name)
+    };
+
     // set registrar as name nft minter
     app.execute_contract(
         Addr::unchecked(admins[0].clone()),
@@ -100,6 +112,14 @@ fn claim_name() {
         owner(&app, bob_name.to_string()).unwrap_err(),
         StdError::GenericErr {
             msg: "Querier contract error: cw721_base::state::TokenInfo<core::option::Option<cosmwasm_std::results::empty::Empty>> not found".to_string()
+        }
+    );
+
+    // unique_twitter_id has not been used yet
+    assert_eq!(
+        name_by_twitter_id(&app, unique_twitter_id.to_string()).unwrap_err(),
+        StdError::GenericErr {
+            msg: "Querier contract error: alloc::string::String not found".to_string()
         }
     );
 
@@ -252,6 +272,10 @@ fn claim_name() {
     .unwrap();
 
     assert_eq!(owner(&app, bob_name.to_string()).unwrap(), bob);
+    assert_eq!(
+        name_by_twitter_id(&app, unique_twitter_id.to_string()).unwrap(),
+        bob_name
+    );
 
     // execute claim with passing but same name -> should error
     let new_twitter_id = "11111";

@@ -14,9 +14,9 @@ use crate::checks::{
 };
 use crate::error::ContractError;
 use crate::msg::{
-    ExecuteMsg, FeeResponse, InstantiateMsg, NameNFTAddressResponse, QueryMsg,
-    ReferralCountResponse, Verification, VerificationThresholdResponse, VerifierPubKeysResponse,
-    VerifyingMsg,
+    ExecuteMsg, FeeResponse, InstantiateMsg, NameByTwitterIdResponse, NameNFTAddressResponse,
+    QueryMsg, ReferralCountResponse, Verification, VerificationThresholdResponse,
+    VerifierPubKeysResponse, VerifyingMsg,
 };
 
 use icns_name_nft::msg::ExecuteMsg as NameNFTExecuteMsg;
@@ -353,7 +353,16 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, StdError> {
         }),
         QueryMsg::ReferralCount { name } => to_binary(&query_referral_count(deps, name)?),
         QueryMsg::Fee {} => to_binary(&query_fee(deps)?),
+        QueryMsg::NameByTwitterId { twitter_id } => {
+            to_binary(&query_name_by_twitter_id(deps, twitter_id)?)
+        }
     }
+}
+
+fn query_name_by_twitter_id(deps: Deps, twitter_id: String) -> StdResult<NameByTwitterIdResponse> {
+    Ok(NameByTwitterIdResponse {
+        name: UNIQUE_TWITTER_ID.load(deps.storage, twitter_id)?,
+    })
 }
 
 fn query_fee(deps: Deps) -> StdResult<FeeResponse> {

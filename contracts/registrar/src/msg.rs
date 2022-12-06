@@ -82,6 +82,9 @@ pub enum QueryMsg {
 
     #[returns(FeeResponse)]
     Fee {},
+
+    #[returns(NameByTwitterIdResponse)]
+    NameByTwitterId { twitter_id: String },
 }
 
 #[cw_serde]
@@ -106,6 +109,11 @@ pub struct ReferralCountResponse {
 #[cw_serde]
 pub struct FeeResponse {
     pub fee: Option<Coin>,
+}
+
+#[cw_serde]
+pub struct NameByTwitterIdResponse {
+    pub name: String,
 }
 
 #[cw_serde]
