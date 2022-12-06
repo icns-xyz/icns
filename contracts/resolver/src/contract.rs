@@ -7,13 +7,14 @@ use cosmwasm_std::{
     WasmQuery,
 };
 use cw2::set_contract_version;
+use cw_storage_plus::KeyDeserialize;
 use subtle_encoding::bech32;
 
 use crate::crypto::adr36_verification;
 use crate::error::ContractError;
 use crate::msg::{
     AddressHash, AddressResponse, AddressesResponse, Adr36Info, ExecuteMsg, InstantiateMsg,
-    PrimaryNameResponse, QueryMsg,
+    NamesResponse, PrimaryNameResponse, QueryMsg,
 };
 use crate::state::{records, Config, CONFIG, PRIMARY_NAME, SIGNATURE};
 use cw721::OwnerOfResponse;
@@ -281,8 +282,30 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         } => to_binary(&query_address(deps, env, name, bech32_prefix)?),
         QueryMsg::Admin {} => to_binary(&query_admin(deps)?),
         QueryMsg::PrimaryName { address } => to_binary(&query_primary_name(deps, address)?),
+        QueryMsg::Names { address } => to_binary(&query_names(deps, address)?),
         // TODO: add query to query directly using ICNS (e.g req: tony.eth)
     }
+}
+
+fn query_names(deps: Deps, address: String) -> StdResult<NamesResponse> {
+    Ok(NamesResponse {
+        names: records()
+            .idx
+            .address
+            .prefix(address)
+            .keys(deps.storage, None, None, Ascending)
+            // get name out of StdResult<(name, bech32_prefix)
+            .map(|result| {
+                result
+                    .iter()
+                    .map(|key| {
+                        let (name, _) = <(String, String)>::from_slice(key.as_bytes())?;
+                        Ok(name)
+                    })
+                    .collect::<StdResult<String>>()
+            })
+            .collect::<StdResult<_>>()?,
+    })
 }
 
 fn query_primary_name(deps: Deps, address: String) -> StdResult<PrimaryNameResponse> {

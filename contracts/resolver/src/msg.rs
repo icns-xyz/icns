@@ -51,6 +51,10 @@ pub enum QueryMsg {
     #[returns(AddressResponse)]
     Address { name: String, bech32_prefix: String },
 
+    /// Get names bound to an address
+    #[returns(NamesResponse)]
+    Names { address: String },
+
     /// An address and hold multiple names, this query returns
     /// their primary name.
     #[returns(PrimaryNameResponse)]
@@ -58,6 +62,11 @@ pub enum QueryMsg {
 
     #[returns(AdminResponse)]
     Admin {},
+}
+
+#[cw_serde]
+pub struct NamesResponse {
+    pub names: Vec<String>,
 }
 
 #[cw_serde]

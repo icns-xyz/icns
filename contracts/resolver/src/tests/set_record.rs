@@ -2,9 +2,9 @@
 
 use crate::{
     crypto::pubkey_to_bech32_address,
-    msg::{self, Adr36Info, ExecuteMsg},
+    msg::{self, Adr36Info, ExecuteMsg, NamesResponse},
     msg::{AddressesResponse, QueryMsg},
-    tests::helpers::{signer1, ToBinary},
+    tests::helpers::{mint_and_set_record, signer1, ToBinary},
     ContractError,
 };
 
@@ -34,18 +34,99 @@ fn set_get_single_record() {
         Ok(addresses)
     };
 
+    let names = |app: &BasicApp, address: String| -> StdResult<_> {
+        let NamesResponse { names } = app
+            .wrap()
+            .query_wasm_smart(resolver_contract_addr.clone(), &QueryMsg::Names { address })?;
+
+        Ok(names)
+    };
+
     // now get record
     let addresses = addresses(&app, "alice".to_string()).unwrap();
-    assert_eq!(addresses.len(), 2);
-    assert_eq!(addresses[0].0, "cosmos");
     assert_eq!(
-        addresses[0].1,
-        "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz"
+        addresses,
+        vec![
+            (
+                "cosmos".to_string(),
+                "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string()
+            ),
+            (
+                "juno".to_string(),
+                "juno1d2kh2xaen7c0zv3h7qnmghhwhsmmassqffq35s".to_string()
+            )
+        ]
     );
-    assert_eq!(addresses[1].0, "juno");
     assert_eq!(
-        addresses[1].1,
-        "juno1d2kh2xaen7c0zv3h7qnmghhwhsmmassqffq35s"
+        names(
+            &app,
+            "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string()
+        )
+        .unwrap(),
+        vec!["alice"]
+    );
+}
+
+#[test]
+fn set_get_multiple_name_on_one_address() {
+    let admin1 = String::from("admin1");
+    let admin2 = String::from("admin2");
+    let admins = vec![admin1, admin2];
+    let registrar = String::from("default-registrar");
+
+    let (name_nft_contract, mut app) = instantiate_name_nft(admins, registrar.clone());
+    let resolver_contract_addr =
+        instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
+
+    let signer_bech32_address = "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string();
+
+    mint_and_set_record(
+        &mut app,
+        "alice",
+        signer_bech32_address.clone(),
+        &signer1(),
+        registrar.clone(),
+        name_nft_contract.clone(),
+        resolver_contract_addr.clone(),
+    );
+
+    mint_and_set_record(
+        &mut app,
+        "alice_in_wonderland",
+        signer_bech32_address.clone(),
+        &signer1(),
+        registrar.clone(),
+        name_nft_contract.clone(),
+        resolver_contract_addr.clone(),
+    );
+
+    let addresses = |app: &BasicApp, name: String| -> StdResult<_> {
+        let AddressesResponse { addresses, .. } = app.wrap().query_wasm_smart(
+            resolver_contract_addr.clone(),
+            &QueryMsg::Addresses { name },
+        )?;
+
+        Ok(addresses)
+    };
+
+    let names = |app: &BasicApp, address: String| -> StdResult<_> {
+        let NamesResponse { names } = app
+            .wrap()
+            .query_wasm_smart(resolver_contract_addr.clone(), &QueryMsg::Names { address })?;
+
+        Ok(names)
+    };
+
+    // now get record
+    let addresses = addresses(&app, "alice".to_string()).unwrap();
+    assert_eq!(
+        addresses,
+        vec![("cosmos".to_string(), signer_bech32_address.to_owned()),]
+    );
+
+    assert_eq!(
+        names(&app, signer_bech32_address).unwrap(),
+        vec!["alice", "alice_in_wonderland"]
     );
 }
 
