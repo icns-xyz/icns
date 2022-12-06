@@ -35,5 +35,4 @@ pub enum ContractError {
 
     #[error("Replace address is not set for name: {name:?}, address: {address:?}")]
     ReplacePrimaryAddressNotSet { name: String, address: String },
-
 }

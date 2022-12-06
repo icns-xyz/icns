@@ -514,7 +514,7 @@ fn claim_name_with_fee() {
             verifications: verify_all(&verifying_msg, vec![verifier4(), verifier3()]),
             referral: None,
         },
-        &[fee.clone()],
+        &[fee],
     )
     .unwrap();
 

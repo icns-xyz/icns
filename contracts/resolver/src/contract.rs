@@ -70,9 +70,8 @@ pub fn execute(
         } => execute_set_primary(deps, info, name, bech32_address),
         ExecuteMsg::RemoveRecord {
             name,
-            replace_primary_name,
             bech32_address,
-        } => execute_remove_record(deps, info, name, bech32_address, replace_primary_name),
+        } => execute_remove_record(deps, info, name, bech32_address),
     }
 }
 
@@ -130,12 +129,12 @@ pub fn execute_set_record(
             signature_salt,
         )?;
     }
-    
+
     // save record
     records().save(
         deps.storage,
         (&name, &bech32_prefix),
-        &adr36_info.signer_bech32_address.clone(),
+        &adr36_info.signer_bech32_address,
     )?;
 
     // set name as primary name if it doesn't exists for this address yet
@@ -191,10 +190,11 @@ fn execute_remove_record(
     info: MessageInfo,
     name: String,
     bech32_address: String,
-    replace_primary_name: Option<String>,
 ) -> Result<Response, ContractError> {
     // check if the msg sender is the owner of the name or an admin. If not, return err
-    if !is_owner(deps.as_ref(), name.clone(), info.sender.to_string())? && !is_admin(deps.as_ref(), info.sender.to_string())? {
+    if !is_owner(deps.as_ref(), name.clone(), info.sender.to_string())?
+        && !is_admin(deps.as_ref(), info.sender.to_string())?
+    {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -209,48 +209,19 @@ fn execute_remove_record(
         records().may_load(deps.storage, (&name, &bech32_prefix_decoded))?;
 
     // check if bech32 address is set for this name
-    if bech32_address_stored.is_none() || bech32_address_stored.unwrap() != bech32_address {
+    if bech32_address_stored.as_ref() != Some(&bech32_address) {
         return Err(ContractError::Bech32AddressNotSet {
-            name: name.clone(),
-            address: bech32_address.clone(),
+            name,
+            address: bech32_address,
         });
     }
 
-    // check if the name is primary for any address
+    // remove primary name if mapped to this address
     let primary_name = PRIMARY_NAME.may_load(deps.storage, bech32_address.clone())?;
-    if primary_name.is_some() && primary_name.unwrap() == name {
-        let records_len = records()
-            .idx
-            .address
-            .prefix(bech32_address.clone())
-            .range(deps.storage, None, None, Ascending)
-            .count();
-
-        if records_len == 1 {
-            // if the name is the only record for this address, remove the primary name
-            PRIMARY_NAME.remove(deps.storage, bech32_address.clone());
-        } else {
-            if replace_primary_name.is_none() {
-                return Err(ContractError::ReplacePrimaryAddressNotSet {
-                    name: name.clone(),
-                    address: bech32_address.clone(),
-                });
-            }
-            let replace_primary_name  = replace_primary_name.unwrap();
-
-            let replace_primary_name_found = records().may_load(deps.storage, (&replace_primary_name, &bech32_prefix_decoded.clone()))?;
-            if replace_primary_name_found.is_none()  {
-                return Err(ContractError::ReplacePrimaryAddressNotSet { name: name.clone(), address: bech32_address.clone() });
-            }
-            // set the replace primary address as primary name
-            PRIMARY_NAME.save(
-                deps.storage,
-                bech32_address.clone(),
-                &replace_primary_name,
-            )?;
-        }
+    if primary_name.as_ref() == Some(&name) {
+        PRIMARY_NAME.remove(deps.storage, bech32_address)
     }
-    
+
     records().remove(deps.storage, (&name, &bech32_prefix_decoded))?;
 
     Ok(Response::new()
@@ -317,13 +288,11 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 fn query_primary_name(deps: Deps, address: String) -> StdResult<PrimaryNameResponse> {
-    let primary_name = PRIMARY_NAME.may_load(deps.storage, address.clone())?;
+    let primary_name = PRIMARY_NAME.may_load(deps.storage, address)?;
     match primary_name {
-        Some(name) => Ok(PrimaryNameResponse {
-            name,
-        }),
-        None => Ok(PrimaryNameResponse {
-            name: "".to_string(),
+        Some(name) => Ok(PrimaryNameResponse { name }),
+        None => Err(cosmwasm_std::StdError::NotFound {
+            kind: "PrimaryName".to_string(),
         }),
     }
 }
