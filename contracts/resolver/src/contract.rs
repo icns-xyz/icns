@@ -217,7 +217,27 @@ fn execute_remove_record(
 
     // remove primary name if mapped to this address
     let primary_name = PRIMARY_NAME.may_load(deps.storage, bech32_address.clone())?;
+
+    // if name is primary_name
     if primary_name.as_ref() == Some(&name) {
+        let has_multiple_record = records()
+            .idx
+            .address
+            .prefix(bech32_address.clone())
+            .range(deps.storage, None, None, Ascending)
+            .take(2) // save iteration
+            .count()
+            > 1;
+
+        // should not removing record allow when address has multiple name to map to
+        if has_multiple_record {
+            return Err(ContractError::RemovingPrimaryAddressNotAllowed {});
+        }
+
+        // if there is only one name mapped to this address, it is allowed to remove
+        // even though it's a primary_name since set_record when there is not record for that address
+        // will force set it to primary_name which will make address to always have primary_name
+        // when there is a record for that address
         PRIMARY_NAME.remove(deps.storage, bech32_address)
     }
 

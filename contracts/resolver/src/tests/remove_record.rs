@@ -67,73 +67,7 @@ fn remove_with_single_name_for_address() {
 }
 
 #[test]
-fn remove_with_two_names_for_address() {
-    let admin1 = String::from("admin1");
-    let admin2 = String::from("admin2");
-    let admins = vec![admin1, admin2];
-    let registrar = String::from("default-registrar");
-
-    let (name_nft_contract, mut app) = instantiate_name_nft(admins, registrar.clone());
-    let resolver_contract_addr =
-        instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
-
-    let addr1 = pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string());
-    let signer_bech32_address = "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string();
-    // make sure primary name is correctly set
-    mint_and_set_record(
-        &mut app,
-        "isabel",
-        signer_bech32_address.clone(),
-        &signer1(),
-        registrar.clone(),
-        name_nft_contract.clone(),
-        resolver_contract_addr.clone(),
-    );
-    mint_and_set_record(
-        &mut app,
-        "isabel2",
-        signer_bech32_address.clone(),
-        &signer1(),
-        registrar,
-        name_nft_contract,
-        resolver_contract_addr.clone(),
-    );
-
-    app.execute_contract(
-        Addr::unchecked(addr1),
-        resolver_contract_addr.clone(),
-        &ExecuteMsg::RemoveRecord {
-            name: "isabel".to_string(),
-            bech32_address: signer_bech32_address.clone(),
-        },
-        &[],
-    )
-    .unwrap();
-
-    assert_eq!(
-        primary_name(
-            &app,
-            signer_bech32_address.clone(),
-            resolver_contract_addr.clone()
-        )
-        .unwrap_err(),
-        StdError::GenericErr {
-            msg: "Querier contract error: PrimaryName not found".to_string()
-        }
-    );
-
-    assert_eq!(
-        addresses(&app, "isabel".to_string(), resolver_contract_addr.clone()).unwrap(),
-        Vec::<(String, String)>::new()
-    );
-    assert_eq!(
-        addresses(&app, "isabel2".to_string(), resolver_contract_addr).unwrap(),
-        vec![("cosmos".to_string(), signer_bech32_address)]
-    );
-}
-
-#[test]
-fn remove_non_primary_address() {
+fn remove_primary_and_non_primary_address() {
     let admin1 = String::from("admin1");
     let admin2 = String::from("admin2");
     let admins = vec![admin1, admin2];
@@ -175,7 +109,7 @@ fn remove_non_primary_address() {
     );
 
     app.execute_contract(
-        Addr::unchecked(addr1),
+        Addr::unchecked(addr1.clone()),
         resolver_contract_addr.clone(),
         &ExecuteMsg::RemoveRecord {
             name: "isabel2".to_string(),
@@ -185,15 +119,62 @@ fn remove_non_primary_address() {
     )
     .unwrap();
 
+    // when address has more than 1 name, that address can't remove primary name
+    // need to set primary name to another name first
+    let err = app
+        .execute_contract(
+            Addr::unchecked(addr1.clone()),
+            resolver_contract_addr.clone(),
+            &ExecuteMsg::RemoveRecord {
+                name: "isabel".to_string(),
+                bech32_address: signer_bech32_address.clone(),
+            },
+            &[],
+        )
+        .unwrap_err();
+
     assert_eq!(
-        primary_name(&app, signer_bech32_address, resolver_contract_addr.clone()).unwrap(),
+        err.downcast_ref::<ContractError>().unwrap(),
+        &ContractError::RemovingPrimaryAddressNotAllowed {}
+    );
+
+    app.execute_contract(
+        Addr::unchecked(addr1.clone()),
+        resolver_contract_addr.clone(),
+        &ExecuteMsg::RemoveRecord {
+            name: "isabel3".to_string(),
+            bech32_address: signer_bech32_address.clone(),
+        },
+        &[],
+    )
+    .unwrap();
+
+    assert_eq!(
+        primary_name(
+            &app,
+            signer_bech32_address.clone(),
+            resolver_contract_addr.clone()
+        )
+        .unwrap(),
         "isabel".to_string()
     );
 
     assert_eq!(
-        addresses(&app, "isabel2".to_string(), resolver_contract_addr).unwrap(),
+        addresses(&app, "isabel2".to_string(), resolver_contract_addr.clone()).unwrap(),
         Vec::<(String, String)>::new()
     );
+
+    // when there it is the last record for this address, removing record with primary name is allowed
+    app.execute_contract(
+        Addr::unchecked(addr1),
+        resolver_contract_addr,
+        &ExecuteMsg::RemoveRecord {
+            name: "isabel".to_string(),
+            bech32_address: signer_bech32_address,
+        },
+        &[],
+    )
+    .unwrap();
 }
 
 #[test]
