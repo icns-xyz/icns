@@ -11,4 +11,7 @@ pub enum ContractError {
 
     #[error("Invalid name")]
     InvalidName {},
+
+    #[error("Transfer of Nft is not allowed")]
+    TransferNotAllowed {},
 }

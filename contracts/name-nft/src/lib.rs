@@ -21,7 +21,7 @@ pub type ICNSNameNFTContract<'a> = Cw721Contract<'a, Extension, Empty, Empty, Em
 
 pub mod entry {
     use super::*;
-    use crate::checks::{check_admin, check_transferrable, validate_name};
+    use crate::checks::{check_admin, is_transferrable, is_admin as check_is_admin, validate_name};
     use crate::error::ContractError;
     use crate::execute::{add_admin, remove_admin, set_minter_address, set_transferrable};
     use crate::msg::{ExecuteMsg, MigrateMsg};
@@ -85,9 +85,16 @@ pub mod entry {
                     // TransferNft and SendNft are supported only if transferrable is set to true
                     msg @ CW721BaseExecuteMsg::TransferNft { .. }
                     | msg @ CW721BaseExecuteMsg::SendNft { .. } => {
-                        // transferrability is configurable.
-                        check_transferrable(deps.as_ref())?;
-                        _execute(deps, env, info, msg).map_err(Into::into)
+                        let is_admin = check_is_admin(deps.as_ref(), &info.sender)?;
+                        
+                        let is_transferable = is_transferrable(deps.as_ref())?;
+
+                        println!("is_admin: {}, is_transferable: {}", is_admin, is_transferable);
+                        if is_admin || is_transferable {
+                            _execute(deps, env, info, msg).map_err(Into::into)
+                        } else {
+                            Err(ContractError::TransferNotAllowed {})
+                        }
                     }
 
                     // approval related msgs are allowed as is

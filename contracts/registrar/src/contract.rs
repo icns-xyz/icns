@@ -239,7 +239,7 @@ pub fn execute_claim(
 ) -> Result<Response, ContractError> {
     check_verfying_msg(deps.as_ref(), &env, &info, &name, &verifying_msg_str)?;
     let is_admin = is_admin(deps.as_ref(), &info.sender)?;
-    if is_admin {
+    if !is_admin {
         check_verification_pass_threshold(
             deps.as_ref(),
             &verifying_msg_str,
