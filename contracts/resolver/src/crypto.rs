@@ -24,7 +24,7 @@ pub fn adr36_verification(
     let decoded_bech32_addr =
         pubkey_to_bech32_address(adr36_info.pub_key.clone(), bech32_prefix.clone());
     if decoded_bech32_addr != adr36_info.signer_bech32_address {
-        return Err(ContractError::SigntaureMisMatch {});
+        return Err(ContractError::SignatureMisMatch {});
     }
 
     let signtaure = SIGNATURE.may_load(deps.storage, adr36_info.signature.as_slice())?;
@@ -48,9 +48,9 @@ pub fn adr36_verification(
     // verify signature using secp256k1
     let verified_result =
         secp256k1_verify(&message_hash, &adr36_info.signature, &adr36_info.pub_key)
-            .map_err(|_| ContractError::SigntaureMisMatch {})?;
+            .map_err(|_| ContractError::SignatureMisMatch {})?;
     if !verified_result {
-        return Err(ContractError::SigntaureMisMatch {});
+        return Err(ContractError::SignatureMisMatch {});
     }
 
     Ok(Response::default())

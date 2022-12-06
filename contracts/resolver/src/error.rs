@@ -22,7 +22,7 @@ pub enum ContractError {
     HashMethodNotSupported {},
 
     #[error("Signature mismatch")]
-    SigntaureMisMatch {},
+    SignatureMisMatch {},
 
     #[error("signature already exists")]
     SigntaureAlreadyExists {},
