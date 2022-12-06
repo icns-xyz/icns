@@ -1,5 +1,5 @@
 [package]
-authors = ["Supanat Potiwarakorn <boss@osmosis.team>"]
+authors = ["mattverse <mattpark1028@gmail.com>", "Supanat Potiwarakorn <boss@osmosis.team>"]
 description = "CosmWasm contract that represents ownership of ICNS name"
 edition = {workspace = true}
 name = "icns-name-nft"

@@ -1,5 +1,5 @@
 [package]
-authors = ["mattverse <mattpark1028@gmail.com>"]
+authors = ["mattverse <mattpark1028@gmail.com>", "Supanat Potiwarakorn <boss@osmosis.team>"]
 edition = "2021"
 name = "icns-registrar"
 version = "0.1.0"
