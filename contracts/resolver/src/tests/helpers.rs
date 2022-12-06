@@ -41,7 +41,7 @@ pub fn default_osmo_set_record_msg() -> ExecuteMsg {
             name: "alice".to_string(),
             adr36_info: Adr36Info {
                 signer_bech32_address: "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string(),
-                address_hash: msg::AddressHash::SHA256,
+                address_hash: msg::AddressHash::Cosmos,
                 pub_key,
                 signature,
             },
@@ -61,7 +61,7 @@ pub fn default_juno_set_record_msg() -> ExecuteMsg {
             name: "alice".to_string(),
             adr36_info: Adr36Info {
                 signer_bech32_address: "juno1d2kh2xaen7c0zv3h7qnmghhwhsmmassqffq35s".to_string(),
-                address_hash: msg::AddressHash::SHA256,
+                address_hash: msg::AddressHash::Cosmos,
                 pub_key,
                 signature,
             },
@@ -234,7 +234,7 @@ pub fn mint_and_set_record(
         name: name.to_string(),
         adr36_info: Adr36Info {
             signer_bech32_address: signer_bech32_address,
-            address_hash: msg::AddressHash::SHA256,
+            address_hash: msg::AddressHash::Cosmos,
             pub_key: signing_key.to_binary(),
             signature,
         },

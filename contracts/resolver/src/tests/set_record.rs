@@ -170,7 +170,7 @@ fn bech32_verification() {
         adr36_info: Adr36Info {
             // invalid address
             signer_bech32_address: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs699".to_string(),
-            address_hash: msg::AddressHash::SHA256,
+            address_hash: msg::AddressHash::Cosmos,
             pub_key: pub_key.clone(),
             signature: signature.clone(),
         },
@@ -193,7 +193,7 @@ fn bech32_verification() {
         name: "tony".to_string(),
         adr36_info: Adr36Info {
             signer_bech32_address: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string(),
-            address_hash: msg::AddressHash::SHA256,
+            address_hash: msg::AddressHash::Cosmos,
             pub_key: pub_key.clone(),
             signature: signature.clone(),
         },
@@ -216,7 +216,7 @@ fn bech32_verification() {
         adr36_info: Adr36Info {
             // invalid address
             signer_bech32_address: "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string(),
-            address_hash: msg::AddressHash::SHA256,
+            address_hash: msg::AddressHash::Cosmos,
             pub_key,
             signature,
         },

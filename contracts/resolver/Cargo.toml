@@ -55,6 +55,7 @@ ripemd = "0.1.3"
 schemars = "0.8.10"
 serde = {version = "1.0.145", default-features = false, features = ["derive"]}
 sha2 = "0.10"
+sha3 = "0.10.6"
 subtle-encoding = {version = "0.5", features = ["bech32-preview"]}
 thiserror = {version = "1.0.31"}
 

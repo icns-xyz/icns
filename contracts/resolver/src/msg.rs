@@ -36,8 +36,8 @@ pub struct Adr36Info {
 #[cw_serde]
 #[serde(rename = "name")]
 pub enum AddressHash {
-    SHA256,
-    Keccak256,
+    Cosmos,
+    Ethereum,
 }
 
 #[cw_serde]

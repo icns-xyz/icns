@@ -94,8 +94,7 @@ pub fn execute_set_record(
 
     // if the sender is admin, skip adr 36 verification
     if !is_admin {
-        // check address hash method, currently only sha256 is supported
-        if adr36_info.address_hash != AddressHash::SHA256 {
+        if adr36_info.address_hash != AddressHash::Cosmos {
             return Err(ContractError::HashMethodNotSupported {});
         }
 

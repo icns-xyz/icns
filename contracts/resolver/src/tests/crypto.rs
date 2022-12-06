@@ -6,8 +6,9 @@ use cosmwasm_std::Binary;
 use hex_literal::hex;
 use ripemd::{Digest as RipemdDigest, Ripemd160};
 use sha2::Sha256;
+use sha3::Keccak256;
 use std::ops::Deref;
-use subtle_encoding::hex::decode as hex_decode;
+use subtle_encoding::hex::{decode as hex_decode, self};
 
 use crate::msg::AddressHash;
 use crate::{
@@ -157,7 +158,7 @@ fn adr36_verify() {
 
     let adr36_info = Adr36Info {
         signer_bech32_address: signer,
-        address_hash: AddressHash::SHA256,
+        address_hash: AddressHash::Cosmos,
         pub_key,
         signature,
     };
@@ -175,4 +176,16 @@ fn adr36_verify() {
     )
     .is_err();
     assert!(!adr_verification)
+}
+
+#[test]
+fn keccack256_digest() {
+    let original_binary_vec = 
+        hex_decode("12345678").unwrap();
+    
+    let keccack256 =Keccak256::digest(&original_binary_vec);
+    assert_eq!(
+        keccack256.as_ref(),
+        hex!("30ca65d5da355227c97ff836c9c6719af9d3835fc6bc72bddc50eeecc1bb2b25")
+    );
 }
