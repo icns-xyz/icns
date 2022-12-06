@@ -14,7 +14,7 @@ pub mod query;
 pub mod state;
 
 // version info for migration info
-const CONTRACT_NAME: &str = "crates.io:icns-name-nft";
+const CONTRACT_NAME: &str = env!("CARGO_PKG_NAME");
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub type ICNSNameNFTContract<'a> = Cw721Contract<'a, Extension, Empty, Empty, Empty>;
@@ -24,7 +24,7 @@ pub mod entry {
     use crate::checks::{check_admin, check_transferrable, validate_name};
     use crate::error::ContractError;
     use crate::execute::{add_admin, remove_admin, set_minter_address, set_transferrable};
-    use crate::msg::ExecuteMsg;
+    use crate::msg::{ExecuteMsg, MigrateMsg};
     use crate::query::{admin, is_admin, transferrable};
     use crate::state::{Config, CONFIG};
 
@@ -147,6 +147,12 @@ pub mod entry {
             // TODO : add query for config
             _ => _query(deps, env, msg.into()),
         }
+    }
+
+    #[cfg_attr(not(feature = "library"), entry_point)]
+    pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+        // No state migrations performed, just returned a Response
+        Ok(Response::default())
     }
 }
 

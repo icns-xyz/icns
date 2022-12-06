@@ -89,3 +89,6 @@ pub struct AddressesResponse {
 pub struct AddressResponse {
     pub address: String,
 }
+
+#[cw_serde]
+pub struct MigrateMsg {}

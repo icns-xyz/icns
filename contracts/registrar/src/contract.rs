@@ -14,9 +14,9 @@ use crate::checks::{
 };
 use crate::error::ContractError;
 use crate::msg::{
-    ExecuteMsg, FeeResponse, InstantiateMsg, NameByTwitterIdResponse, NameNFTAddressResponse,
-    QueryMsg, ReferralCountResponse, Verification, VerificationThresholdResponse,
-    VerifierPubKeysResponse, VerifyingMsg,
+    ExecuteMsg, FeeResponse, InstantiateMsg, MigrateMsg, NameByTwitterIdResponse,
+    NameNFTAddressResponse, QueryMsg, ReferralCountResponse, Verification,
+    VerificationThresholdResponse, VerifierPubKeysResponse, VerifyingMsg,
 };
 
 use icns_name_nft::msg::ExecuteMsg as NameNFTExecuteMsg;
@@ -24,7 +24,7 @@ use icns_name_nft::msg::ExecuteMsg as NameNFTExecuteMsg;
 use crate::state::{Config, CONFIG, REFERRAL, UNIQUE_TWITTER_ID};
 
 // version info for migration info
-const CONTRACT_NAME: &str = "crates.io:icns-registrar";
+const CONTRACT_NAME: &str = env!("CARGO_PKG_NAME");
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Handling contract instantiation
@@ -101,6 +101,12 @@ pub fn execute(
             execute_withdraw_funds(deps, info, amount, to_address)
         }
     }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    // No state migrations performed, just returned a Response
+    Ok(Response::default())
 }
 
 fn execute_withdraw_funds(

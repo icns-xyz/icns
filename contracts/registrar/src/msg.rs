@@ -88,6 +88,9 @@ pub enum QueryMsg {
 }
 
 #[cw_serde]
+pub struct MigrateMsg {}
+
+#[cw_serde]
 pub struct VerifierPubKeysResponse {
     pub verifier_pubkeys: Vec<Binary>,
 }

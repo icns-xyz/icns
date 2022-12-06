@@ -14,14 +14,14 @@ use crate::crypto::adr36_verification;
 use crate::error::ContractError;
 use crate::msg::{
     AddressHash, AddressResponse, AddressesResponse, Adr36Info, ExecuteMsg, InstantiateMsg,
-    NamesResponse, PrimaryNameResponse, QueryMsg,
+    MigrateMsg, NamesResponse, PrimaryNameResponse, QueryMsg,
 };
 use crate::state::{records, Config, CONFIG, PRIMARY_NAME, SIGNATURE};
 use cw721::OwnerOfResponse;
 use icns_name_nft::msg::{AdminResponse, QueryMsg as QueryMsgName};
 
 // version info for migration info
-const CONTRACT_NAME: &str = "crates.io:icns-resolver";
+const CONTRACT_NAME: &str = env!("CARGO_PKG_NAME");
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -347,4 +347,10 @@ fn query_admin(deps: Deps) -> StdResult<AdminResponse> {
             admins: vec![String::from("")],
         }),
     }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    // No state migrations performed, just returned a Response
+    Ok(Response::default())
 }

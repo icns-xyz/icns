@@ -156,6 +156,9 @@ pub struct TransferrableResponse {
     pub transferrable: bool,
 }
 
+#[cw_serde]
+pub struct MigrateMsg {}
+
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::{from_binary, to_binary, Binary};
