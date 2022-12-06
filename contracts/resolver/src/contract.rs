@@ -93,59 +93,76 @@ pub fn execute_set_record(
 
     // if the sender is admin, skip adr 36 verification
     if !is_admin {
-        if adr36_info.address_hash == AddressHash::Cosmos {
-            // if address hash is for Cosmos, first verify that pub key is 33 bytes
-            if adr36_info.pub_key.len() != 33 {
-                return Err(ContractError::InvalidPubKey { pub_key: adr36_info.pub_key.to_string() });
+        // first check sender and the bech32 address in msg match
+        // if it does, no need to verify adr36
+        // in order to check if they match, we first need to decode the bech32 address
+        let decoded_bech32_addr_from_msg = bech32::decode(adr36_info.signer_bech32_address.clone())
+            .map_err(|_| ContractError::Bech32DecodingErr {
+                addr: bech32_prefix.clone(),
+            })?
+            .1;
+        let decoded_bech32_addr_from_info = bech32::decode(info.sender.clone())
+            .map_err(|_| ContractError::Bech32DecodingErr {
+                addr: adr36_info.signer_bech32_address.clone(),
+            })?
+            .1;
+        
+        // if they don't match, verify adr36
+        if decoded_bech32_addr_from_msg != decoded_bech32_addr_from_info {
+            if adr36_info.address_hash == AddressHash::Cosmos {
+                // if address hash is for Cosmos, first verify that pub key is 33 bytes
+                if adr36_info.pub_key.len() != 33 {
+                    return Err(ContractError::InvalidPubKey { pub_key: adr36_info.pub_key.to_string() });
+                }
+    
+                // extract bech32 prefix from given address
+                let bech32_prefix_decoded = bech32::decode(adr36_info.signer_bech32_address.clone())
+                    .map_err(|_| ContractError::Bech32DecodingErr {
+                        addr: adr36_info.signer_bech32_address.to_string(),
+                    })?
+                    .0;
+    
+                // check if the user input for prefix + address is valid
+                if bech32_prefix != bech32_prefix_decoded {
+                    return Err(ContractError::Bech32PrefixMismatch {
+                        prefix: bech32_prefix,
+                        addr: adr36_info.signer_bech32_address,
+                    });
+                }
+    
+                // extract pubkey to bech32 address, check that it matches with the given bech32 address
+                let decoded_bech32_addr =
+                    cosmos_pubkey_to_bech32_address(adr36_info.pub_key.clone(), bech32_prefix.clone());
+                if decoded_bech32_addr != adr36_info.signer_bech32_address {
+                    return Err(ContractError::SignatureMisMatch {});
+                }
+            } else if adr36_info.address_hash == AddressHash::Ethereum {
+                if adr36_info.pub_key.len() != 65 {
+                    return Err(ContractError::InvalidPubKey { pub_key: adr36_info.pub_key.to_string() });
+                }
+    
+                let decoded_bech32_addr = 
+                    eth_pubkey_to_bech32_address(adr36_info.pub_key.clone(), bech32_prefix.clone());
+                if decoded_bech32_addr != adr36_info.signer_bech32_address {
+                    return Err(ContractError::SignatureMisMatch {});
+                }
+            } else {
+                return Err(ContractError::HashMethodNotSupported {});
             }
-
-            // extract bech32 prefix from given address
-            let bech32_prefix_decoded = bech32::decode(adr36_info.signer_bech32_address.clone())
-                .map_err(|_| ContractError::Bech32DecodingErr {
-                    addr: adr36_info.signer_bech32_address.to_string(),
-                })?
-                .0;
-
-            // check if the user input for prefix + address is valid
-            if bech32_prefix != bech32_prefix_decoded {
-                return Err(ContractError::Bech32PrefixMismatch {
-                    prefix: bech32_prefix,
-                    addr: adr36_info.signer_bech32_address,
-                });
-            }
-
-            // extract pubkey to bech32 address, check that it matches with the given bech32 address
-            let decoded_bech32_addr =
-                cosmos_pubkey_to_bech32_address(adr36_info.pub_key.clone(), bech32_prefix.clone());
-            if decoded_bech32_addr != adr36_info.signer_bech32_address {
-                return Err(ContractError::SignatureMisMatch {});
-            }
-        } else if adr36_info.address_hash == AddressHash::Ethereum {
-            if adr36_info.pub_key.len() != 65 {
-                return Err(ContractError::InvalidPubKey { pub_key: adr36_info.pub_key.to_string() });
-            }
-
-            let decoded_bech32_addr = 
-                eth_pubkey_to_bech32_address(adr36_info.pub_key.clone(), bech32_prefix.clone());
-            if decoded_bech32_addr != adr36_info.signer_bech32_address {
-                return Err(ContractError::SignatureMisMatch {});
-            }
-        } else {
-            return Err(ContractError::HashMethodNotSupported {});
+    
+            // do adr36 verification
+            let chain_id = env.block.chain_id;
+            let contract_address = env.contract.address.to_string();
+            adr36_verification(
+                deps.as_ref(),
+                name.clone(),
+                info.sender.into_string(),
+                bech32_prefix.clone(),
+                adr36_info.clone(),
+                chain_id,
+                contract_address,
+            )?;
         }
-
-        // do adr36 verification
-        let chain_id = env.block.chain_id;
-        let contract_address = env.contract.address.to_string();
-        adr36_verification(
-            deps.as_ref(),
-            name.clone(),
-            info.sender.into_string(),
-            bech32_prefix.clone(),
-            adr36_info.clone(),
-            chain_id,
-            contract_address,
-        )?;
     }
 
     // save record

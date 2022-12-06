@@ -224,16 +224,16 @@ fn bech32_verification() {
         },
         bech32_prefix: "cosmos".to_string(),
     };
-    let err = app
+    app
         .execute_contract(
             Addr::unchecked(addr1),
             resolver_contract_addr,
             &record_msg,
             &[],
         )
-        .unwrap_err();
+        .unwrap();
 
-    println!("err: {}", err.downcast_ref::<ContractError>().unwrap());
+    // println!("err: {}", err.downcast_ref::<ContractError>().unwrap());
     // assert_eq!(err, false);
 }
 
