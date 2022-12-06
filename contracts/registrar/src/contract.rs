@@ -9,8 +9,8 @@ use icns_name_nft::MintMsg;
 use itertools::Itertools;
 
 use crate::checks::{
-    check_fee, check_send_from_admin, check_valid_threshold, check_verfying_msg,
-    check_verification_pass_threshold, check_verifying_key,
+    check_fee, check_admin, check_valid_threshold, check_verfying_msg,
+    check_verification_pass_threshold, check_verifying_key, is_admin,
 };
 use crate::error::ContractError;
 use crate::msg::{
@@ -115,7 +115,7 @@ fn execute_withdraw_funds(
     amount: Vec<Coin>,
     to_address: String,
 ) -> Result<Response, ContractError> {
-    check_send_from_admin(deps.as_ref(), &info.sender)?;
+    check_admin(deps.as_ref(), &info.sender)?;
     deps.api.addr_validate(&to_address)?;
     let attrs = vec![
         attr("method", "withraw_funds"),
@@ -140,7 +140,7 @@ fn execute_set_fee(
     info: MessageInfo,
     fee: Option<Coin>,
 ) -> Result<Response, ContractError> {
-    check_send_from_admin(deps.as_ref(), &info.sender)?;
+    check_admin(deps.as_ref(), &info.sender)?;
 
     let attrs = vec![
         attr("method", "set_fee"),
@@ -164,7 +164,7 @@ fn execute_set_name_nft_address(
     info: MessageInfo,
     name_nft_address: String,
 ) -> Result<Response, ContractError> {
-    check_send_from_admin(deps.as_ref(), &info.sender)?;
+    check_admin(deps.as_ref(), &info.sender)?;
     CONFIG.update(deps.storage, |config| -> Result<_, ContractError> {
         Ok(Config {
             name_nft: deps.api.addr_validate(&name_nft_address)?,
@@ -183,7 +183,7 @@ fn execute_update_verifier_pubkeys(
     add: Vec<Binary>,
     remove: Vec<Binary>,
 ) -> Result<Response, ContractError> {
-    check_send_from_admin(deps.as_ref(), &info.sender)?;
+    check_admin(deps.as_ref(), &info.sender)?;
 
     CONFIG.update(deps.storage, |config| -> Result<_, ContractError> {
         Ok(Config {
@@ -209,7 +209,7 @@ fn execute_set_verification_threshold(
     info: MessageInfo,
     verification_threshold: Decimal,
 ) -> Result<Response, ContractError> {
-    check_send_from_admin(deps.as_ref(), &info.sender)?;
+    check_admin(deps.as_ref(), &info.sender)?;
 
     let attrs = vec![
         attr("method", "set_verification_threshold"),
@@ -238,19 +238,22 @@ pub fn execute_claim(
     referral: Option<String>,
 ) -> Result<Response, ContractError> {
     check_verfying_msg(deps.as_ref(), &env, &info, &name, &verifying_msg_str)?;
-    check_verification_pass_threshold(
-        deps.as_ref(),
-        &verifying_msg_str,
-        &verifications
-            .iter()
-            .map(|verification| {
-                Ok((
-                    verification.public_key.to_vec(),
-                    verification.signature.to_vec(),
-                ))
-            })
-            .collect::<StdResult<Vec<_>>>()?,
-    )?;
+    let is_admin = is_admin(deps.as_ref(), &info.sender)?;
+    if is_admin {
+        check_verification_pass_threshold(
+            deps.as_ref(),
+            &verifying_msg_str,
+            &verifications
+                .iter()
+                .map(|verification| {
+                    Ok((
+                        verification.public_key.to_vec(),
+                        verification.signature.to_vec(),
+                    ))
+                })
+                .collect::<StdResult<Vec<_>>>()?,
+        )?;
+    }
     check_fee(deps.as_ref(), &info.funds)?;
 
     // add referral count if referral is set
@@ -303,7 +306,7 @@ pub fn execute_add_verifier(
         attr("verifier", verifier_pubkey.to_base64()),
     ];
 
-    check_send_from_admin(deps.as_ref(), &info.sender)?;
+    check_admin(deps.as_ref(), &info.sender)?;
     let adding_verifier = verifier_pubkey;
     check_verifying_key(&adding_verifier)?;
 
@@ -323,7 +326,7 @@ pub fn execute_remove_verifier(
     info: MessageInfo,
     verifier_pubkey: Binary,
 ) -> Result<Response, ContractError> {
-    check_send_from_admin(deps.as_ref(), &info.sender)?;
+    check_admin(deps.as_ref(), &info.sender)?;
     let removing_verifier = verifier_pubkey.to_vec();
     check_verifying_key(&removing_verifier)?;
 

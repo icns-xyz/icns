@@ -13,7 +13,20 @@ use itertools::Itertools;
 
 use crate::{msg::VerifyingMsg, state::CONFIG, state::UNIQUE_TWITTER_ID, ContractError};
 
-pub fn check_send_from_admin(deps: Deps, sender: &Addr) -> Result<(), ContractError> {
+pub fn is_admin(deps: Deps, address: &Addr) -> Result<bool, ContractError> {
+    let AdminResponse { admins } = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+        contract_addr: CONFIG.load(deps.storage)?.name_nft.to_string(),
+        msg: to_binary(&NameNFTQueryMsg::Admin {})?,
+    }))?;
+
+    if !admins.contains(&address.to_string()) {
+        return Ok(false)
+    }
+    
+    return Ok(true)
+}
+
+pub fn check_admin(deps: Deps, sender: &Addr) -> Result<(), ContractError> {
     let AdminResponse { admins } = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
         contract_addr: CONFIG.load(deps.storage)?.name_nft.to_string(),
         msg: to_binary(&NameNFTQueryMsg::Admin {})?,
