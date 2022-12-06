@@ -1,10 +1,11 @@
 #![cfg(test)]
 
 use crate::{
-    crypto::{pubkey_to_bech32_address},
+    crypto::pubkey_to_bech32_address,
     msg::{self, Adr36Info, ExecuteMsg},
     msg::{AddressesResponse, QueryMsg},
-    tests::helpers::{signer1, ToBinary}, ContractError
+    tests::helpers::{signer1, ToBinary},
+    ContractError,
 };
 
 use cosmwasm_std::{Addr, Binary, Empty, StdResult};
@@ -27,7 +28,7 @@ fn set_get_single_record() {
     let addresses = |app: &BasicApp, name: String| -> StdResult<_> {
         let AddressesResponse { addresses, .. } = app.wrap().query_wasm_smart(
             resolver_contract_addr.clone(),
-            &QueryMsg::Addresses { name: name },
+            &QueryMsg::Addresses { name },
         )?;
 
         Ok(addresses)
@@ -52,7 +53,7 @@ fn set_get_single_record() {
 fn bech32_verification() {
     let admin1 = String::from("admin1");
     let admin2 = String::from("admin2");
-    let admins = vec![admin1.clone(), admin2];
+    let admins = vec![admin1, admin2];
     let registrar = String::from("default-registrar");
 
     // first instantiate name nft
@@ -78,7 +79,6 @@ fn bech32_verification() {
         )
         .is_err();
     assert_eq!(mint, false);
-
 
     // now set record, first try setting invalid bech32 address
     let original_signature_vec = hex!("624fcd052ed8333fe643140ab5fde6fa308dd02c95cb61dd490ab53afa622db12a79ba2826b7da85d56c53bd4e53947b069cc3fb6fb091ca938f8d1952dfdf50");

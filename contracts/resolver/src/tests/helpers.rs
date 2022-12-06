@@ -4,7 +4,7 @@ use crate::{
     contract::query,
     crypto::{create_adr36_message, pubkey_to_bech32_address},
     msg::{self, ExecuteMsg},
-    msg::{Adr36Info, InstantiateMsg, PrimaryNameResponse, QueryMsg, AddressesResponse},
+    msg::{AddressesResponse, Adr36Info, InstantiateMsg, PrimaryNameResponse, QueryMsg},
 };
 use cosmrs::{bip32, crypto::secp256k1::SigningKey, tendermint::signature::Secp256k1Signature};
 use cosmwasm_std::{Binary, Empty, StdResult};
@@ -192,7 +192,6 @@ pub fn signer2() -> SigningKey {
     from_mnemonic("quality vacuum heart guard buzz spike sight swarm shove special gym robust assume sudden deposit grid alcohol choice devote leader tilt noodle tide penalty", DERIVATION_PATH)
 }
 
-
 pub fn mint_and_set_record(
     app: &mut BasicApp,
     name: &str,
@@ -205,8 +204,8 @@ pub fn mint_and_set_record(
     let addr = pubkey_to_bech32_address(signing_key.to_binary(), "osmo".to_string());
 
     app.execute_contract(
-        Addr::unchecked(registrar.clone()),
-        name_nft_contract.clone(),
+        Addr::unchecked(registrar),
+        name_nft_contract,
         &CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
             token_id: name.to_string(),
             owner: addr.to_string(),
@@ -234,7 +233,7 @@ pub fn mint_and_set_record(
     let msg = ExecuteMsg::SetRecord {
         name: name.to_string(),
         adr36_info: Adr36Info {
-            signer_bech32_address: signer_bech32_address.to_string(),
+            signer_bech32_address: signer_bech32_address,
             address_hash: msg::AddressHash::SHA256,
             pub_key: signing_key.to_binary(),
             signature,
@@ -243,29 +242,30 @@ pub fn mint_and_set_record(
         signature_salt: 12313u128.into(),
     };
 
-    app.execute_contract(
-        Addr::unchecked(addr),
-        resolver_contract_addr.clone(),
-        &msg,
-        &[],
-    )
-    .unwrap();
+    app.execute_contract(Addr::unchecked(addr), resolver_contract_addr, &msg, &[])
+        .unwrap();
 }
 
-pub fn primary_name(app: &BasicApp, address: String, resolver_contract_addr: Addr) -> StdResult<String> {
-    let PrimaryNameResponse { name } = app.wrap().query_wasm_smart(
-        resolver_contract_addr.clone(),
-        &QueryMsg::PrimaryName { address },
-    )?;
+pub fn primary_name(
+    app: &BasicApp,
+    address: String,
+    resolver_contract_addr: Addr,
+) -> StdResult<String> {
+    let PrimaryNameResponse { name } = app
+        .wrap()
+        .query_wasm_smart(resolver_contract_addr, &QueryMsg::PrimaryName { address })?;
 
     Ok(name)
 }
 
-pub fn addresses(app: &BasicApp, name: String, resolver_contract_addr: Addr) -> StdResult<Vec<(String, String)>> {
-    let AddressesResponse { addresses } = app.wrap().query_wasm_smart(
-        resolver_contract_addr.clone(),
-        &QueryMsg::Addresses { name },
-    )?;
+pub fn addresses(
+    app: &BasicApp,
+    name: String,
+    resolver_contract_addr: Addr,
+) -> StdResult<Vec<(String, String)>> {
+    let AddressesResponse { addresses } = app
+        .wrap()
+        .query_wasm_smart(resolver_contract_addr, &QueryMsg::Addresses { name })?;
 
     Ok(addresses)
 }

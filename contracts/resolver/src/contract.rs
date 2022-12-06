@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::Order::Ascending;
@@ -261,7 +259,7 @@ pub fn is_owner(deps: Deps, username: String, sender: String) -> Result<bool, Co
     let response = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
         contract_addr: CONFIG.load(deps.storage)?.name_address.to_string(),
         msg: to_binary(&QueryMsgName::OwnerOf {
-            token_id: username.clone(),
+            token_id: username,
             include_expired: None,
         })?,
     }));
@@ -313,9 +311,7 @@ fn query_address(
     bech32_prefix: String,
 ) -> StdResult<AddressResponse> {
     Ok(AddressResponse {
-        address: records()
-            .load(deps.storage, (&name, &bech32_prefix))?
-            .to_string(),
+        address: records().load(deps.storage, (&name, &bech32_prefix))?,
     })
 }
 

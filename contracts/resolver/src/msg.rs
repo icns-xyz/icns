@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Binary, Uint128};
+use cosmwasm_std::{Binary, Uint128};
 
 use crate::state::Config;
 #[cw_serde]

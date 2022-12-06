@@ -15,7 +15,7 @@ use crate::{
         adr36_verification, create_adr36_data, create_adr36_message, pubkey_to_bech32_address,
     },
     msg::Adr36Info,
-    tests::helpers::{signer1}
+    tests::helpers::signer1,
 };
 
 use super::helpers::ToBinary;
@@ -93,13 +93,14 @@ fn create_valid_adr36_data() {
         signature_salt,
     );
 
-    let expected_message = "The following is the information for ICNS registration for alice.cosmos.
+    let expected_message =
+        "The following is the information for ICNS registration for alice.cosmos.
 
 Chain id: cosmos-testnet-14002
 Contract Address: contract1
 Owner: osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697
 Salt: 12313"
-        .to_string();
+            .to_string();
 
     let expected_base_64 = base64_encode(expected_message);
     println!("expected_base_64: {}", expected_base_64);
@@ -119,7 +120,7 @@ fn create_valid_adr36_message() {
     let message = create_adr36_message(
         name,
         bech32_prefix,
-        sender.clone(),
+        sender,
         signer.clone(),
         chain_id,
         contract_address,
@@ -155,7 +156,7 @@ fn adr36_verify() {
     let signature = Binary::from(original_signature_vec);
 
     let adr36_info = Adr36Info {
-        signer_bech32_address: signer.clone(),
+        signer_bech32_address: signer,
         address_hash: AddressHash::SHA256,
         pub_key,
         signature,

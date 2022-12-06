@@ -5,10 +5,7 @@ use crate::{
     msg::{AddressResponse, AddressesResponse, QueryMsg},
 };
 
-use cosmwasm_std::{Addr, Empty, StdError};
-use cw721_base::{ExecuteMsg as CW721BaseExecuteMsg, Extension, MintMsg};
-use cw_multi_test::Executor;
-use icns_name_nft::msg::ExecuteMsg as NameExecuteMsg;
+use cosmwasm_std::StdError;
 
 use super::helpers::{default_setting, instantiate_name_nft, instantiate_resolver_with_name_nft};
 
@@ -44,8 +41,7 @@ fn query_addresses() {
     let admins = vec![admin1, admin2];
     let registrar = String::from("default-registrar");
 
-    let (_, resolver_contract_addr, mut app) =
-        default_setting(admins, registrar.clone());
+    let (_, resolver_contract_addr, app) = default_setting(admins, registrar);
 
     // query addresses
     let AddressesResponse { addresses } = app
@@ -82,8 +78,7 @@ fn query_address() {
     let admins = vec![admin1, admin2];
     let registrar = String::from("default-registrar");
 
-    let (name_nft_contract, resolver_contract_addr, mut app) =
-        default_setting(admins, registrar.clone());
+    let (_name_nft_contract, resolver_contract_addr, app) = default_setting(admins, registrar);
 
     // query address
     let AddressResponse { address } = app

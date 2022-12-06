@@ -84,7 +84,7 @@ pub fn create_adr36_message(
     let data = create_adr36_data(
         name,
         bech32_prefix,
-        sender.clone(),
+        sender,
         chain_id,
         contract_address,
         signature_salt,
