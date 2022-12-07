@@ -4,12 +4,12 @@ use crate::{
     contract::query,
     crypto::{cosmos_pubkey_to_bech32_address, create_adr36_message},
     msg::{self, ExecuteMsg},
-    msg::{AddressesResponse, Adr36Info, InstantiateMsg, PrimaryNameResponse, QueryMsg},
+    msg::{AddressesResponse, Adr36Info, InstantiateMsg, PrimaryNameResponse, QueryMsg}, ContractError,
 };
 use cosmrs::{bip32, crypto::secp256k1::SigningKey, tendermint::signature::Secp256k1Signature};
 use cosmwasm_std::{Binary, Empty, StdResult};
 use hex_literal::hex;
-// import execute
+use subtle_encoding::bech32;
 
 use cosmwasm_std::Addr;
 use cw_multi_test::{App, BasicApp, Contract, ContractWrapper, Executor};
@@ -217,9 +217,15 @@ pub fn mint_and_set_record(
     .unwrap();
 
     let multitest_chain_id = "cosmos-testnet-14002";
+    let bech32_prefix_decoded = bech32::decode(signer_bech32_address.clone())
+        .map_err(|_| ContractError::Bech32DecodingErr {
+            addr: signer_bech32_address.to_string(),
+        });
+    let bech32_prefix = bech32_prefix_decoded.unwrap().0;
 
     let msg = create_adr36_message(
         name.to_string(),
+        // bech32_prefix.clone(),
         "cosmos".to_string(),
         addr.to_string(),
         signer_bech32_address.to_string(),
@@ -240,6 +246,7 @@ pub fn mint_and_set_record(
             signature_salt: 12313u128.into(),
         },
         bech32_prefix: "cosmos".to_string(),
+        // bech32_prefix,
     };
 
     app.execute_contract(Addr::unchecked(addr), resolver_contract_addr, &msg, &[])

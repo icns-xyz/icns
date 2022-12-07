@@ -99,6 +99,14 @@ pub fn execute_set_record(
             })?
             .1;
 
+        // check if the user input for prefix + address is valid
+        if bech32_prefix != bech32_prefix_decoded {
+            return Err(ContractError::Bech32PrefixMismatch {
+                prefix: bech32_prefix,
+                addr: adr36_info.signer_bech32_address,
+            });
+        }
+
         // if they don't match, verify adr36
         if bech32_address_decoded != decoded_bech32_addr_from_info {
             if adr36_info.address_hash == AddressHash::Cosmos {
@@ -109,13 +117,7 @@ pub fn execute_set_record(
                     });
                 }
                 
-                // check if the user input for prefix + address is valid
-                if bech32_prefix != bech32_prefix_decoded {
-                    return Err(ContractError::Bech32PrefixMismatch {
-                        prefix: bech32_prefix,
-                        addr: adr36_info.signer_bech32_address,
-                    });
-                }
+              
 
                 // extract pubkey to bech32 address, check that it matches with the given bech32 address
                 let decoded_bech32_addr = cosmos_pubkey_to_bech32_address(
@@ -163,7 +165,7 @@ pub fn execute_set_record(
         &adr36_info.signer_bech32_address,
     )?;
 
-    // set name as primary name if it doesn't exists for this address yet
+    // over-ride primary name
     PRIMARY_NAME.save(deps.storage, adr36_info.signer_bech32_address, &name)?;
 
     // save signature to prevent replay attack

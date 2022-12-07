@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate::{
-    crypto::cosmos_pubkey_to_bech32_address,
+    crypto::{cosmos_pubkey_to_bech32_address, create_adr36_message, eth_pubkey_to_bech32_address},
     msg::{self, Adr36Info, ExecuteMsg, NamesResponse},
     msg::{AddressesResponse, QueryMsg},
     tests::helpers::{mint_and_set_record, signer1, ToBinary},
@@ -370,4 +370,86 @@ fn adr36_verification_bypass() {
         &[],
     )
     .unwrap();
+}
+
+// TODO: add test for testing withg different pub key and sender with secp256k1
+#[test]
+fn same_pubkey_invalid_bech_32() {
+    let admin1 = String::from("admin1");
+    let admin2 = String::from("admin2");
+    let admins = vec![admin1, admin2];
+    let registrar = String::from("default-registrar");
+
+    let (name_nft_contract, resolver_contract_addr, mut app) = default_setting(admins, registrar.clone());
+
+    // create osmo address
+    let addr = cosmos_pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string());
+    let multitest_chain_id = "cosmos-testnet-14002";
+
+    app.execute_contract(
+        Addr::unchecked(registrar),
+        name_nft_contract,
+        &CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+            token_id: "bob".to_string(),
+            owner: addr.to_string(),
+            token_uri: None,
+            extension: None,
+        }),
+        &[],
+    )
+    .unwrap();
+
+    let msg = create_adr36_message(
+        "bob".to_string(),
+        // bech32_prefix.clone(),
+        "osmo".to_string(),
+        addr.to_string(),
+        addr.to_string(),
+        multitest_chain_id.to_string(),
+        resolver_contract_addr.to_string(),
+        12313,
+    );
+    let signature = signer1().sign(msg.as_bytes()).unwrap().to_binary();
+
+    // this should fail because the bech32 prefix is different
+    let msg = ExecuteMsg::SetRecord {
+        name: "bob".to_string(),
+        adr36_info: Adr36Info {
+            signer_bech32_address: addr.to_string(),
+            address_hash: msg::AddressHash::Cosmos,
+            pub_key: signer1().to_binary(),
+            signature,
+            signature_salt: 12313u128.into(),
+        },
+        bech32_prefix: "cosmos".to_string(),
+    };
+    app.execute_contract(Addr::unchecked(addr), resolver_contract_addr.clone(), &msg, &[])
+        .unwrap_err();
+
+    // now try this with eth address
+    let eth_addr = eth_pubkey_to_bech32_address(signer1().to_binary(), "evmos".to_string());
+    let msg = create_adr36_message(
+        "bob".to_string(),
+        // bech32_prefix.clone(),
+        "evmos".to_string(),
+        eth_addr.to_string(),
+        eth_addr.to_string(),
+        multitest_chain_id.to_string(),
+        resolver_contract_addr.to_string(),
+        12313,
+    );
+    let signature = signer1().sign(msg.as_bytes()).unwrap().to_binary();
+    let msg = ExecuteMsg::SetRecord {
+        name: "bob".to_string(),
+        adr36_info: Adr36Info {
+            signer_bech32_address: eth_addr.to_string(),
+            address_hash: msg::AddressHash::Cosmos,
+            pub_key: signer1().to_binary(),
+            signature,
+            signature_salt: 12313u128.into(),
+        },
+        bech32_prefix: "eth".to_string(),
+    };
+    app.execute_contract(Addr::unchecked(eth_addr), resolver_contract_addr.clone(), &msg, &[])
+        .unwrap_err();
 }

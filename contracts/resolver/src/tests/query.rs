@@ -2,7 +2,7 @@
 
 use crate::{
     msg::AdminResponse,
-    msg::{AddressResponse, AddressesResponse, QueryMsg},
+    msg::{AddressResponse, AddressesResponse, QueryMsg}, tests::helpers::{mint_and_set_record, signer2, ToBinary}, crypto::cosmos_pubkey_to_bech32_address,
 };
 
 use cosmwasm_std::StdError;
@@ -41,13 +41,13 @@ fn query_addresses() {
     let admins = vec![admin1, admin2];
     let registrar = String::from("default-registrar");
 
-    let (_, resolver_contract_addr, app) = default_setting(admins, registrar);
+    let (name_nft_contract, resolver_contract_addr, mut app) = default_setting(admins, registrar.clone());
 
     // query addresses
     let AddressesResponse { addresses } = app
         .wrap()
         .query_wasm_smart(
-            resolver_contract_addr,
+            resolver_contract_addr.clone(),
             &QueryMsg::Addresses {
                 name: "alice".to_string(),
             },
@@ -67,8 +67,29 @@ fn query_addresses() {
             )
         ]
     );
+    let addr2 = cosmos_pubkey_to_bech32_address(signer2().to_binary(), "osmo".to_string());
+    
+    
+    // mint_and_set_record(
+    //     &mut app,
+    //     "bob",
+    //     addr2.clone(),
+    //     &signer2(),
+    //     registrar.clone(),
+    //     name_nft_contract.clone(),
+    //     resolver_contract_addr.clone(),
+    // );
 
-    // TODO: add test case for adding different user and ensuring query still works
+    // let AddressesResponse { addresses } = app
+    //     .wrap()
+    //     .query_wasm_smart(
+    //         resolver_contract_addr.clone(),
+    //         &QueryMsg::Addresses {
+    //             name: "bob".to_string(),
+    //         },
+    //     )
+    //     .unwrap();
+    // println!("addresses: {:?}", addresses);
 }
 
 #[test]

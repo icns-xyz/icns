@@ -89,10 +89,6 @@ pub mod entry {
 
                         let is_transferable = is_transferrable(deps.as_ref())?;
 
-                        println!(
-                            "is_admin: {}, is_transferable: {}",
-                            is_admin, is_transferable
-                        );
                         if is_admin || is_transferable {
                             _execute(deps, env, info, msg).map_err(Into::into)
                         } else {

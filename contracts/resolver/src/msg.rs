@@ -58,7 +58,7 @@ pub enum QueryMsg {
     Names { address: String },
 
     /// Get names bound to an address
-    /// Returns list of full icns name (e.g alice.osmo) given bech32 address
+    /// Returns list of full icns name (e.g alice.osmo, alice.juno) given bech32 address
     #[returns(IcnsNamesResponse)]
     IcnsNames { address: String },
 
