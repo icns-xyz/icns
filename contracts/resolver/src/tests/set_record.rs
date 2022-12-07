@@ -134,7 +134,7 @@ fn set_get_multiple_name_on_one_address() {
         names(&app, signer_bech32_address).unwrap(),
         (
             vec!["alice".to_string(), "alice_in_wonderland".to_string()],
-            "alice".to_string()
+            "alice_in_wonderland".to_string()
         )
     );
 }

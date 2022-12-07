@@ -56,14 +56,15 @@ pub fn cosmos_pubkey_to_bech32_address(pub_key: Binary, bech32_prefix: String) -
     let sha256 = Sha256::digest(decoded_pub_key);
     let result = Ripemd160::digest(sha256);
 
-    let bech32_address = bech32::encode(
-        &bech32_prefix,
-        result.deref().to_base32(),
-        bech32::Variant::Bech32,
-    )
-    .unwrap();
+    // let bech32_address = bech32::encode(
+    //     &bech32_prefix,
+    //     result.deref().to_base32(),
+    //     bech32::Variant::Bech32,
+    // )
+    // .unwrap();
 
-    bech32_address
+    bech32_encode(&bech32_prefix, result.deref().to_vec())
+    // bech32_address
 }
 
 pub fn eth_pubkey_to_bech32_address(pub_key: Binary, bech32_prefix: String) -> String {

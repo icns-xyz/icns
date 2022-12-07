@@ -4,7 +4,7 @@ members = [
   'contracts/*',
 ]
 
-repository = "https://github.com/interchain-name/icns"
+repository = "https://github.com/icns-xyz/icns"
 
 [workspace.package]
 edition = "2021"

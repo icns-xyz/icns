@@ -89,11 +89,10 @@ pub fn execute_set_record(
         // first check sender and the bech32 address in msg match
         // if it does, no need to verify adr36
         // in order to check if they match, we first need to decode the bech32 address
-        let decoded_bech32_addr_from_msg = bech32::decode(adr36_info.signer_bech32_address.clone())
+        let (bech32_prefix_decoded, bech32_address_decoded) = bech32::decode(adr36_info.signer_bech32_address.clone())
             .map_err(|_| ContractError::Bech32DecodingErr {
                 addr: bech32_prefix.clone(),
-            })?
-            .1;
+            })?;
         let decoded_bech32_addr_from_info = bech32::decode(info.sender.clone())
             .map_err(|_| ContractError::Bech32DecodingErr {
                 addr: adr36_info.signer_bech32_address.clone(),
@@ -101,7 +100,7 @@ pub fn execute_set_record(
             .1;
 
         // if they don't match, verify adr36
-        if decoded_bech32_addr_from_msg != decoded_bech32_addr_from_info {
+        if bech32_address_decoded != decoded_bech32_addr_from_info {
             if adr36_info.address_hash == AddressHash::Cosmos {
                 // if address hash is for Cosmos, first verify that pub key is 33 bytes
                 if adr36_info.pub_key.len() != 33 {
@@ -109,15 +108,7 @@ pub fn execute_set_record(
                         pub_key: adr36_info.pub_key.to_string(),
                     });
                 }
-
-                // extract bech32 prefix from given address
-                let bech32_prefix_decoded =
-                    bech32::decode(adr36_info.signer_bech32_address.clone())
-                        .map_err(|_| ContractError::Bech32DecodingErr {
-                            addr: adr36_info.signer_bech32_address.to_string(),
-                        })?
-                        .0;
-
+                
                 // check if the user input for prefix + address is valid
                 if bech32_prefix != bech32_prefix_decoded {
                     return Err(ContractError::Bech32PrefixMismatch {
@@ -173,11 +164,8 @@ pub fn execute_set_record(
     )?;
 
     // set name as primary name if it doesn't exists for this address yet
-    let primary_name = PRIMARY_NAME.key(adr36_info.signer_bech32_address);
-    if primary_name.may_load(deps.storage)?.is_none() {
-        primary_name.save(deps.storage, &name)?
-    }
-
+    PRIMARY_NAME.save(deps.storage, adr36_info.signer_bech32_address, &name)?;
+    
     // save signature to prevent replay attack
     SIGNATURE.save(deps.storage, adr36_info.signature.as_slice(), &true)?;
 
