@@ -96,8 +96,8 @@ fn set_get_multiple_name_on_one_address() {
         "alice_in_wonderland",
         signer_bech32_address.clone(),
         &signer1(),
-        registrar.clone(),
-        name_nft_contract.clone(),
+        registrar,
+        name_nft_contract,
         resolver_contract_addr.clone(),
     );
 

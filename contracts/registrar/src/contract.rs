@@ -19,7 +19,7 @@ use crate::msg::{
     VerificationThresholdResponse, VerifierPubKeysResponse, VerifyingMsg,
 };
 
-use icns_name_nft::msg::ExecuteMsg as NameNFTExecuteMsg;
+
 
 use crate::state::{Config, CONFIG, REFERRAL, UNIQUE_TWITTER_ID};
 

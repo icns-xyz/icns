@@ -8,9 +8,9 @@ use crate::{
 };
 
 use cosmwasm_std::to_binary;
-use cosmwasm_std::{Addr, Empty};
+use cosmwasm_std::{Addr};
 use cw721::OwnerOfResponse;
-use cw721_base::{ExecuteMsg as CW721BaseExecuteMsg, Extension, MintMsg};
+use cw721_base::{MintMsg};
 use cw_multi_test::{BasicApp, Executor};
 
 mod non_transferrable {
