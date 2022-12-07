@@ -71,6 +71,7 @@ pub enum QueryMsg {
 #[cw_serde]
 pub struct NamesResponse {
     pub names: Vec<String>,
+    pub primary_name: String,
 }
 
 #[cw_serde]

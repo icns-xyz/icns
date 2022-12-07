@@ -344,6 +344,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 fn query_names(deps: Deps, address: String) -> StdResult<NamesResponse> {
+    let primary_name = PRIMARY_NAME.load(deps.storage, address.clone())?;
     Ok(NamesResponse {
         names: records()
             .idx
@@ -361,6 +362,7 @@ fn query_names(deps: Deps, address: String) -> StdResult<NamesResponse> {
                     .collect::<StdResult<String>>()
             })
             .collect::<StdResult<_>>()?,
+        primary_name,
     })
 }
 

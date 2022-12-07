@@ -36,11 +36,11 @@ fn set_get_single_record() {
     };
 
     let names = |app: &BasicApp, address: String| -> StdResult<_> {
-        let NamesResponse { names } = app
+        let NamesResponse { names, primary_name } = app
             .wrap()
             .query_wasm_smart(resolver_contract_addr.clone(), &QueryMsg::Names { address })?;
 
-        Ok(names)
+        Ok((names, primary_name))
     };
 
     // now get record
@@ -64,7 +64,7 @@ fn set_get_single_record() {
             "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string()
         )
         .unwrap(),
-        vec!["alice"]
+        (vec!["alice".to_string()], "alice".to_string())
     );
 }
 
@@ -111,11 +111,11 @@ fn set_get_multiple_name_on_one_address() {
     };
 
     let names = |app: &BasicApp, address: String| -> StdResult<_> {
-        let NamesResponse { names } = app
+        let NamesResponse { names, primary_name } = app
             .wrap()
             .query_wasm_smart(resolver_contract_addr.clone(), &QueryMsg::Names { address })?;
 
-        Ok(names)
+        Ok((names, primary_name))
     };
 
     // now get record
@@ -127,7 +127,7 @@ fn set_get_multiple_name_on_one_address() {
 
     assert_eq!(
         names(&app, signer_bech32_address).unwrap(),
-        vec!["alice", "alice_in_wonderland"]
+        (vec!["alice".to_string(), "alice_in_wonderland".to_string()], "alice".to_string())
     );
 }
 
