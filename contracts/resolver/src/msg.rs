@@ -53,8 +53,14 @@ pub enum QueryMsg {
     Address { name: String, bech32_prefix: String },
 
     /// Get names bound to an address
+    /// only returns name itself, not full icns name
     #[returns(NamesResponse)]
     Names { address: String },
+
+    /// Get names bound to an address
+    /// Returns list of full icns name (e.g alice.osmo) given bech32 address
+    #[returns(IcnsNamesResponse)]
+    IcnsNames { address: String },
 
     /// An address and hold multiple names, this query returns
     /// their primary name.
@@ -70,6 +76,12 @@ pub enum QueryMsg {
 
 #[cw_serde]
 pub struct NamesResponse {
+    pub names: Vec<String>,
+    pub primary_name: String,
+}
+
+#[cw_serde]
+pub struct IcnsNamesResponse {
     pub names: Vec<String>,
     pub primary_name: String,
 }

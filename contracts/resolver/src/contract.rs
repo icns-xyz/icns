@@ -16,7 +16,7 @@ use crate::crypto::{
 use crate::error::ContractError;
 use crate::msg::{
     AddressByIcnsResponse, AddressHash, AddressResponse, AddressesResponse, Adr36Info, ExecuteMsg,
-    InstantiateMsg, MigrateMsg, NamesResponse, PrimaryNameResponse, QueryMsg,
+    InstantiateMsg, MigrateMsg, NamesResponse, PrimaryNameResponse, QueryMsg, IcnsNamesResponse,
 };
 use crate::state::{records, Config, CONFIG, PRIMARY_NAME, SIGNATURE};
 use cw721::OwnerOfResponse;
@@ -165,7 +165,7 @@ pub fn execute_set_record(
 
     // set name as primary name if it doesn't exists for this address yet
     PRIMARY_NAME.save(deps.storage, adr36_info.signer_bech32_address, &name)?;
-    
+
     // save signature to prevent replay attack
     SIGNATURE.save(deps.storage, adr36_info.signature.as_slice(), &true)?;
 
@@ -178,7 +178,10 @@ fn execute_set_primary(
     name: String,
     bech32_address: String,
 ) -> Result<Response, ContractError> {
-    if !is_owner(deps.as_ref(), name.clone(), info.sender.to_string())? {
+    // check if the msg sender is a registrar or admin. If not, return err
+    let is_admin = is_admin(deps.as_ref(), info.sender.to_string())?;
+    let is_owner_nft = is_owner(deps.as_ref(), name.clone(), info.sender.to_string())?;
+    if !is_admin && !is_owner_nft {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -327,6 +330,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Admin {} => to_binary(&query_admin(deps)?),
         QueryMsg::PrimaryName { address } => to_binary(&query_primary_name(deps, address)?),
         QueryMsg::Names { address } => to_binary(&query_names(deps, address)?),
+        QueryMsg::IcnsNames { address } => to_binary(&query_icns_names(deps, address)?),
         QueryMsg::AddressByIcns { icns } => to_binary(&query_address_by_icns(deps, icns)?),
     }
 }
@@ -348,6 +352,38 @@ fn query_names(deps: Deps, address: String) -> StdResult<NamesResponse> {
                         Ok(name)
                     })
                     .collect::<StdResult<String>>()
+            })
+            .collect::<StdResult<_>>()?,
+        primary_name,
+    })
+}
+
+fn query_icns_names(deps: Deps, address: String) -> StdResult<IcnsNamesResponse> {
+    let primary_name = PRIMARY_NAME.load(deps.storage, address.clone())?;
+
+    let bech32_prefix = bech32::decode(address.clone())
+        .map_err(|_| cosmwasm_std::StdError::GenericErr {
+            msg: "Invalid bech32 address".to_string(),
+        })?
+        .0;
+
+    Ok(IcnsNamesResponse {
+        names: records()
+            .idx
+            .address
+            .prefix(address)
+            .keys(deps.storage, None, None, Ascending)
+            // get name out of StdResult<(name, bech32_prefix)
+            .map(|result| {
+                result
+                    .iter()
+                    .map(|key| {
+                        let (name, _) = <(String, String)>::from_slice(key.as_bytes())?;
+                        Ok(name)
+                    })
+                    .collect::<StdResult<String>>()
+                    // and then append bech32 prefix
+                    .map(|name| format!("{}.{}", name, bech32_prefix))
             })
             .collect::<StdResult<_>>()?,
         primary_name,
