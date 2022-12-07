@@ -1,17 +1,17 @@
-use cosmrs::{
-    bip32::secp256k1::schnorr::signature::Signature,
-    crypto::secp256k1::VerifyingKey,
-    tendermint::signature::{Secp256k1Signature, Verifier},
-};
 use cosmwasm_std::{
     from_slice, to_binary, Addr, Binary, Coin, Decimal, Deps, Env, MessageInfo, QueryRequest,
     WasmQuery,
 };
 
+use crate::{msg::VerifyingMsg, state::CONFIG, state::UNIQUE_TWITTER_ID, ContractError};
+// use ecdsa::signature::Signature;
+// use ecdsa::signature::Verifier;
 use icns_name_nft::msg::{AdminResponse, QueryMsg as NameNFTQueryMsg};
 use itertools::Itertools;
+use sha2::Digest;
+// use k256::{ecdsa::VerifyingKey, Secp256k1};
 
-use crate::{msg::VerifyingMsg, state::CONFIG, state::UNIQUE_TWITTER_ID, ContractError};
+// type Secp256k1Signature = ecdsa::Signature<Secp256k1>;
 
 pub fn is_admin(deps: Deps, address: &Addr) -> Result<bool, ContractError> {
     let AdminResponse { admins } = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
@@ -20,10 +20,10 @@ pub fn is_admin(deps: Deps, address: &Addr) -> Result<bool, ContractError> {
     }))?;
 
     if !admins.contains(&address.to_string()) {
-        return Ok(false)
+        return Ok(false);
     }
-    
-    return Ok(true)
+
+    return Ok(true);
 }
 
 pub fn check_admin(deps: Deps, sender: &Addr) -> Result<(), ContractError> {
@@ -131,15 +131,14 @@ pub fn check_verification_pass_threshold(
         })?;
 
     // check for duplicated signatures
-    let duplicated_signatures = verifications
+    let duplicated_signature = verifications
         .iter()
         .map(|(_, signature)| signature)
         .duplicates()
         .next();
 
-    if let Some(duplicated_signature) = duplicated_signatures {
-        let signature = check_signature(duplicated_signature)?;
-        let signature = Binary(signature.to_vec());
+    if let Some(duplicated_signature) = duplicated_signature {
+        let signature = Binary(duplicated_signature.to_vec());
         return Err(ContractError::DuplicatedVerification { signature });
     }
 
@@ -148,7 +147,16 @@ pub fn check_verification_pass_threshold(
         .iter()
         .unique()
         .try_for_each(|(public_key, signature)| {
-            verify_secp256k1_signature(msg.as_bytes(), signature, public_key)
+            let msg_hash = sha2::Sha256::digest(msg);
+            let verified = deps
+                .api
+                .secp256k1_verify(&msg_hash, signature, public_key)?;
+
+            if !verified {
+                return Err(ContractError::InvalidSignature {});
+            }
+
+            Ok(())
         })?;
 
     // when all signature are valid, no duplicates and all from verifiers, check if it pass threshold
@@ -156,27 +164,6 @@ pub fn check_verification_pass_threshold(
     config.check_pass_threshold(Decimal::new(verification_count.into()))?;
 
     Ok(())
-}
-
-fn verify_secp256k1_signature(
-    msg: &[u8],
-    signature: &[u8], // bytes of r/s components
-    pubkey: &[u8],    // SEC-1 encoded
-) -> Result<(), ContractError> {
-    let verifying_key = check_verifying_key(pubkey)?;
-    let signature = check_signature(signature)?;
-
-    verifying_key
-        .verify(msg, &signature)
-        .map_err(|_| ContractError::InvalidSignature {})
-}
-
-pub fn check_verifying_key(pubkey: &[u8]) -> Result<VerifyingKey, ContractError> {
-    VerifyingKey::from_sec1_bytes(pubkey).map_err(|_| ContractError::InvalidPublicKeyFormat {})
-}
-
-pub fn check_signature(signature: &[u8]) -> Result<Secp256k1Signature, ContractError> {
-    Secp256k1Signature::from_bytes(signature).map_err(|_| ContractError::InvalidSignatureFormat {})
 }
 
 pub fn check_valid_threshold(percent: &Decimal) -> Result<(), ContractError> {
@@ -288,37 +275,6 @@ mod test {
                     chain_id, wrong_chain_id
                 ),
             }
-        );
-    }
-
-    #[test]
-    fn test_verify_secp256k1_signature() {
-        let derivation_path = "m/44'/118'/0'/0/0"; //
-        let verifier1 = from_mnemonic("notice oak worry limit wrap speak medal online prefer cluster roof addict wrist behave treat actual wasp year salad speed social layer crew genius", derivation_path);
-
-        // all sec1 encoded should be ok
-        let pubkey = verifier1.public_key().to_bytes();
-        let msg = r#"{"name":"boss"}"#;
-        let signature = verifier1.sign(msg.as_bytes()).unwrap().to_vec();
-
-        assert_eq!(
-            verify_secp256k1_signature(msg.as_bytes(), &signature, &pubkey),
-            Ok(())
-        );
-
-        assert_eq!(
-            verify_secp256k1_signature(msg.as_bytes(), &[69, 69, 69], &pubkey),
-            Err(ContractError::InvalidSignatureFormat {})
-        );
-
-        assert_eq!(
-            verify_secp256k1_signature(msg.as_bytes(), &signature, &[69, 69, 69]),
-            Err(ContractError::InvalidPublicKeyFormat {})
-        );
-
-        assert_eq!(
-            verify_secp256k1_signature(r#"{"name":"slave"}"#.as_bytes(), &signature, &pubkey),
-            Err(ContractError::InvalidSignature {})
         );
     }
 

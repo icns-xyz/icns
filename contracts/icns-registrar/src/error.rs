@@ -1,4 +1,4 @@
-use cosmwasm_std::{Binary, Coin, Decimal, StdError};
+use cosmwasm_std::{Binary, Coin, Decimal, StdError, VerificationError};
 use cw_utils::ThresholdError;
 use thiserror::Error;
 
@@ -9,6 +9,9 @@ pub enum ContractError {
 
     #[error("{0}")]
     Threshold(#[from] ThresholdError),
+
+    #[error("{0}")]
+    Verification(#[from] VerificationError),
 
     #[error("Unauthorized")]
     Unauthorized {},
