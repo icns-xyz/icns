@@ -23,7 +23,7 @@ pub fn is_admin(deps: Deps, address: &Addr) -> Result<bool, ContractError> {
         return Ok(false);
     }
 
-    return Ok(true);
+    Ok(true)
 }
 
 pub fn check_admin(deps: Deps, sender: &Addr) -> Result<(), ContractError> {

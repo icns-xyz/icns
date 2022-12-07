@@ -68,7 +68,7 @@ fn set_primary_name_on_set_first_record() {
             resolver_contract_addr
         )
         .unwrap(),
-        "alice".to_string()
+        "isakaya".to_string()
     );
 }
 
@@ -119,7 +119,7 @@ fn set_primary() {
             resolver_contract_addr.clone()
         )
         .unwrap(),
-        "isabel".to_string()
+        "isann".to_string()
     );
 
     let addr1 = cosmos_pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string());

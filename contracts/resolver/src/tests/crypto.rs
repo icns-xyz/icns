@@ -8,16 +8,13 @@ use ripemd::{Digest as RipemdDigest, Ripemd160};
 use sha2::Sha256;
 use sha3::Keccak256;
 use std::ops::Deref;
-use subtle_encoding::hex::{decode as hex_decode};
+use subtle_encoding::hex::decode as hex_decode;
 
 use crate::msg::AddressHash;
 use crate::{
     crypto::{
-        adr36_verification,
-        create_adr36_data,
-        create_adr36_message,
-        cosmos_pubkey_to_bech32_address,
-        eth_pubkey_to_bech32_address,
+        adr36_verification, cosmos_pubkey_to_bech32_address, create_adr36_data,
+        create_adr36_message, eth_pubkey_to_bech32_address,
     },
     msg::Adr36Info,
     tests::helpers::signer1,
@@ -28,8 +25,7 @@ use super::helpers::ToBinary;
 #[test]
 fn pubkey_to_address() {
     let pub_key_bytes =
-        hex_decode("02394bc53633366a2ab9b5d697a94c8c0121cc5e3f0d554a63167edb318ceae8bc")
-        .unwrap();
+        hex_decode("02394bc53633366a2ab9b5d697a94c8c0121cc5e3f0d554a63167edb318ceae8bc").unwrap();
 
     // first check using cosmos_pubkey_to_bech32_address method
     let pub_key_binary = Binary::from(pub_key_bytes.clone());
@@ -184,10 +180,9 @@ fn adr36_verify_cosmos() {
 
 #[test]
 fn keccack256_digest() {
-    let original_binary_vec = 
-        hex_decode("12345678").unwrap();
-    
-    let keccack256 =Keccak256::digest(&original_binary_vec);
+    let original_binary_vec = hex_decode("12345678").unwrap();
+
+    let keccack256 = Keccak256::digest(&original_binary_vec);
     assert_eq!(
         keccack256.as_ref(),
         hex!("30ca65d5da355227c97ff836c9c6719af9d3835fc6bc72bddc50eeecc1bb2b25")
@@ -196,11 +191,11 @@ fn keccack256_digest() {
 
 #[test]
 fn eth_pubkey_to_bech32_address_encoding() {
-    let pub_key_bytes = 
+    let pub_key_bytes =
         hex_decode("0422b7d0ab1ec915bf3902bd4d3a1dde5d0add15865f951d7ac3fb206e9e898f2d2cd59418a2a27b98eb1e39fc33c55faeed8e550dbf9226a594203c0c2430b0d7")
         .unwrap();
-    
-    let pub_key_binary = Binary::from(pub_key_bytes.clone());
+
+    let pub_key_binary = Binary::from(pub_key_bytes);
     let bech32_address = eth_pubkey_to_bech32_address(pub_key_binary, "evmos".to_string());
 
     assert_eq!(

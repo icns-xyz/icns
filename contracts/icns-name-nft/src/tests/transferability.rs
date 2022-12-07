@@ -60,7 +60,7 @@ mod non_transferrable {
 
         assert_eq!(
             err.downcast_ref::<ContractError>().unwrap(),
-            &ContractError::TransferNotAllowed {}.into()
+            &ContractError::TransferNotAllowed {}
         );
     }
 
@@ -107,7 +107,7 @@ mod non_transferrable {
 
         assert_eq!(
             err.downcast_ref::<ContractError>().unwrap(),
-            &ContractError::TransferNotAllowed {}.into()
+            &ContractError::TransferNotAllowed {}
         );
     }
 
@@ -152,7 +152,7 @@ mod non_transferrable {
 
         assert_eq!(
             err.downcast_ref::<ContractError>().unwrap(),
-            &ContractError::TransferNotAllowed {}.into()
+            &ContractError::TransferNotAllowed {}
         );
     }
 }

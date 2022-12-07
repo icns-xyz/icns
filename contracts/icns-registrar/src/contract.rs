@@ -43,7 +43,6 @@ pub fn instantiate(
     //     .iter()
     //     .try_for_each(|pubkey| check_verifying_key(pubkey).map(|_| ()))?;
 
-
     // check if threshold is valid (0.0-1.0)
     check_valid_threshold(&msg.verification_threshold)?;
 

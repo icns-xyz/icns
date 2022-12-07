@@ -108,17 +108,6 @@ fn remove_primary_and_non_primary_address() {
         resolver_contract_addr.clone(),
     );
 
-    app.execute_contract(
-        Addr::unchecked(addr1.clone()),
-        resolver_contract_addr.clone(),
-        &ExecuteMsg::RemoveRecord {
-            name: "isabel2".to_string(),
-            bech32_address: signer_bech32_address.clone(),
-        },
-        &[],
-    )
-    .unwrap();
-
     // when address has more than 1 name, that address can't remove primary name
     // need to set primary name to another name first
     let err = app
@@ -126,7 +115,7 @@ fn remove_primary_and_non_primary_address() {
             Addr::unchecked(addr1.clone()),
             resolver_contract_addr.clone(),
             &ExecuteMsg::RemoveRecord {
-                name: "isabel".to_string(),
+                name: "isabel3".to_string(),
                 bech32_address: signer_bech32_address.clone(),
             },
             &[],
@@ -142,7 +131,7 @@ fn remove_primary_and_non_primary_address() {
         Addr::unchecked(addr1.clone()),
         resolver_contract_addr.clone(),
         &ExecuteMsg::RemoveRecord {
-            name: "isabel3".to_string(),
+            name: "isabel2".to_string(),
             bech32_address: signer_bech32_address.clone(),
         },
         &[],
@@ -156,7 +145,7 @@ fn remove_primary_and_non_primary_address() {
             resolver_contract_addr.clone()
         )
         .unwrap(),
-        "isabel".to_string()
+        "isabel3".to_string()
     );
 
     assert_eq!(
