@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 
-set -o pipefail
+set -eoux pipefail
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 CW_PLUS_VERSION=v0.16.0
 NETWORK="${1:-local}"
-ARGS=${@:2}
+SIGNER="${2:-test1}"
+ARGS=${@:3}
 
 deploy_contract() {
     local contract_name="$1"
@@ -20,22 +21,21 @@ deploy_contract() {
     cd "$SCRIPT_DIR/../contracts/${contract_name}"
     
     RUSTFLAGS="-C link-arg=-s" cargo wasm
-    beaker wasm deploy "$contract_name" --no-rebuild --raw "$msg" --network "$NETWORK" $ARGS 1> /dev/null
-
+    beaker wasm deploy "$contract_name" --no-rebuild --no-wasm-opt --raw "$msg" --signer-account "$SIGNER" --network "$NETWORK" $ARGS 1> /dev/null
 
     CONTRACT_ADDR=$(cat "$SCRIPT_DIR/../.beaker/$state_file" | jq ".local.\"${contract_name}\".addresses.default" | sed 's/"//g') 
     echo $CONTRACT_ADDR
 }
 
 param() {
-    cat "$SCRIPT_DIR//params.json" | jq ".$1"
+    jq ".$1" "$SCRIPT_DIR/params.json" -Mc
 }
 
 
 echo ">>> Deploying name-nft contract ..."
 echo
 
-read -r -d '' MSG <<- EOF
+read -r -d '' MSG <<- EOF || true
 {
     "transferrable": $(param "transferrable"),
     "admins": $(param "admins")
@@ -50,14 +50,14 @@ echo "NAME_NFT_CONTRACT_ADDR: $NAME_NFT_CONTRACT_ADDR"
 echo ">>> Deploying resolver contract ..."
 echo
 
-read -r -d '' MSG <<- EOF
+read -r -d '' MSG <<- EOF || true
 {
     "name_address": "$NAME_NFT_CONTRACT_ADDR"
 }
 EOF
 echo "$MSG" | jq
 
-REGISTRAR_CONTRACT_ADDR=$(deploy_contract "icns-resolver" "$MSG")
+RESOLVER_CONTRACT_ADDR=$(deploy_contract "icns-resolver" "$MSG")
 echo "RESOLVER_CONTRACT_ADDR: $RESOLVER_CONTRACT_ADDR"
 
 
@@ -65,7 +65,7 @@ echo "RESOLVER_CONTRACT_ADDR: $RESOLVER_CONTRACT_ADDR"
 echo ">>> Deploying registrar contract ..."
 echo
 
-read -r -d '' MSG <<- EOF
+read -r -d '' MSG <<- EOF || true
 {
     "name_nft_addr": "$NAME_NFT_CONTRACT_ADDR",
     "verifier_pubkeys": $(param "verifier_pubkeys"),
@@ -82,7 +82,7 @@ echo "REGISTRAR_CONTRACT_ADDR: $REGISTRAR_CONTRACT_ADDR"
 echo ">>> Set registar to be name-nft minter ..."
 echo
 
-read -r -d '' MSG <<- EOF
+read -r -d '' MSG <<- EOF || true
 {
     "extension": {
         "msg": {
@@ -95,4 +95,4 @@ read -r -d '' MSG <<- EOF
 EOF
 echo "$MSG" | jq
 
-beaker wasm execute icns-name-nft --signer-account test1 --raw "$MSG" 1> /dev/null
+beaker wasm execute icns-name-nft --signer-account "$SIGNER" --raw "$MSG" 1> /dev/null
