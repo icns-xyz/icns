@@ -9,7 +9,7 @@ use icns_name_nft::MintMsg;
 use itertools::Itertools;
 
 use crate::checks::{
-    check_fee, check_admin, check_valid_threshold, check_verfying_msg,
+    check_admin, check_fee, check_valid_threshold, check_verfying_msg,
     check_verification_pass_threshold, check_verifying_key, is_admin,
 };
 use crate::error::ContractError;

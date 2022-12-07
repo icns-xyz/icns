@@ -2,7 +2,7 @@ use crate::{
     contract::execute,
     contract::instantiate,
     contract::query,
-    crypto::{create_adr36_message, cosmos_pubkey_to_bech32_address},
+    crypto::{cosmos_pubkey_to_bech32_address, create_adr36_message},
     msg::{self, ExecuteMsg},
     msg::{AddressesResponse, Adr36Info, InstantiateMsg, PrimaryNameResponse, QueryMsg},
 };
@@ -233,7 +233,7 @@ pub fn mint_and_set_record(
     let msg = ExecuteMsg::SetRecord {
         name: name.to_string(),
         adr36_info: Adr36Info {
-            signer_bech32_address: signer_bech32_address,
+            signer_bech32_address,
             address_hash: msg::AddressHash::Cosmos,
             pub_key: signing_key.to_binary(),
             signature,

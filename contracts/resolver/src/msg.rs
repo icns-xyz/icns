@@ -63,7 +63,7 @@ pub enum QueryMsg {
 
     #[returns(AdminResponse)]
     Admin {},
-    
+
     #[returns(AddressByIcnsResponse)]
     AddressByIcns { icns: String },
 }

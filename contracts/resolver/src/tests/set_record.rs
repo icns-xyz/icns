@@ -1,11 +1,10 @@
 #![cfg(test)]
 
 use crate::{
-    crypto::{cosmos_pubkey_to_bech32_address, eth_pubkey_to_bech32_address},
+    crypto::cosmos_pubkey_to_bech32_address,
     msg::{self, Adr36Info, ExecuteMsg, NamesResponse},
     msg::{AddressesResponse, QueryMsg},
     tests::helpers::{mint_and_set_record, signer1, ToBinary},
-    ContractError,
 };
 
 use cosmwasm_std::{Addr, Binary, Empty, StdResult};
@@ -13,8 +12,8 @@ use cw721_base::{ExecuteMsg as CW721BaseExecuteMsg, Extension, MintMsg};
 
 use cw_multi_test::{BasicApp, Executor};
 use hex_literal::hex;
-use subtle_encoding::hex::{decode as hex_decode};
 use icns_name_nft::msg::ExecuteMsg as NameExecuteMsg;
+use subtle_encoding::hex::decode as hex_decode;
 
 use super::helpers::{default_setting, instantiate_name_nft, instantiate_resolver_with_name_nft};
 
@@ -36,7 +35,10 @@ fn set_get_single_record() {
     };
 
     let names = |app: &BasicApp, address: String| -> StdResult<_> {
-        let NamesResponse { names, primary_name } = app
+        let NamesResponse {
+            names,
+            primary_name,
+        } = app
             .wrap()
             .query_wasm_smart(resolver_contract_addr.clone(), &QueryMsg::Names { address })?;
 
@@ -96,8 +98,8 @@ fn set_get_multiple_name_on_one_address() {
         "alice_in_wonderland",
         signer_bech32_address.clone(),
         &signer1(),
-        registrar.clone(),
-        name_nft_contract.clone(),
+        registrar,
+        name_nft_contract,
         resolver_contract_addr.clone(),
     );
 
@@ -111,7 +113,10 @@ fn set_get_multiple_name_on_one_address() {
     };
 
     let names = |app: &BasicApp, address: String| -> StdResult<_> {
-        let NamesResponse { names, primary_name } = app
+        let NamesResponse {
+            names,
+            primary_name,
+        } = app
             .wrap()
             .query_wasm_smart(resolver_contract_addr.clone(), &QueryMsg::Names { address })?;
 
@@ -127,7 +132,10 @@ fn set_get_multiple_name_on_one_address() {
 
     assert_eq!(
         names(&app, signer_bech32_address).unwrap(),
-        (vec!["alice".to_string(), "alice_in_wonderland".to_string()], "alice".to_string())
+        (
+            vec!["alice".to_string(), "alice_in_wonderland".to_string()],
+            "alice".to_string()
+        )
     );
 }
 
@@ -224,14 +232,13 @@ fn bech32_verification() {
         },
         bech32_prefix: "cosmos".to_string(),
     };
-    app
-        .execute_contract(
-            Addr::unchecked(addr1),
-            resolver_contract_addr,
-            &record_msg,
-            &[],
-        )
-        .unwrap();
+    app.execute_contract(
+        Addr::unchecked(addr1),
+        resolver_contract_addr,
+        &record_msg,
+        &[],
+    )
+    .unwrap();
 
     // println!("err: {}", err.downcast_ref::<ContractError>().unwrap());
     // assert_eq!(err, false);
@@ -251,22 +258,21 @@ fn eth_address_set_record() {
     let resolver_contract_addr =
         instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
 
-    let pub_key_bytes = 
+    let pub_key_bytes =
         hex_decode("0422b7d0ab1ec915bf3902bd4d3a1dde5d0add15865f951d7ac3fb206e9e898f2d2cd59418a2a27b98eb1e39fc33c55faeed8e550dbf9226a594203c0c2430b0d7")
         .unwrap();
-    let pub_key_binary = Binary::from(pub_key_bytes.clone());
+    let pub_key_binary = Binary::from(pub_key_bytes);
 
     let sender_pub_key_bytes =
-    hex_decode("02394bc53633366a2ab9b5d697a94c8c0121cc5e3f0d554a63167edb318ceae8bc")
-    .unwrap();
+        hex_decode("02394bc53633366a2ab9b5d697a94c8c0121cc5e3f0d554a63167edb318ceae8bc").unwrap();
 
     // first check using cosmos_pubkey_to_bech32_address method
-    let sender_pub_key_binary = Binary::from(sender_pub_key_bytes.clone());
+    let sender_pub_key_binary = Binary::from(sender_pub_key_bytes);
 
     let addr = cosmos_pubkey_to_bech32_address(sender_pub_key_binary, "osmo".to_string());
 
     let original_signature_bytes = hex!("d67d5dc9f33f2a680c635bdae898c1c6a9ee39cd946ae9e2df827dd25eb50d6f6d7adc2926741d9adc84780f5a06bae226c30cd110af91f4092b45e3e521445c");
-    let signature = Binary::from(original_signature_bytes.clone());
+    let signature = Binary::from(original_signature_bytes);
 
     let mint = app
         .execute_contract(
@@ -290,19 +296,18 @@ fn eth_address_set_record() {
         adr36_info: Adr36Info {
             signer_bech32_address: "evmos16wx7ye3ce060tjvmmpu8lm0ak5xr7gm238xyss".to_string(),
             address_hash: msg::AddressHash::Ethereum,
-            pub_key: pub_key_binary.clone(),
-            signature: signature,
+            pub_key: pub_key_binary,
+            signature,
             signature_salt: 12313u128.into(),
-        }, 
+        },
     };
 
-    app
-        .execute_contract(
-            Addr::unchecked(addr.clone()),
-            resolver_contract_addr.clone(),
-            &record_msg,
-            &[],
-        )
+    app.execute_contract(
+        Addr::unchecked(addr),
+        resolver_contract_addr,
+        &record_msg,
+        &[],
+    )
     .unwrap();
 }
 
@@ -325,12 +330,12 @@ fn adr36_verification_bypass() {
     // use invalid pub key and signature
     let pub_key_bytes = hex!("aaaa");
     let signature_bytes = hex!("bbbb");
-    let pub_key = Binary::from(pub_key_bytes.clone());
-    let signature = Binary::from(signature_bytes.clone());
+    let pub_key = Binary::from(pub_key_bytes);
+    let signature = Binary::from(signature_bytes);
 
     let mint = app
         .execute_contract(
-            Addr::unchecked(registrar.clone()),
+            Addr::unchecked(registrar),
             name_nft_contract,
             &NameExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
                 token_id: "alice".to_string(),
@@ -344,25 +349,25 @@ fn adr36_verification_bypass() {
     assert_eq!(mint, false);
 
     // use address with different bech32 prefix
-    let different_bech32_prefix_address = cosmos_pubkey_to_bech32_address(signer1().to_binary(), "cosmos".to_string());
+    let different_bech32_prefix_address =
+        cosmos_pubkey_to_bech32_address(signer1().to_binary(), "cosmos".to_string());
     let record_msg = ExecuteMsg::SetRecord {
         name: "alice".to_string(),
         bech32_prefix: "cosmos".to_string(),
         adr36_info: Adr36Info {
-            signer_bech32_address: different_bech32_prefix_address.to_string(),
+            signer_bech32_address: different_bech32_prefix_address,
             address_hash: msg::AddressHash::Ethereum,
-            pub_key: pub_key.clone(),
-            signature: signature,
+            pub_key: pub_key,
+            signature,
             signature_salt: 12313u128.into(),
-        }, 
+        },
     };
 
-    app
-        .execute_contract(
-            Addr::unchecked(addr),
-            resolver_contract_addr,
-            &record_msg,
-            &[],
-        )
-        .unwrap();
+    app.execute_contract(
+        Addr::unchecked(addr),
+        resolver_contract_addr,
+        &record_msg,
+        &[],
+    )
+    .unwrap();
 }

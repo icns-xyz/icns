@@ -36,7 +36,6 @@ pub fn is_transferrable(deps: Deps) -> Result<bool, ContractError> {
     Ok(true)
 }
 
-
 pub fn validate_name(name: &str) -> Result<(), ContractError> {
     if name.contains('.') {
         return Err(ContractError::InvalidName {});

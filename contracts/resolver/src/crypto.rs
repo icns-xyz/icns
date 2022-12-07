@@ -4,9 +4,9 @@ use bech32::ToBase32;
 use cosmwasm_crypto::secp256k1_verify;
 use ripemd::{Digest as RipemdDigest, Ripemd160};
 use sha2::Sha256;
-use subtle_encoding::bech32::encode as bech32_encode;
 use sha3::Keccak256;
 use std::ops::Deref;
+use subtle_encoding::bech32::encode as bech32_encode;
 
 use cosmwasm_std::{Binary, Deps, Response};
 
@@ -71,9 +71,8 @@ pub fn eth_pubkey_to_bech32_address(pub_key: Binary, bech32_prefix: String) -> S
     let xy = &pub_key.as_slice()[1..];
 
     let hashed = Keccak256::digest(xy).as_slice()[12..].to_vec();
-    let bech32_address = bech32_encode(&bech32_prefix, hashed);
 
-    bech32_address
+    bech32_encode(&bech32_prefix, hashed)
 }
 
 pub fn create_adr36_message(
