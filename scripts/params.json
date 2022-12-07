@@ -1,0 +1,12 @@
+{
+    "transferrable": false,
+    "admins": [
+        "osmo1cyyzpxplxdzkeea7kwsydadg87357qnahakaks"
+    ],
+    "verifier_pubkeys": [],
+    "verification_threshold": "0.5",
+    "fee": {
+        "amount": "1000000000",
+        "denom": "uosmo"
+    }
+}
