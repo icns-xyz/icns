@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Empty;
+use cosmwasm_std::{CustomMsg, Empty};
 use cw721::{
     AllNftInfoResponse, ApprovalResponse, ApprovalsResponse, ContractInfoResponse, NftInfoResponse,
     NumTokensResponse, OperatorsResponse, OwnerOfResponse, TokensResponse,
@@ -17,12 +17,7 @@ pub struct InstantiateMsg {
     pub admins: Vec<String>,
 }
 
-#[cw_serde]
-#[serde(untagged)]
-pub enum ExecuteMsg {
-    CW721Base(cw721_base::ExecuteMsg<cw721_base::Extension, Empty>),
-    ICNSName(ICNSNameExecuteMsg),
-}
+pub type ExecuteMsg = cw721_base::ExecuteMsg<cw721_base::Extension, ICNSNameExecuteMsg>;
 
 #[cw_serde]
 pub enum ICNSNameExecuteMsg {
@@ -31,6 +26,8 @@ pub enum ICNSNameExecuteMsg {
     AddAdmin { admin_address: String },
     SetMinter { minter_address: String },
 }
+
+impl CustomMsg for ICNSNameExecuteMsg {}
 
 #[cw_serde]
 #[derive(QueryResponses)]
@@ -163,15 +160,13 @@ pub struct MigrateMsg {}
 mod tests {
     use cosmwasm_std::{from_binary, to_binary, Binary};
 
-    use super::*;
-
     #[test]
     fn execute_msg_serde_should_conform_cw721_standard() {
         let execute_msg_binary: Binary =
             r#"{"transfer_nft":{"recipient":"recp","token_id":"name"}}"#
                 .as_bytes()
                 .into();
-        let execute_msg: ExecuteMsg = from_binary(&execute_msg_binary).unwrap();
+        let execute_msg: crate::ExecuteMsg = from_binary(&execute_msg_binary).unwrap();
 
         assert_eq!(
             std::str::from_utf8(to_binary(&execute_msg).unwrap().as_slice()),
@@ -182,8 +177,10 @@ mod tests {
     #[test]
     fn execute_msg_serde_should_include_set_admin_extension() {
         let execute_msg_binary: Binary =
-            r#"{"add_admin":{"admin_address":"admin_address"}}"#.as_bytes().into();
-        let execute_msg: ExecuteMsg = from_binary(&execute_msg_binary).unwrap();
+            r#"{"extension":{"msg":{"add_admin":{"admin_address":"admin_address"}}}}"#
+                .as_bytes()
+                .into();
+        let execute_msg: crate::ExecuteMsg = from_binary(&execute_msg_binary).unwrap();
 
         assert_eq!(
             std::str::from_utf8(to_binary(&execute_msg).unwrap().as_slice()),

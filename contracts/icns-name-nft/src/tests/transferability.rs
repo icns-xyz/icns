@@ -35,12 +35,12 @@ mod non_transferrable {
         app.execute_contract(
             registrar,
             contract_addr.clone(),
-            &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+            &ExecuteMsg::Mint(MintMsg {
                 token_id: name.to_string(),
                 owner: name_owner.to_string(),
                 token_uri: None,
                 extension: None,
-            })),
+            }),
             &[],
         )
         .unwrap();
@@ -50,10 +50,10 @@ mod non_transferrable {
             .execute_contract(
                 name_owner,
                 contract_addr,
-                &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::TransferNft {
+                &ExecuteMsg::TransferNft {
                     recipient: recipient.to_string(),
                     token_id: name.to_string(),
-                }),
+                },
                 &[],
             )
             .unwrap_err();
@@ -81,12 +81,12 @@ mod non_transferrable {
         app.execute_contract(
             registrar,
             contract_addr.clone(),
-            &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+            &ExecuteMsg::Mint(MintMsg {
                 token_id: name.to_string(),
                 owner: name_owner.to_string(),
                 token_uri: None,
                 extension: None,
-            })),
+            }),
             &[],
         )
         .unwrap();
@@ -96,11 +96,11 @@ mod non_transferrable {
             .execute_contract(
                 name_owner,
                 contract_addr,
-                &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::SendNft {
+                &ExecuteMsg::SendNft {
                     contract: recipient_contract.to_string(),
                     token_id: name.to_string(),
                     msg: to_binary("").unwrap(),
-                }),
+                },
                 &[],
             )
             .unwrap_err();
@@ -127,12 +127,12 @@ mod non_transferrable {
         app.execute_contract(
             registrar.clone(),
             contract_addr.clone(),
-            &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+            &ExecuteMsg::Mint(MintMsg {
                 token_id: name.to_string(),
                 owner: registrar.to_string(),
                 token_uri: None,
                 extension: None,
-            })),
+            }),
             &[],
         )
         .unwrap();
@@ -142,10 +142,10 @@ mod non_transferrable {
             .execute_contract(
                 registrar,
                 contract_addr,
-                &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::TransferNft {
+                &ExecuteMsg::TransferNft {
                     recipient: name_owner.to_string(),
                     token_id: name.to_string(),
-                }),
+                },
                 &[],
             )
             .unwrap_err();
@@ -179,12 +179,12 @@ mod transferrable {
         app.execute_contract(
             registrar,
             contract_addr.clone(),
-            &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+            &ExecuteMsg::Mint(MintMsg {
                 token_id: name.to_string(),
                 owner: name_owner.to_string(),
                 token_uri: None,
                 extension: None,
-            })),
+            }),
             &[],
         )
         .unwrap();
@@ -193,10 +193,10 @@ mod transferrable {
         app.execute_contract(
             name_owner,
             contract_addr.clone(),
-            &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::TransferNft {
+            &ExecuteMsg::TransferNft {
                 recipient: recipient.to_string(),
                 token_id: name.to_string(),
-            }),
+            },
             &[],
         )
         .unwrap();
@@ -234,12 +234,12 @@ mod transferrable {
         app.execute_contract(
             registrar,
             contract_addr.clone(),
-            &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+            &ExecuteMsg::Mint(MintMsg {
                 token_id: name.to_string(),
                 owner: name_owner.to_string(),
                 token_uri: None,
                 extension: None,
-            })),
+            }),
             &[],
         )
         .unwrap();
@@ -260,11 +260,11 @@ mod transferrable {
         app.execute_contract(
             name_owner,
             contract_addr.clone(),
-            &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::SendNft {
+            &ExecuteMsg::SendNft {
                 contract: reciever_contract_addr.to_string(),
                 token_id: name.to_string(),
                 msg: to_binary(&()).unwrap(),
-            }),
+            },
             &[],
         )
         .unwrap();
@@ -307,7 +307,9 @@ fn only_admin_can_set_transferrable() {
         app.execute_contract(
             sender,
             contract_addr.clone(),
-            &ExecuteMsg::ICNSName(ICNSNameExecuteMsg::SetTransferrable { transferrable }),
+            &ExecuteMsg::Extension {
+                msg: ICNSNameExecuteMsg::SetTransferrable { transferrable },
+            },
             &[],
         )
     };

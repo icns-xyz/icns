@@ -114,9 +114,11 @@ fn only_admin_can_withdraw_collected_fees() {
     app.execute_contract(
         Addr::unchecked(admins[0].clone()),
         name_nft_contract_addr.clone(),
-        &icns_name_nft::msg::ExecuteMsg::ICNSName(ICNSNameExecuteMsg::SetMinter {
-            minter_address: registrar_contract_addr.to_string(),
-        }),
+        &icns_name_nft::msg::ExecuteMsg::Extension {
+            msg: ICNSNameExecuteMsg::SetMinter {
+                minter_address: registrar_contract_addr.to_string(),
+            },
+        },
         &[],
     )
     .unwrap();

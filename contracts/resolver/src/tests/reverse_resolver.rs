@@ -5,8 +5,8 @@ use crate::{
     msg::{AddressesResponse, QueryMsg},
 };
 
-use cosmwasm_std::{Addr, Binary, Empty, StdResult};
-use cw721_base::{ExecuteMsg as CW721BaseExecuteMsg, Extension, MintMsg};
+use cosmwasm_std::{Addr, Binary, StdResult};
+use cw721_base::MintMsg;
 
 use cw_multi_test::{BasicApp, Executor};
 use hex_literal::hex;
@@ -37,12 +37,12 @@ fn reverse_resolver() {
         .execute_contract(
             Addr::unchecked(registrar),
             name_nft_contract,
-            &NameExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+            &NameExecuteMsg::Mint(MintMsg {
                 token_id: "bob".to_string(),
                 owner: "bob".to_string(),
                 token_uri: None,
                 extension: None,
-            })),
+            }),
             &[],
         )
         .is_err();

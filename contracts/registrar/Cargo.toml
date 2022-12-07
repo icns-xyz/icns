@@ -47,7 +47,7 @@ cosmwasm-storage = "1.1.2"
 cw-storage-plus = "0.13.2"
 cw-utils = "1.0.0"
 cw2 = "0.13.2"
-icns-name-nft = {path = "../name-nft", features = ["library"]}
+icns-name-nft = {path = "../icns-name-nft", features = ["library"]}
 icns-resolver = {version = "0.1.0", path = "../resolver", features = ["library"]}
 itertools = "0.10.5"
 schemars = "0.8.8"

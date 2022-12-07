@@ -39,7 +39,9 @@ fn only_admin_can_add_remove_new_admin() {
         app.execute_contract(
             sender,
             contract_addr.clone(),
-            &ExecuteMsg::ICNSName(ICNSNameExecuteMsg::AddAdmin { admin_address }),
+            &ExecuteMsg::Extension {
+                msg: ICNSNameExecuteMsg::AddAdmin { admin_address },
+            },
             &[],
         )
     };
@@ -48,7 +50,9 @@ fn only_admin_can_add_remove_new_admin() {
         app.execute_contract(
             sender,
             contract_addr.clone(),
-            &ExecuteMsg::ICNSName(ICNSNameExecuteMsg::RemoveAdmin { admin_address }),
+            &ExecuteMsg::Extension {
+                msg: ICNSNameExecuteMsg::RemoveAdmin { admin_address },
+            },
             &[],
         )
     };

@@ -2,7 +2,7 @@ use crate::{
     contract::execute,
     contract::instantiate,
     contract::query,
-    crypto::{create_adr36_message, cosmos_pubkey_to_bech32_address},
+    crypto::{cosmos_pubkey_to_bech32_address, create_adr36_message},
     msg::{self, ExecuteMsg},
     msg::{AddressesResponse, Adr36Info, InstantiateMsg, PrimaryNameResponse, QueryMsg},
 };
@@ -80,12 +80,12 @@ pub fn default_setting(admins: Vec<String>, registrar: String) -> (Addr, Addr, A
     app.execute_contract(
         Addr::unchecked(registrar),
         name_nft_contract.clone(),
-        &NameExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+        &NameExecuteMsg::Mint(MintMsg {
             token_id: "alice".to_string(),
             owner: "alice".to_string(),
             token_uri: None,
             extension: None,
-        })),
+        }),
         &[],
     )
     .unwrap();
@@ -132,9 +132,11 @@ pub fn instantiate_name_nft(admins: Vec<String>, registrar: String) -> (Addr, Ap
     app.execute_contract(
         Addr::unchecked(admins[0].clone()),
         nft_address.clone(),
-        &NameExecuteMsg::ICNSName(SetMinter {
-            minter_address: registrar,
-        }),
+        &NameExecuteMsg::Extension {
+            msg: SetMinter {
+                minter_address: registrar,
+            },
+        },
         &[],
     )
     .unwrap();
@@ -233,7 +235,7 @@ pub fn mint_and_set_record(
     let msg = ExecuteMsg::SetRecord {
         name: name.to_string(),
         adr36_info: Adr36Info {
-            signer_bech32_address: signer_bech32_address,
+            signer_bech32_address,
             address_hash: msg::AddressHash::Cosmos,
             pub_key: signing_key.to_binary(),
             signature,

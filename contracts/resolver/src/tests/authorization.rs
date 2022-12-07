@@ -6,8 +6,8 @@ use crate::{
     ContractError,
 };
 
-use cosmwasm_std::{Addr, Empty, StdResult};
-use cw721_base::{ExecuteMsg as CW721BaseExecuteMsg, Extension, MintMsg};
+use cosmwasm_std::{Addr, StdResult};
+use cw721_base::MintMsg;
 use cw_multi_test::{BasicApp, Executor};
 use icns_name_nft::msg::ExecuteMsg as NameExecuteMsg;
 
@@ -89,12 +89,12 @@ fn only_owner_can_set_record() {
         .execute_contract(
             Addr::unchecked(registrar),
             name_nft_contract,
-            &NameExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+            &NameExecuteMsg::Mint(MintMsg {
                 token_id: "tony".to_string(),
                 owner: "tony".to_string(),
                 token_uri: None,
                 extension: None,
-            })),
+            }),
             &[],
         )
         .is_err();

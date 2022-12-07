@@ -1,10 +1,11 @@
-pub use crate::msg::{InstantiateMsg, QueryMsg};
+pub use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use cosmwasm_std::Empty;
 pub use cw721_base::{
     entry::{execute as _execute, query as _query},
     Cw721Contract, ExecuteMsg as CW721BaseExecuteMsg, Extension,
     InstantiateMsg as Cw721BaseInstantiateMsg, MintMsg, MinterResponse,
 };
+use msg::ICNSNameExecuteMsg;
 
 mod checks;
 pub mod error;
@@ -17,11 +18,11 @@ pub mod state;
 const CONTRACT_NAME: &str = env!("CARGO_PKG_NAME");
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-pub type ICNSNameNFTContract<'a> = Cw721Contract<'a, Extension, Empty, Empty, Empty>;
+pub type ICNSNameNFTContract<'a> = Cw721Contract<'a, Extension, Empty, ICNSNameExecuteMsg, Empty>;
 
 pub mod entry {
     use super::*;
-    use crate::checks::{check_admin, is_transferrable, is_admin as check_is_admin, validate_name};
+    use crate::checks::{check_admin, is_admin as check_is_admin, is_transferrable, validate_name};
     use crate::error::ContractError;
     use crate::execute::{add_admin, remove_admin, set_minter_address, set_transferrable};
     use crate::msg::{ExecuteMsg, MigrateMsg};
@@ -79,52 +80,52 @@ pub mod entry {
         info: MessageInfo,
         msg: ExecuteMsg,
     ) -> Result<Response, ContractError> {
+        let name_nft = ICNSNameNFTContract::default();
+
         match msg {
-            ExecuteMsg::CW721Base(msg) => {
-                match msg {
-                    // TransferNft and SendNft are supported only if transferrable is set to true
-                    msg @ CW721BaseExecuteMsg::TransferNft { .. }
-                    | msg @ CW721BaseExecuteMsg::SendNft { .. } => {
-                        let is_admin = check_is_admin(deps.as_ref(), &info.sender)?;
-                        
-                        let is_transferable = is_transferrable(deps.as_ref())?;
+            // TransferNft and SendNft are supported only if transferrable is set to true
+            msg @ CW721BaseExecuteMsg::TransferNft { .. }
+            | msg @ CW721BaseExecuteMsg::SendNft { .. } => {
+                let is_admin = check_is_admin(deps.as_ref(), &info.sender)?;
 
-                        println!("is_admin: {}, is_transferable: {}", is_admin, is_transferable);
-                        if is_admin || is_transferable {
-                            _execute(deps, env, info, msg).map_err(Into::into)
-                        } else {
-                            Err(ContractError::TransferNotAllowed {})
-                        }
-                    }
+                let is_transferable = is_transferrable(deps.as_ref())?;
 
-                    // approval related msgs are allowed as is
-                    msg @ CW721BaseExecuteMsg::Approve { .. }
-                    | msg @ CW721BaseExecuteMsg::Revoke { .. }
-                    | msg @ CW721BaseExecuteMsg::ApproveAll { .. }
-                    | msg @ CW721BaseExecuteMsg::RevokeAll { .. } => {
-                        _execute(deps, env, info, msg).map_err(Into::into)
-                    }
-
-                    // minting is allowed as is
-                    msg @ CW721BaseExecuteMsg::Mint(_) => {
-                        // validate name
-                        if let CW721BaseExecuteMsg::Mint(m) = &msg {
-                            validate_name(&m.token_id)?;
-                        };
-
-                        _execute(deps, env, info, msg).map_err(Into::into)
-                    }
-
-                    // buring is disabled
-                    CW721BaseExecuteMsg::Burn { .. } => {
-                        Err(cw721_base::ContractError::Unauthorized {}.into())
-                    }
-
-                    // cw721_base extension is not being used
-                    CW721BaseExecuteMsg::Extension { .. } => unimplemented!(),
+                println!(
+                    "is_admin: {}, is_transferable: {}",
+                    is_admin, is_transferable
+                );
+                if is_admin || is_transferable {
+                    name_nft.execute(deps, env, info, msg).map_err(Into::into)
+                } else {
+                    Err(ContractError::TransferNotAllowed {})
                 }
             }
-            ExecuteMsg::ICNSName(msg) => match msg {
+
+            // approval related msgs are allowed as is
+            msg @ CW721BaseExecuteMsg::Approve { .. }
+            | msg @ CW721BaseExecuteMsg::Revoke { .. }
+            | msg @ CW721BaseExecuteMsg::ApproveAll { .. }
+            | msg @ CW721BaseExecuteMsg::RevokeAll { .. } => {
+                name_nft.execute(deps, env, info, msg).map_err(Into::into)
+            }
+
+            // minting is allowed as is
+            msg @ CW721BaseExecuteMsg::Mint(_) => {
+                // validate name
+                if let CW721BaseExecuteMsg::Mint(m) = &msg {
+                    validate_name(&m.token_id)?;
+                };
+
+                name_nft.execute(deps, env, info, msg).map_err(Into::into)
+            }
+
+            // buring is disabled
+            CW721BaseExecuteMsg::Burn { .. } => {
+                Err(cw721_base::ContractError::Unauthorized {}.into())
+            }
+
+            // cw721_base extension for icns name
+            CW721BaseExecuteMsg::Extension { msg } => match msg {
                 msg::ICNSNameExecuteMsg::AddAdmin { admin_address } => {
                     check_admin(deps.as_ref(), &info.sender)?;
                     add_admin(&admin_address, deps)

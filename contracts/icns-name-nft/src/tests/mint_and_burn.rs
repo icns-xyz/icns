@@ -7,9 +7,9 @@ use crate::{
     QueryMsg,
 };
 
-use cosmwasm_std::{Addr, Empty, StdError, StdResult};
+use cosmwasm_std::{Addr, StdError, StdResult};
 use cw721::OwnerOfResponse;
-use cw721_base::{ExecuteMsg as CW721BaseExecuteMsg, Extension, MintMsg};
+use cw721_base::MintMsg;
 use cw_multi_test::{BasicApp, Executor};
 
 #[test]
@@ -41,12 +41,12 @@ fn can_not_mint_until_minter_is_set() {
         app.execute_contract(
             sender,
             contract_addr.clone(),
-            &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+            &ExecuteMsg::Mint(MintMsg {
                 token_id: name,
                 owner,
                 token_uri: None,
                 extension: None,
-            })),
+            }),
             &[],
         )
     };
@@ -78,9 +78,11 @@ fn can_not_mint_until_minter_is_set() {
         .execute_contract(
             random_person.clone(),
             contract_addr.clone(),
-            &ExecuteMsg::ICNSName(ICNSNameExecuteMsg::SetMinter {
-                minter_address: registrar.to_string(),
-            }),
+            &ExecuteMsg::Extension {
+                msg: ICNSNameExecuteMsg::SetMinter {
+                    minter_address: registrar.to_string(),
+                },
+            },
             &[],
         )
         .unwrap_err();
@@ -94,9 +96,11 @@ fn can_not_mint_until_minter_is_set() {
     app.execute_contract(
         admins[0].clone(),
         contract_addr.clone(),
-        &ExecuteMsg::ICNSName(ICNSNameExecuteMsg::SetMinter {
-            minter_address: registrar.to_string(),
-        }),
+        &ExecuteMsg::Extension {
+            msg: ICNSNameExecuteMsg::SetMinter {
+                minter_address: registrar.to_string(),
+            },
+        },
         &[],
     )
     .unwrap();
@@ -129,12 +133,12 @@ fn can_not_name_with_dot() {
         app.execute_contract(
             sender,
             contract_addr.clone(),
-            &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+            &ExecuteMsg::Mint(MintMsg {
                 token_id: name,
                 owner,
                 token_uri: None,
                 extension: None,
-            })),
+            }),
             &[],
         )
     };
@@ -146,9 +150,11 @@ fn can_not_name_with_dot() {
     app.execute_contract(
         admins[0].clone(),
         contract_addr.clone(),
-        &ExecuteMsg::ICNSName(ICNSNameExecuteMsg::SetMinter {
-            minter_address: registrar.to_string(),
-        }),
+        &ExecuteMsg::Extension {
+            msg: ICNSNameExecuteMsg::SetMinter {
+                minter_address: registrar.to_string(),
+            },
+        },
         &[],
     )
     .unwrap();
@@ -191,12 +197,12 @@ fn only_registrar_can_mint() {
         app.execute_contract(
             sender,
             contract_addr.clone(),
-            &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+            &ExecuteMsg::Mint(MintMsg {
                 token_id: name,
                 owner,
                 token_uri: None,
                 extension: None,
-            })),
+            }),
             &[],
         )
     };
@@ -265,9 +271,9 @@ fn burning_is_not_allowed() {
         .execute_contract(
             admins[0].clone(),
             contract_addr,
-            &ExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Burn {
+            &ExecuteMsg::Burn {
                 token_id: "name".to_string(),
-            }),
+            },
             &[],
         )
         .unwrap_err();

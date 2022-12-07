@@ -129,9 +129,11 @@ impl TestEnvBuilder {
             app.execute_contract(
                 self.admins[0].clone(),
                 contract_addr.clone(),
-                &ExecuteMsg::ICNSName(ICNSNameExecuteMsg::SetMinter {
-                    minter_address: self.registrar.to_string(),
-                }),
+                &ExecuteMsg::Extension {
+                    msg: ICNSNameExecuteMsg::SetMinter {
+                        minter_address: self.registrar.to_string(),
+                    },
+                },
                 &[],
             )
             .unwrap();

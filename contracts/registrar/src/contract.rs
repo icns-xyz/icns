@@ -277,14 +277,12 @@ pub fn execute_claim(
     let config = CONFIG.load(deps.storage)?;
     let mint_msg = WasmMsg::Execute {
         contract_addr: config.name_nft.to_string(),
-        msg: to_binary(&NameNFTExecuteMsg::CW721Base(
-            icns_name_nft::CW721BaseExecuteMsg::Mint(MintMsg {
-                token_id: name.clone(),
-                owner: info.sender.to_string(),
-                token_uri: None,
-                extension: None,
-            }),
-        ))?,
+        msg: to_binary(&icns_name_nft::ExecuteMsg::Mint(MintMsg {
+            token_id: name.clone(),
+            owner: info.sender.to_string(),
+            token_uri: None,
+            extension: None,
+        }))?,
         funds: vec![],
     };
 
