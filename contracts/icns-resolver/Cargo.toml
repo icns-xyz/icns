@@ -42,7 +42,6 @@ optimize = """docker run --rm -v "$(pwd)":/code \
 [dependencies]
 base64 = "0.13.1"
 bech32 = "0.9.1"
-cosmwasm-crypto = "1.1.3"
 cosmwasm-schema = "1.1.3"
 cosmwasm-std = "1.1.3"
 cosmwasm-storage = "1.1.3"

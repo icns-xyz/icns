@@ -1,6 +1,5 @@
 use crate::state::SIGNATURE;
 use base64::encode as base64_encode;
-use cosmwasm_crypto::secp256k1_verify;
 use ripemd::{Digest as RipemdDigest, Ripemd160};
 use sha2::Sha256;
 use sha3::Keccak256;
@@ -40,9 +39,10 @@ pub fn adr36_verification(
     let message_hash = Sha256::digest(message_bytes);
 
     // verify signature using secp256k1
-    let verified_result =
-        secp256k1_verify(&message_hash, &adr36_info.signature, &adr36_info.pub_key)
-            .map_err(|_| ContractError::SignatureMisMatch {})?;
+    let verified_result = deps
+        .api
+        .secp256k1_verify(&message_hash, &adr36_info.signature, &adr36_info.pub_key)
+        .map_err(|_| ContractError::SignatureMisMatch {})?;
     if !verified_result {
         return Err(ContractError::SignatureMisMatch {});
     }
@@ -55,7 +55,7 @@ pub fn cosmos_pubkey_to_bech32_address(pub_key: Binary, bech32_prefix: String) -
     let sha256 = Sha256::digest(decoded_pub_key);
     let result = Ripemd160::digest(sha256);
 
-    bech32_encode(&bech32_prefix, result.deref().to_vec())
+    bech32_encode(&bech32_prefix, result.deref())
 }
 
 pub fn eth_pubkey_to_bech32_address(pub_key: Binary, bech32_prefix: String) -> String {
