@@ -3,7 +3,10 @@
     "admins": [
         "osmo1cyyzpxplxdzkeea7kwsydadg87357qnahakaks"
     ],
-    "verifier_pubkeys": [],
+    "verifier_pubkeys": [
+        "AuwYyCUBxQiBGSUWebU46c+OrlApVsyGLHd4qhSDZeiG",
+        "A2G5GnZLlHyxQJUI6LW2ww1lnFEBy+3CCl8LsK2OY6Tj"
+    ],
     "verification_threshold": "0.5",
     "fee": {
         "amount": "1000000000",
