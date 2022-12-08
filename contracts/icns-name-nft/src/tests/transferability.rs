@@ -158,66 +158,65 @@ mod non_transferrable {
 
     #[test]
     fn should_allow_admin_to_send() {
-        // let TestEnv {
-        //     mut app,
-        //     contract_addr,
-        //     registrar,
-        //     admins,
-        //     ..
-        // } = TestEnvBuilder::default().with_transferrable(false).build();
+        let TestEnv {
+            mut app,
+            contract_addr,
+            registrar,
+            admins,
+            ..
+        } = TestEnvBuilder::default().with_transferrable(false).build();
 
-        // // let name_owner = Addr::unchecked("name_owner");
-        // // let name = "alice";
+        let admin = admins[0].clone();
 
-        // // // registrar mint test name
-        // // app.execute_contract(
-        // //     registrar.clone(),
-        // //     contract_addr.clone(),
-        // //     &ExecuteMsg::Mint(MintMsg {
-        // //         token_id: name.to_string(),
-        // //         owner: name_owner.to_string(),
-        // //         token_uri: None,
-        // //         extension: Metadata { referral: None },
-        // //     }),
-        // //     &[],
-        // // )
-        // // .unwrap();
+        // registrar mint test name
+        app.execute_contract(
+            registrar.clone(),
+            contract_addr.clone(),
+            &ExecuteMsg::Mint(MintMsg {
+                token_id: admin.to_string(),
+                owner: admin.to_string(),
+                token_uri: None,
+                extension: Metadata { referral: None },
+            }),
+            &[],
+        )
+        .unwrap();
 
-        // // app.execute_contract(
-        // //         admins[0].clone(),
-        // //         contract_addr.clone(),
-        // //         &ExecuteMsg::TransferNft {
-        // //             recipient: name_owner.to_string(),
-        // //             token_id: name.to_string(),
-        // //         },
-        // //         &[],
-        // // )
-        // // .unwrap();
+        app.execute_contract(
+                admins[0].clone(),
+                contract_addr.clone(),
+                &ExecuteMsg::TransferNft {
+                    recipient: admin.to_string(),
+                    token_id: admin.to_string(),
+                },
+                &[],
+        )
+        .unwrap();
 
-        // // // send to recipient should succeed
-        // // let reciever_code_id = app.store_code(mock_reciever_contract());
-        // // let reciever_contract_addr = app
-        // //     .instantiate_contract(
-        // //         reciever_code_id,
-        // //         admins[0].clone(),
-        // //         &(),
-        // //         &[],
-        // //         "name_clone",
-        // //         None,
-        // //     )
-        // //     .unwrap();
+        // send to recipient should succeed
+        let reciever_code_id = app.store_code(mock_reciever_contract());
+        let reciever_contract_addr = app
+            .instantiate_contract(
+                reciever_code_id,
+                admins[0].clone(),
+                &(),
+                &[],
+                "name_clone",
+                None,
+            )
+            .unwrap();
 
-        // // app.execute_contract(
-        // //     admins[0].clone(),
-        // //     contract_addr.clone(),
-        // //     &ExecuteMsg::SendNft {
-        // //         contract: reciever_contract_addr.to_string(),
-        // //         token_id: name.to_string(),
-        // //         msg: to_binary(&()).unwrap(),
-        // //     },
-        // // &[],
-        // // )
-        // // .unwrap();
+        app.execute_contract(
+            admins[0].clone(),
+            contract_addr.clone(),
+            &ExecuteMsg::SendNft {
+                contract: reciever_contract_addr.to_string(),
+                token_id: admin.to_string(),
+                msg: to_binary(&()).unwrap(),
+            },
+        &[],
+        )
+        .unwrap();
     }
 }
 
