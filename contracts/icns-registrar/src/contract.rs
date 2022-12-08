@@ -258,15 +258,9 @@ pub fn execute_claim(
     // add referral count if referral is set
     if let Some(referral) = referral.clone() {
         // initialize referral count to 1 if not exists
-        let referral_count = REFERRAL.may_load(deps.storage, referral.to_string())?;
-        match referral_count {
-            Some(count) => {
-                REFERRAL.save(deps.storage, referral, &(count + 1))?;
-            }
-            None => {
-                REFERRAL.save(deps.storage, referral, &1)?;
-            }
-        }
+        REFERRAL.update(deps.storage, referral, |referral_count| -> StdResult<_> {
+            Ok(referral_count.unwrap_or(0) + 1)
+        })?;
     }
 
     let verifying_msg: VerifyingMsg = from_slice(verifying_msg_str.as_bytes())?;
