@@ -18,8 +18,8 @@ use icns_name_nft::msg::ICNSNameExecuteMsg;
 #[test]
 fn only_admin_can_set_fee() {
     test_only_admin(
-        ExecuteMsg::SetFee {
-            fee: Some(Coin::new(999999999, "uosmo")),
+        ExecuteMsg::SetMintingFee {
+            minting_fee: Some(Coin::new(999999999, "uosmo")),
         },
         QueryMsg::Fee {},
         FeeResponse { fee: None },

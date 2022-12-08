@@ -1,11 +1,12 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{CustomMsg, Empty};
 use cw721::{
-    AllNftInfoResponse, ApprovalResponse, ApprovalsResponse, ContractInfoResponse, NftInfoResponse,
-    NumTokensResponse, OperatorsResponse, OwnerOfResponse, TokensResponse,
+    ApprovalResponse, ApprovalsResponse, ContractInfoResponse, NumTokensResponse,
+    OperatorsResponse, OwnerOfResponse, TokensResponse,
 };
 use cw721_base::msg::QueryMsg as Cw721QueryMsg;
 use cw721_base::MinterResponse;
+
 #[cw_serde]
 pub struct InstantiateMsg {
     /// If set to `true`, this NFT will be able to transfer / send
@@ -79,10 +80,10 @@ pub enum QueryMsg {
     #[returns(ContractInfoResponse)]
     ContractInfo {},
 
-    #[returns(NftInfoResponse<Metadata>)]
+    #[returns(NftInfoResponse)]
     NftInfo { token_id: String },
 
-    #[returns(AllNftInfoResponse<Metadata>)]
+    #[returns(AllNftInfoResponse)]
     AllNftInfo {
         token_id: String,
         include_expired: Option<bool>,
@@ -104,6 +105,9 @@ pub enum QueryMsg {
     #[returns(MinterResponse)]
     Minter {},
 }
+
+pub type NftInfoResponse = cw721::NftInfoResponse<Metadata>;
+pub type AllNftInfoResponse = cw721::AllNftInfoResponse<Metadata>;
 
 impl From<QueryMsg> for Cw721QueryMsg<Empty> {
     fn from(msg: QueryMsg) -> Cw721QueryMsg<Empty> {

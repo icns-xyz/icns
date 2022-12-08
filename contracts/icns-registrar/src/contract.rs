@@ -95,7 +95,7 @@ pub fn execute(
         ExecuteMsg::SetNameNFTAddress { name_nft_address } => {
             execute_set_name_nft_address(deps, info, name_nft_address)
         }
-        ExecuteMsg::SetFee { fee } => execute_set_fee(deps, info, fee),
+        ExecuteMsg::SetMintingFee { minting_fee: fee } => execute_set_fee(deps, info, fee),
         ExecuteMsg::WithdrawFunds { amount, to_address } => {
             execute_withdraw_funds(deps, info, amount, to_address)
         }

@@ -52,9 +52,9 @@ pub enum ExecuteMsg {
     },
 
     /// Set fee required for claim
-    SetFee {
-        /// fee required for claim
-        fee: Option<Coin>,
+    SetMintingFee {
+        /// fee required for minting new name
+        minting_fee: Option<Coin>,
     },
 
     /// Withdraw funds from this contract

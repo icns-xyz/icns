@@ -39,8 +39,8 @@ export type ExecuteMsg = {
     name_nft_address: string;
   };
 } | {
-  set_fee: {
-    fee?: Coin | null;
+  set_minting_fee: {
+    minting_fee?: Coin | null;
   };
 } | {
   withdraw_funds: {

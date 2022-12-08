@@ -40,7 +40,7 @@ export type ExecuteMsg = {
     operator: string;
   };
 } | {
-  mint: MintMsgForNullable_Empty;
+  mint: MintMsgForMetadata;
 } | {
   burn: {
     token_id: string;
@@ -77,14 +77,14 @@ export type ICNSNameExecuteMsg = {
     minter_address: string;
   };
 };
-export interface MintMsgForNullable_Empty {
-  extension?: Empty | null;
+export interface MintMsgForMetadata {
+  extension: Metadata;
   owner: string;
   token_id: string;
   token_uri?: string | null;
 }
-export interface Empty {
-  [k: string]: unknown;
+export interface Metadata {
+  referral?: string | null;
 }
 export type QueryMsg = {
   admin: {};
@@ -148,9 +148,9 @@ export interface MigrateMsg {}
 export interface AdminResponse {
   admins: string[];
 }
-export interface AllNftInfoResponseForNullable_Empty {
+export interface AllNftInfoResponseForMetadata {
   access: OwnerOfResponse;
-  info: NftInfoResponseForNullable_Empty;
+  info: NftInfoResponseForMetadata;
 }
 export interface OwnerOfResponse {
   approvals: Approval[];
@@ -160,8 +160,8 @@ export interface Approval {
   expires: Expiration;
   spender: string;
 }
-export interface NftInfoResponseForNullable_Empty {
-  extension?: Empty | null;
+export interface NftInfoResponseForMetadata {
+  extension: Metadata;
   token_uri?: string | null;
 }
 export interface OperatorsResponse {
