@@ -229,7 +229,7 @@ pub fn mint_and_set_record(
             addr: signer_bech32_address.to_string(),
         }
     });
-    let bech32_prefix = bech32_prefix_decoded.unwrap().0;
+    let _bech32_prefix = bech32_prefix_decoded.unwrap().0;
 
     let msg = create_adr36_message(
         name.to_string(),

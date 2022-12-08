@@ -10,7 +10,7 @@ use crate::{
     ContractError,
 };
 
-use cw721_base::{Extension, MintMsg};
+use cw721_base::MintMsg;
 use icns_name_nft::{msg::Metadata, CW721BaseExecuteMsg};
 
 use cosmwasm_std::{Addr, Empty};

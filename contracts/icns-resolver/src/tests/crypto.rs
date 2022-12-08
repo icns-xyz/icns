@@ -63,28 +63,30 @@ fn secp256k1_verification() {
     let signature = hex!("8c009e1fa58d6ae5dfcda93208f800dbd8815f20ea9c690b56a5758e999c9cb66fdb764b1e070d65ea22fe5827214631b1aba54730a9dfa74dc37b73da529c00");
     let pub_key = hex!("02394bc53633366a2ab9b5d697a94c8c0121cc5e3f0d554a63167edb318ceae8bc");
 
-    let verify_result = deps
+    let verified = deps
         .api
         .secp256k1_verify(&hashed, &signature, &pub_key)
         .unwrap();
-    assert_eq!(verify_result, true);
+
+    assert!(verified);
 
     let false_signature = hex!("8c009e1fa58d6ae5dfcda93208f800dbd8815f20ea9c690b56a5758e999c9cb66fdb764b1e070d65ea22fe5827214631b1aba54730a9dfa74dc37b73da529c01");
-    let verify_result = deps
+    let verified = deps
         .api
         .secp256k1_verify(&hashed, &false_signature, &pub_key)
         .unwrap();
-    assert_eq!(verify_result, false);
+
+    assert!(!verified);
 
     let false_message = "{\"account_number\":\"0\",\"chain_id\":\"\",\"fee\":{\"amount\":[],\"gas\":\"0\"},\"memo\":\"\",\"msgs\":[{\"type\":\"sign/MsgSignData\",\"value\":{\"data\":\"aW52YWxpZA==\",\"signer\":\"osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697\"}}],\"sequence\":\"0\"}";
     let bytes = false_message.as_bytes();
     let hashed = Sha256::digest(bytes);
 
-    let verify_result = deps
+    let verified = deps
         .api
         .secp256k1_verify(&hashed, &signature, &pub_key)
         .unwrap();
-    assert_eq!(verify_result, false);
+    assert!(!verified);
 }
 
 #[test]

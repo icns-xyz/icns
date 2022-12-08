@@ -85,20 +85,18 @@ fn only_owner_can_set_record() {
         instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
 
     // mint name nft to tony
-    let mint = app
-        .execute_contract(
-            Addr::unchecked(registrar),
-            name_nft_contract,
-            &NameExecuteMsg::Mint(MintMsg {
-                token_id: "tony".to_string(),
-                owner: "tony".to_string(),
-                token_uri: None,
-                extension: Metadata { referral: None },
-            }),
-            &[],
-        )
-        .is_err();
-    assert_eq!(mint, false);
+    app.execute_contract(
+        Addr::unchecked(registrar),
+        name_nft_contract,
+        &NameExecuteMsg::Mint(MintMsg {
+            token_id: "tony".to_string(),
+            owner: "tony".to_string(),
+            token_uri: None,
+            extension: Metadata { referral: None },
+        }),
+        &[],
+    )
+    .unwrap();
 
     // try setting record with non owner, should fail
     let err = app

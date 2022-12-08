@@ -5,10 +5,11 @@ use crate::{
     msg::{self, Adr36Info, ExecuteMsg, NamesResponse},
     msg::{AddressesResponse, QueryMsg},
     tests::helpers::{mint_and_set_record, signer1, ToBinary},
+    ContractError,
 };
 
 use cosmwasm_std::{Addr, Binary, Empty, StdResult};
-use cw721_base::{ExecuteMsg as CW721BaseExecuteMsg, Extension, MintMsg};
+use cw721_base::{ExecuteMsg as CW721BaseExecuteMsg, MintMsg};
 
 use cw_multi_test::{BasicApp, Executor};
 use hex_literal::hex;
@@ -155,20 +156,18 @@ fn bech32_verification() {
 
     let addr1 = cosmos_pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string());
     // mint name nft to alice
-    let mint = app
-        .execute_contract(
-            Addr::unchecked(registrar),
-            name_nft_contract,
-            &NameExecuteMsg::Mint(MintMsg {
-                token_id: "alice".to_string(),
-                owner: addr1.to_string(),
-                token_uri: None,
-                extension: Metadata { referral: None },
-            }),
-            &[],
-        )
-        .is_err();
-    assert_eq!(mint, false);
+    app.execute_contract(
+        Addr::unchecked(registrar),
+        name_nft_contract,
+        &NameExecuteMsg::Mint(MintMsg {
+            token_id: "alice".to_string(),
+            owner: addr1.to_string(),
+            token_uri: None,
+            extension: Metadata { referral: None },
+        }),
+        &[],
+    )
+    .unwrap();
 
     // now set record, first try setting invalid bech32 address
     let original_signature_vec = hex!("624fcd052ed8333fe643140ab5fde6fa308dd02c95cb61dd490ab53afa622db12a79ba2826b7da85d56c53bd4e53947b069cc3fb6fb091ca938f8d1952dfdf50");
@@ -194,8 +193,14 @@ fn bech32_verification() {
             &record_msg,
             &[],
         )
-        .is_err();
-    assert_eq!(err, true);
+        .unwrap_err();
+
+    assert_eq!(
+        err.downcast_ref::<ContractError>().unwrap(),
+        &ContractError::Bech32DecodingErr {
+            addr: "osmo".to_string()
+        }
+    );
 
     // now try setting record with unmatching bech32 prefix and address
     let record_msg = ExecuteMsg::SetRecord {
@@ -209,6 +214,7 @@ fn bech32_verification() {
         },
         bech32_prefix: "juno".to_string(),
     };
+
     let err = app
         .execute_contract(
             Addr::unchecked(addr1.clone()),
@@ -216,8 +222,12 @@ fn bech32_verification() {
             &record_msg,
             &[],
         )
-        .is_err();
-    assert_eq!(err, true);
+        .unwrap_err();
+
+    assert_eq!(
+        err.downcast_ref::<ContractError>().unwrap(),
+        &ContractError::Unauthorized {}
+    );
 
     // now set record with valid bech32 prefix and addresses, this should succeed
     let record_msg = ExecuteMsg::SetRecord {
@@ -239,9 +249,6 @@ fn bech32_verification() {
         &[],
     )
     .unwrap();
-
-    // println!("err: {}", err.downcast_ref::<ContractError>().unwrap());
-    // assert_eq!(err, false);
 }
 
 #[test]
@@ -274,20 +281,18 @@ fn eth_address_set_record() {
     let original_signature_bytes = hex!("d67d5dc9f33f2a680c635bdae898c1c6a9ee39cd946ae9e2df827dd25eb50d6f6d7adc2926741d9adc84780f5a06bae226c30cd110af91f4092b45e3e521445c");
     let signature = Binary::from(original_signature_bytes);
 
-    let mint = app
-        .execute_contract(
-            Addr::unchecked(registrar),
-            name_nft_contract,
-            &NameExecuteMsg::Mint(MintMsg {
-                token_id: "alice".to_string(),
-                owner: addr.to_string(),
-                token_uri: None,
-                extension: Metadata { referral: None },
-            }),
-            &[],
-        )
-        .is_err();
-    assert_eq!(mint, false);
+    app.execute_contract(
+        Addr::unchecked(registrar),
+        name_nft_contract,
+        &NameExecuteMsg::Mint(MintMsg {
+            token_id: "alice".to_string(),
+            owner: addr.to_string(),
+            token_uri: None,
+            extension: Metadata { referral: None },
+        }),
+        &[],
+    )
+    .unwrap();
 
     // now set record
     let record_msg = ExecuteMsg::SetRecord {
@@ -303,8 +308,8 @@ fn eth_address_set_record() {
     };
 
     app.execute_contract(
-        Addr::unchecked(addr.clone()),
-        resolver_contract_addr.clone(),
+        Addr::unchecked(addr),
+        resolver_contract_addr,
         &record_msg,
         &[],
     )
@@ -333,20 +338,18 @@ fn adr36_verification_bypass() {
     let pub_key = Binary::from(pub_key_bytes);
     let signature = Binary::from(signature_bytes);
 
-    let mint = app
-        .execute_contract(
-            Addr::unchecked(registrar),
-            name_nft_contract,
-            &NameExecuteMsg::Mint(MintMsg {
-                token_id: "alice".to_string(),
-                owner: addr.to_string(),
-                token_uri: None,
-                extension: Metadata { referral: None },
-            }),
-            &[],
-        )
-        .is_err();
-    assert_eq!(mint, false);
+    app.execute_contract(
+        Addr::unchecked(registrar),
+        name_nft_contract,
+        &NameExecuteMsg::Mint(MintMsg {
+            token_id: "alice".to_string(),
+            owner: addr.to_string(),
+            token_uri: None,
+            extension: Metadata { referral: None },
+        }),
+        &[],
+    )
+    .unwrap();
 
     // use address with different bech32 prefix
     let different_bech32_prefix_address =
@@ -357,7 +360,7 @@ fn adr36_verification_bypass() {
         adr36_info: Adr36Info {
             signer_bech32_address: different_bech32_prefix_address,
             address_hash: msg::AddressHash::Ethereum,
-            pub_key: pub_key,
+            pub_key,
             signature,
             signature_salt: 12313u128.into(),
         },
@@ -456,11 +459,6 @@ fn same_pubkey_invalid_bech_32() {
         },
         bech32_prefix: "eth".to_string(),
     };
-    app.execute_contract(
-        Addr::unchecked(eth_addr),
-        resolver_contract_addr.clone(),
-        &msg,
-        &[],
-    )
-    .unwrap_err();
+    app.execute_contract(Addr::unchecked(eth_addr), resolver_contract_addr, &msg, &[])
+        .unwrap_err();
 }
