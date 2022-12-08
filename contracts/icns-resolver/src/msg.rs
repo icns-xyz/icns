@@ -34,7 +34,6 @@ pub struct Adr36Info {
 }
 
 #[cw_serde]
-#[serde(rename = "name")]
 pub enum AddressHash {
     Cosmos,
     Ethereum,

@@ -44,7 +44,6 @@ pub mod entry {
         _info: MessageInfo,
         msg: InstantiateMsg,
     ) -> Result<Response, cw721_base::ContractError> {
-        // let admin_addr: Addr = deps.api.addr_validate(&msg.admin)?;
         let mut admin_addrs = Vec::new();
         for admin in msg.admins {
             admin_addrs.push(deps.api.addr_validate(&admin)?);

@@ -16,7 +16,7 @@ use crate::crypto::{
 use crate::error::ContractError;
 use crate::msg::{
     AddressByIcnsResponse, AddressHash, AddressResponse, AddressesResponse, Adr36Info, ExecuteMsg,
-    InstantiateMsg, MigrateMsg, NamesResponse, PrimaryNameResponse, QueryMsg, IcnsNamesResponse,
+    IcnsNamesResponse, InstantiateMsg, MigrateMsg, NamesResponse, PrimaryNameResponse, QueryMsg,
 };
 use crate::state::{records, Config, CONFIG, PRIMARY_NAME, SIGNATURE};
 use cw721::OwnerOfResponse;
@@ -89,18 +89,18 @@ pub fn execute_set_record(
         // first check sender and the bech32 address in msg match
         // if it does, no need to verify adr36
         // in order to check if they match, we first need to decode the bech32 address
-        let (bech32_prefix_decoded, bech32_address_decoded) = bech32::decode(adr36_info.signer_bech32_address.clone())
+        let (signer_bech32_prefix_decoded, signer_bech32_address_decoded) = bech32::decode(adr36_info.signer_bech32_address.clone())
             .map_err(|_| ContractError::Bech32DecodingErr {
                 addr: bech32_prefix.clone(),
             })?;
-        let decoded_bech32_addr_from_info = bech32::decode(info.sender.clone())
+        let sender_bech32_address_decoded = bech32::decode(info.sender.clone())
             .map_err(|_| ContractError::Bech32DecodingErr {
                 addr: adr36_info.signer_bech32_address.clone(),
             })?
             .1;
 
         // check if the user input for prefix + address is valid
-        if bech32_prefix != bech32_prefix_decoded {
+        if bech32_prefix != signer_bech32_prefix_decoded {
             return Err(ContractError::Bech32PrefixMismatch {
                 prefix: bech32_prefix,
                 addr: adr36_info.signer_bech32_address,
@@ -108,7 +108,7 @@ pub fn execute_set_record(
         }
 
         // if they don't match, verify adr36
-        if bech32_address_decoded != decoded_bech32_addr_from_info {
+        if signer_bech32_address_decoded != sender_bech32_address_decoded {
             if adr36_info.address_hash == AddressHash::Cosmos {
                 // if address hash is for Cosmos, first verify that pub key is 33 bytes
                 if adr36_info.pub_key.len() != 33 {
@@ -116,8 +116,6 @@ pub fn execute_set_record(
                         pub_key: adr36_info.pub_key.to_string(),
                     });
                 }
-                
-              
 
                 // extract pubkey to bech32 address, check that it matches with the given bech32 address
                 let decoded_bech32_addr = cosmos_pubkey_to_bech32_address(
