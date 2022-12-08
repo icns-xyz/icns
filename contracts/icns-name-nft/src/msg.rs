@@ -5,7 +5,7 @@ use cw721::{
     NumTokensResponse, OperatorsResponse, OwnerOfResponse, TokensResponse,
 };
 use cw721_base::msg::QueryMsg as Cw721QueryMsg;
-use cw721_base::{Extension, MinterResponse};
+use cw721_base::MinterResponse;
 #[cw_serde]
 pub struct InstantiateMsg {
     /// If set to `true`, this NFT will be able to transfer / send
@@ -79,10 +79,10 @@ pub enum QueryMsg {
     #[returns(ContractInfoResponse)]
     ContractInfo {},
 
-    #[returns(NftInfoResponse<Extension>)]
+    #[returns(NftInfoResponse<Metadata>)]
     NftInfo { token_id: String },
 
-    #[returns(AllNftInfoResponse<Extension>)]
+    #[returns(AllNftInfoResponse<Metadata>)]
     AllNftInfo {
         token_id: String,
         include_expired: Option<bool>,

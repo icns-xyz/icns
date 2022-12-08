@@ -144,12 +144,14 @@ pub mod entry {
 
     #[cfg_attr(not(feature = "library"), entry_point)]
     pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+        let name_nft = ICNSNameNFTContract::default();
+
         match msg {
             QueryMsg::Admin {} => to_binary(&admin(deps)?),
             QueryMsg::Transferrable {} => to_binary(&transferrable(deps)?),
             QueryMsg::IsAdmin { address } => to_binary(&is_admin(deps, address)?),
             // TODO : add query for config
-            _ => _query(deps, env, msg.into()),
+            _ => name_nft.query(deps, env, msg.into()),
         }
     }
 

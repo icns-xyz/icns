@@ -208,7 +208,7 @@ fn only_registrar_can_mint() {
     };
 
     let not_found_err = StdError::GenericErr {
-        msg: "Querier contract error: cw721_base::state::TokenInfo<core::option::Option<cosmwasm_std::results::empty::Empty>> not found".to_string()
+        msg: "Querier contract error: cw721_base::state::TokenInfo<icns_name_nft::msg::Metadata> not found".to_string()
     };
 
     let random_person = Addr::unchecked("random_person");
