@@ -20,6 +20,7 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub type ICNSNameNFTContract<'a> = Cw721Contract<'a, Metadata, Empty, ICNSNameExecuteMsg, Empty>;
 
+// NL: I like this pattern of having the entrypoints on lib.rs.
 pub mod entry {
     use super::*;
     use crate::checks::{check_admin, is_admin as check_is_admin, is_transferrable, validate_name};
@@ -44,6 +45,7 @@ pub mod entry {
         _info: MessageInfo,
         msg: InstantiateMsg,
     ) -> Result<Response, cw721_base::ContractError> {
+        // NL: remove this comment?
         // let admin_addr: Addr = deps.api.addr_validate(&msg.admin)?;
         let mut admin_addrs = Vec::new();
         for admin in msg.admins {
@@ -68,6 +70,8 @@ pub mod entry {
 
         name_nft.contract_info.save(deps.storage, &info)?;
 
+        // NL: Can we set the minter on instantiation? or does this have to be a two step process?
+
         Ok(Response::default()
             .add_attribute("contract_name", CONTRACT_NAME)
             .add_attribute("contract_version", CONTRACT_VERSION))
@@ -91,7 +95,7 @@ pub mod entry {
                 let is_transferable = is_transferrable(deps.as_ref())?;
 
                 if is_admin || is_transferable {
-                    println!("===here");
+                    println!("===here"); // NL: remove
                     name_nft.execute(deps, env, info, msg).map_err(Into::into)
                 } else {
                     Err(ContractError::TransferNotAllowed {})
@@ -118,6 +122,7 @@ pub mod entry {
 
             // buring is disabled
             CW721BaseExecuteMsg::Burn { .. } => {
+                // NL: Why is burning disabled?
                 Err(cw721_base::ContractError::Unauthorized {}.into())
             }
 

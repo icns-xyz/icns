@@ -9,8 +9,8 @@ use cw721_base::MinterResponse;
 
 #[cw_serde]
 pub struct InstantiateMsg {
-    /// If set to `true`, this NFT will be able to transfer / send
-    /// not allowed to set to `false`.
+    /// If set to `true`, this NFT will be able to transfer / send.
+    /// To disallow transfers and sends, this should be set to `false`.
     pub transferrable: bool,
 
     /// Admin has ability to change config of this contract.
