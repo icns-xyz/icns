@@ -3,7 +3,6 @@ use cosmwasm_std::{Binary, Coin, Decimal};
 
 #[cw_serde]
 pub struct InstantiateMsg {
-    // NL: Document this
     /// valid contract address of the name nft contract
     pub name_nft_addr: String,
     /// verifiers's public key that can sign verification message

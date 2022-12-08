@@ -4,14 +4,9 @@ use cosmwasm_std::{
 };
 
 use crate::{msg::VerifyingMsg, state::CONFIG, state::UNIQUE_TWITTER_ID, ContractError};
-// use ecdsa::signature::Signature;
-// use ecdsa::signature::Verifier;
 use icns_name_nft::msg::{AdminResponse, QueryMsg as NameNFTQueryMsg};
 use itertools::Itertools;
 use sha2::Digest;
-// use k256::{ecdsa::VerifyingKey, Secp256k1};
-
-// type Secp256k1Signature = ecdsa::Signature<Secp256k1>;
 
 pub fn is_admin(deps: Deps, address: &Addr) -> Result<bool, ContractError> {
     let AdminResponse { admins } = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
@@ -147,7 +142,6 @@ pub fn check_verification_pass_threshold(
         .iter()
         .unique()
         .try_for_each(|(public_key, signature)| {
-            // NL: Love this! so clean!
             let msg_hash = sha2::Sha256::digest(msg);
             let verified = deps
                 .api
