@@ -3,9 +3,14 @@ use cosmwasm_std::{Binary, Coin, Decimal};
 
 #[cw_serde]
 pub struct InstantiateMsg {
+    // NL: Document this
+    /// valid contract address of the name nft contract
     pub name_nft_addr: String,
+    /// verifiers's public key that can sign verification message
     pub verifier_pubkeys: Vec<Binary>,
+    /// percentage of verification signature required out of all verifiers
     pub verification_threshold: Decimal,
+    /// fee required for minting new name
     pub fee: Option<Coin>,
 }
 
@@ -14,6 +19,8 @@ pub enum ExecuteMsg {
     /// To claim name, sender needs to gather signatures of `verifying_msg` form `verifiers`
     /// number of signatures must pass `verification_threshold` in order to proceed with minting
     /// and owning the name NFT
+    ///
+    /// The contract's admin can execute this message regardless of the threashold
     Claim {
         /// Name to be minted as NFT
         name: String,

@@ -15,6 +15,7 @@ exclude = [
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+# NL: Remove this profile. The one in the workspace overrides it.
 [profile.release]
 codegen-units = 1
 debug = false
@@ -33,6 +34,7 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [package.metadata.scripts]
+# NL: Update to 0.12.10?
 optimize = """docker run --rm -v "$(pwd)":/code \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
@@ -60,6 +62,6 @@ thiserror = {version = "1.0.31"}
 [dev-dependencies]
 anyhow = "1.0.66"
 cosmrs = {version = "0.10.0", default-features = false, features = ["bip32"]}
-cw-multi-test = "0.13.2"
+cw-multi-test = "0.13.2"  # NL: Use {workspace = true} here?
 cw721 = {workspace = true}
 cw721-base = {workspace = true}

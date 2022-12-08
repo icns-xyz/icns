@@ -45,5 +45,7 @@ impl Config {
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");
+// NL: Document what the key and value of the Map represent on these two
+// Referer Addr => referal_count
 pub const REFERRAL: Map<String, u64> = Map::new("referral");
 pub const UNIQUE_TWITTER_ID: Map<String, String> = Map::new("unique_twitter_id");

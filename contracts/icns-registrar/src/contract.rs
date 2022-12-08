@@ -39,6 +39,7 @@ pub fn instantiate(
     // validate name nft address
     let name_nft_addr = deps.api.addr_validate(&msg.name_nft_addr)?;
 
+    // NL: Should this be disabled?
     // check each verififying key if there is invalid key
     // msg.verifier_pubkeys
     //     .iter()
@@ -239,6 +240,8 @@ pub fn execute_claim(
     check_verfying_msg(deps.as_ref(), &env, &info, &name, &verifying_msg_str)?;
     let is_admin = is_admin(deps.as_ref(), &info.sender)?;
     if !is_admin {
+        // NL: Question: Where is the backend that accumulates these signatures
+        // and generates the claim message? or is it the FE?
         check_verification_pass_threshold(
             deps.as_ref(),
             &verifying_msg_str,
@@ -264,10 +267,17 @@ pub fn execute_claim(
     }
 
     let verifying_msg: VerifyingMsg = from_slice(verifying_msg_str.as_bytes())?;
+    // NL: This is probably not a problem, but just noting that this does not
+    // check for existance and instead overrides the existing id with the new
+    // name. Meaning that you can claim more than once. Should be ok since the
+    // name is checked in the message validation
     UNIQUE_TWITTER_ID.save(deps.storage, verifying_msg.unique_twitter_id, &name)?;
 
     // mint name nft
     let config = CONFIG.load(deps.storage)?;
+
+    // NL: I'm unfamiliar with how CW721 works under the hood. Does it check
+    // that only this contract can execute mint? I don't see the check in icns-name-nfts
     let mint_msg = WasmMsg::Execute {
         contract_addr: config.name_nft.to_string(),
         msg: to_binary(&icns_name_nft::ExecuteMsg::Mint(MintMsg {
