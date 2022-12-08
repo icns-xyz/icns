@@ -10,7 +10,7 @@ use cw721_base::MintMsg;
 
 use cw_multi_test::{BasicApp, Executor};
 use hex_literal::hex;
-use icns_name_nft::msg::ExecuteMsg as NameExecuteMsg;
+use icns_name_nft::msg::{ExecuteMsg as NameExecuteMsg, Metadata};
 
 use super::helpers::default_setting;
 
@@ -41,7 +41,7 @@ fn reverse_resolver() {
                 token_id: "bob".to_string(),
                 owner: "bob".to_string(),
                 token_uri: None,
-                extension: None,
+                extension: Metadata { referral: None },
             }),
             &[],
         )

@@ -2,7 +2,7 @@
 
 use crate::{
     error::ContractError,
-    msg::{ExecuteMsg, ICNSNameExecuteMsg},
+    msg::{ExecuteMsg, ICNSNameExecuteMsg, Metadata},
     tests::helpers::{TestEnv, TestEnvBuilder},
     QueryMsg,
 };
@@ -45,7 +45,7 @@ fn can_not_mint_until_minter_is_set() {
                 token_id: name,
                 owner,
                 token_uri: None,
-                extension: None,
+                extension: Metadata { referral: None },
             }),
             &[],
         )
@@ -137,7 +137,7 @@ fn can_not_name_with_dot() {
                 token_id: name,
                 owner,
                 token_uri: None,
-                extension: None,
+                extension: Metadata { referral: None },
             }),
             &[],
         )
@@ -201,7 +201,7 @@ fn only_registrar_can_mint() {
                 token_id: name,
                 owner,
                 token_uri: None,
-                extension: None,
+                extension: Metadata { referral: None },
             }),
             &[],
         )

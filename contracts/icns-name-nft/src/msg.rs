@@ -17,7 +17,12 @@ pub struct InstantiateMsg {
     pub admins: Vec<String>,
 }
 
-pub type ExecuteMsg = cw721_base::ExecuteMsg<cw721_base::Extension, ICNSNameExecuteMsg>;
+pub type ExecuteMsg = cw721_base::ExecuteMsg<Metadata, ICNSNameExecuteMsg>;
+
+#[cw_serde]
+pub struct Metadata {
+    pub referral: Option<String>,
+}
 
 #[cw_serde]
 pub enum ICNSNameExecuteMsg {

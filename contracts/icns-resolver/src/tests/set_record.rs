@@ -7,12 +7,12 @@ use crate::{
     tests::helpers::{mint_and_set_record, signer1, ToBinary},
 };
 
-use cosmwasm_std::{Addr, Binary, StdResult, Empty};
-use cw721_base::{MintMsg, ExecuteMsg as CW721BaseExecuteMsg, Extension};
+use cosmwasm_std::{Addr, Binary, Empty, StdResult};
+use cw721_base::{ExecuteMsg as CW721BaseExecuteMsg, Extension, MintMsg};
 
 use cw_multi_test::{BasicApp, Executor};
 use hex_literal::hex;
-use icns_name_nft::msg::ExecuteMsg as NameExecuteMsg;
+use icns_name_nft::msg::{ExecuteMsg as NameExecuteMsg, Metadata};
 use subtle_encoding::hex::decode as hex_decode;
 
 use super::helpers::{default_setting, instantiate_name_nft, instantiate_resolver_with_name_nft};
@@ -163,7 +163,7 @@ fn bech32_verification() {
                 token_id: "alice".to_string(),
                 owner: addr1.to_string(),
                 token_uri: None,
-                extension: None,
+                extension: Metadata { referral: None },
             }),
             &[],
         )
@@ -282,7 +282,7 @@ fn eth_address_set_record() {
                 token_id: "alice".to_string(),
                 owner: addr.to_string(),
                 token_uri: None,
-                extension: None,
+                extension: Metadata { referral: None },
             }),
             &[],
         )
@@ -341,7 +341,7 @@ fn adr36_verification_bypass() {
                 token_id: "alice".to_string(),
                 owner: addr.to_string(),
                 token_uri: None,
-                extension: None,
+                extension: Metadata { referral: None },
             }),
             &[],
         )
@@ -380,7 +380,8 @@ fn same_pubkey_invalid_bech_32() {
     let admins = vec![admin1, admin2];
     let registrar = String::from("default-registrar");
 
-    let (name_nft_contract, resolver_contract_addr, mut app) = default_setting(admins, registrar.clone());
+    let (name_nft_contract, resolver_contract_addr, mut app) =
+        default_setting(admins, registrar.clone());
 
     // create osmo address
     let addr = cosmos_pubkey_to_bech32_address(signer1().to_binary(), "osmo".to_string());
@@ -389,11 +390,11 @@ fn same_pubkey_invalid_bech_32() {
     app.execute_contract(
         Addr::unchecked(registrar),
         name_nft_contract,
-        &CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+        &CW721BaseExecuteMsg::<Metadata, Empty>::Mint(MintMsg {
             token_id: "bob".to_string(),
             owner: addr.to_string(),
             token_uri: None,
-            extension: None,
+            extension: Metadata { referral: None },
         }),
         &[],
     )
@@ -423,8 +424,13 @@ fn same_pubkey_invalid_bech_32() {
         },
         bech32_prefix: "cosmos".to_string(),
     };
-    app.execute_contract(Addr::unchecked(addr), resolver_contract_addr.clone(), &msg, &[])
-        .unwrap_err();
+    app.execute_contract(
+        Addr::unchecked(addr),
+        resolver_contract_addr.clone(),
+        &msg,
+        &[],
+    )
+    .unwrap_err();
 
     // now try this with eth address
     let eth_addr = eth_pubkey_to_bech32_address(signer1().to_binary(), "evmos".to_string());
@@ -450,6 +456,11 @@ fn same_pubkey_invalid_bech_32() {
         },
         bech32_prefix: "eth".to_string(),
     };
-    app.execute_contract(Addr::unchecked(eth_addr), resolver_contract_addr.clone(), &msg, &[])
-        .unwrap_err();
+    app.execute_contract(
+        Addr::unchecked(eth_addr),
+        resolver_contract_addr.clone(),
+        &msg,
+        &[],
+    )
+    .unwrap_err();
 }

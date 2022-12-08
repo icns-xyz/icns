@@ -11,7 +11,7 @@ use crate::{
 };
 
 use cw721_base::{Extension, MintMsg};
-use icns_name_nft::CW721BaseExecuteMsg;
+use icns_name_nft::{msg::Metadata, CW721BaseExecuteMsg};
 
 use cosmwasm_std::{Addr, Empty};
 
@@ -147,11 +147,11 @@ fn set_primary() {
     app.execute_contract(
         Addr::unchecked(registrar),
         name_nft_contract,
-        &CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
+        &CW721BaseExecuteMsg::<Metadata, Empty>::Mint(MintMsg {
             token_id: "others_name".to_string(),
             owner: "someone_else".to_string(),
             token_uri: None,
-            extension: None,
+            extension: Metadata { referral: None },
         }),
         &[],
     )

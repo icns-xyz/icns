@@ -8,13 +8,13 @@ use crate::{
 };
 
 use cosmwasm_std::to_binary;
-use cosmwasm_std::{Addr};
+use cosmwasm_std::Addr;
 use cw721::OwnerOfResponse;
-use cw721_base::{MintMsg};
+use cw721_base::MintMsg;
 use cw_multi_test::{BasicApp, Executor};
 
 mod non_transferrable {
-    use crate::error::ContractError;
+    use crate::{error::ContractError, msg::Metadata};
 
     use super::*;
 
@@ -39,7 +39,7 @@ mod non_transferrable {
                 token_id: name.to_string(),
                 owner: name_owner.to_string(),
                 token_uri: None,
-                extension: None,
+                extension: Metadata { referral: None },
             }),
             &[],
         )
@@ -85,7 +85,7 @@ mod non_transferrable {
                 token_id: name.to_string(),
                 owner: name_owner.to_string(),
                 token_uri: None,
-                extension: None,
+                extension: Metadata { referral: None },
             }),
             &[],
         )
@@ -131,7 +131,7 @@ mod non_transferrable {
                 token_id: name.to_string(),
                 owner: registrar.to_string(),
                 token_uri: None,
-                extension: None,
+                extension: Metadata { referral: None },
             }),
             &[],
         )
@@ -158,7 +158,7 @@ mod non_transferrable {
 }
 
 mod transferrable {
-    use crate::tests::helpers::mock_reciever_contract;
+    use crate::{msg::Metadata, tests::helpers::mock_reciever_contract};
 
     use super::*;
 
@@ -183,7 +183,7 @@ mod transferrable {
                 token_id: name.to_string(),
                 owner: name_owner.to_string(),
                 token_uri: None,
-                extension: None,
+                extension: Metadata { referral: None },
             }),
             &[],
         )
@@ -238,7 +238,7 @@ mod transferrable {
                 token_id: name.to_string(),
                 owner: name_owner.to_string(),
                 token_uri: None,
-                extension: None,
+                extension: Metadata { referral: None },
             }),
             &[],
         )

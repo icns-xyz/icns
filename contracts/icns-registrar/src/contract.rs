@@ -5,6 +5,7 @@ use cosmwasm_std::{
     Response, StdError, StdResult, WasmMsg,
 };
 use cw2::set_contract_version;
+use icns_name_nft::msg::Metadata;
 use icns_name_nft::MintMsg;
 use itertools::Itertools;
 
@@ -255,7 +256,7 @@ pub fn execute_claim(
     check_fee(deps.as_ref(), &info.funds)?;
 
     // add referral count if referral is set
-    if let Some(referral) = referral {
+    if let Some(referral) = referral.clone() {
         // initialize referral count to 1 if not exists
         let referral_count = REFERRAL.may_load(deps.storage, referral.to_string())?;
         match referral_count {
@@ -279,7 +280,7 @@ pub fn execute_claim(
             token_id: name.clone(),
             owner: info.sender.to_string(),
             token_uri: None,
-            extension: None,
+            extension: Metadata { referral },
         }))?,
         funds: vec![],
     };

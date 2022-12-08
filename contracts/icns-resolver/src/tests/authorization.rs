@@ -9,7 +9,7 @@ use crate::{
 use cosmwasm_std::{Addr, StdResult};
 use cw721_base::MintMsg;
 use cw_multi_test::{BasicApp, Executor};
-use icns_name_nft::msg::ExecuteMsg as NameExecuteMsg;
+use icns_name_nft::msg::{ExecuteMsg as NameExecuteMsg, Metadata};
 
 use super::helpers::{instantiate_name_nft, instantiate_resolver_with_name_nft};
 
@@ -93,7 +93,7 @@ fn only_owner_can_set_record() {
                 token_id: "tony".to_string(),
                 owner: "tony".to_string(),
                 token_uri: None,
-                extension: None,
+                extension: Metadata { referral: None },
             }),
             &[],
         )

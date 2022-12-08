@@ -5,7 +5,7 @@ pub use cw721_base::{
     Cw721Contract, ExecuteMsg as CW721BaseExecuteMsg, Extension,
     InstantiateMsg as Cw721BaseInstantiateMsg, MintMsg, MinterResponse,
 };
-use msg::ICNSNameExecuteMsg;
+use msg::{ICNSNameExecuteMsg, Metadata};
 
 mod checks;
 pub mod error;
@@ -18,7 +18,7 @@ pub mod state;
 const CONTRACT_NAME: &str = env!("CARGO_PKG_NAME");
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-pub type ICNSNameNFTContract<'a> = Cw721Contract<'a, Extension, Empty, ICNSNameExecuteMsg, Empty>;
+pub type ICNSNameNFTContract<'a> = Cw721Contract<'a, Metadata, Empty, ICNSNameExecuteMsg, Empty>;
 
 pub mod entry {
     use super::*;
