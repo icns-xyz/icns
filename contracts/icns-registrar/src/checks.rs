@@ -147,6 +147,7 @@ pub fn check_verification_pass_threshold(
         .iter()
         .unique()
         .try_for_each(|(public_key, signature)| {
+            // NL: Love this! so clean!
             let msg_hash = sha2::Sha256::digest(msg);
             let verified = deps
                 .api
