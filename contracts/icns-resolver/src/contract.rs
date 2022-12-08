@@ -16,7 +16,7 @@ use crate::crypto::{
 use crate::error::ContractError;
 use crate::msg::{
     AddressByIcnsResponse, AddressHash, AddressResponse, AddressesResponse, Adr36Info, ExecuteMsg,
-    InstantiateMsg, MigrateMsg, NamesResponse, PrimaryNameResponse, QueryMsg, IcnsNamesResponse,
+    IcnsNamesResponse, InstantiateMsg, MigrateMsg, NamesResponse, PrimaryNameResponse, QueryMsg,
 };
 use crate::state::{records, Config, CONFIG, PRIMARY_NAME, SIGNATURE};
 use cw721::OwnerOfResponse;
@@ -89,9 +89,14 @@ pub fn execute_set_record(
         // first check sender and the bech32 address in msg match
         // if it does, no need to verify adr36
         // in order to check if they match, we first need to decode the bech32 address
-        let (bech32_prefix_decoded, bech32_address_decoded) = bech32::decode(adr36_info.signer_bech32_address.clone())
-            .map_err(|_| ContractError::Bech32DecodingErr {
-                addr: bech32_prefix.clone(),
+
+        // NL: Consider reanming these variables to inclide "signer" and
+        // "sender" so it's easier to remember who they belong to
+        let (bech32_prefix_decoded, bech32_address_decoded) =
+            bech32::decode(adr36_info.signer_bech32_address.clone()).map_err(|_| {
+                ContractError::Bech32DecodingErr {
+                    addr: bech32_prefix.clone(),
+                }
             })?;
         let decoded_bech32_addr_from_info = bech32::decode(info.sender.clone())
             .map_err(|_| ContractError::Bech32DecodingErr {
@@ -107,6 +112,10 @@ pub fn execute_set_record(
             });
         }
 
+        // NL: It's unclear to me why we accept addrs that don't match, but
+        // that's likely just me not properly understanding the use of addr36
+        // here
+        //
         // if they don't match, verify adr36
         if bech32_address_decoded != decoded_bech32_addr_from_info {
             if adr36_info.address_hash == AddressHash::Cosmos {
@@ -116,8 +125,6 @@ pub fn execute_set_record(
                         pub_key: adr36_info.pub_key.to_string(),
                     });
                 }
-                
-              
 
                 // extract pubkey to bech32 address, check that it matches with the given bech32 address
                 let decoded_bech32_addr = cosmos_pubkey_to_bech32_address(
@@ -165,6 +172,7 @@ pub fn execute_set_record(
         &adr36_info.signer_bech32_address,
     )?;
 
+    // NL: Do we want to do any validation on signer_bech32_address and name even for admins?
     // over-ride primary name
     PRIMARY_NAME.save(deps.storage, adr36_info.signer_bech32_address, &name)?;
 
@@ -368,7 +376,7 @@ fn query_icns_names(deps: Deps, address: String) -> StdResult<IcnsNamesResponse>
             msg: "Invalid bech32 address".to_string(),
         })?
         .0;
-    
+
     let primary_name_with_prefix = format!("{}.{}", primary_name, bech32_prefix);
 
     Ok(IcnsNamesResponse {

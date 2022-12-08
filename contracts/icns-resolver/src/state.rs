@@ -5,7 +5,7 @@ pub static CONFIG_KEY: &[u8] = b"config";
 
 #[cw_serde]
 pub struct Config {
-    pub name_address: Addr,
+    pub name_address: Addr, // NL: Document this.
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");
@@ -35,4 +35,6 @@ pub fn records<'a>() -> IndexedMap<'a, (&'a str, &'a str), String, RecordIndexes
 // map of bech32 address -> user name
 pub const PRIMARY_NAME: Map<String, String> = Map::new("primary_name");
 
+// NL: We store the used signatures here to make sure they can't be reused. Used in adr36_verification()
+// NL: document the meaning of the keys and valies
 pub const SIGNATURE: Map<&[u8], bool> = Map::new("signature");

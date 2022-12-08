@@ -76,6 +76,9 @@ pub fn create_adr36_message(
     contract_address: String,
     signature_salt: u128,
 ) -> String {
+    // NL: Consuder using raw strings and interpolation here/
+    // Alternatively, serde_json_wasm::to_string() and a struct.
+    // This way of doing it should be safe though. As this is only used for validation
     let message_prefix = "{\"account_number\":\"0\",\"chain_id\":\"\",\"fee\":{\"amount\":[],\"gas\":\"0\"},\"memo\":\"\",\"msgs\":[{\"type\":\"sign/MsgSignData\",\"value\":{\"data\":\"";
     let data = create_adr36_data(
         name,
