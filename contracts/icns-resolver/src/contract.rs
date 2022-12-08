@@ -368,6 +368,8 @@ fn query_icns_names(deps: Deps, address: String) -> StdResult<IcnsNamesResponse>
             msg: "Invalid bech32 address".to_string(),
         })?
         .0;
+    
+    let primary_name_with_prefix = format!("{}.{}", primary_name, bech32_prefix);
 
     Ok(IcnsNamesResponse {
         names: records()
@@ -388,7 +390,7 @@ fn query_icns_names(deps: Deps, address: String) -> StdResult<IcnsNamesResponse>
                     .map(|name| format!("{}.{}", name, bech32_prefix))
             })
             .collect::<StdResult<_>>()?,
-        primary_name,
+        primary_name: primary_name_with_prefix,
     })
 }
 

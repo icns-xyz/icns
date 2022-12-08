@@ -238,6 +238,8 @@ pub fn execute_claim(
 ) -> Result<Response, ContractError> {
     check_verfying_msg(deps.as_ref(), &env, &info, &name, &verifying_msg_str)?;
     let is_admin = is_admin(deps.as_ref(), &info.sender)?;
+
+    // if not admin, need to pass check verification pass threshold before being able to claim name
     if !is_admin {
         check_verification_pass_threshold(
             deps.as_ref(),
@@ -253,6 +255,8 @@ pub fn execute_claim(
                 .collect::<StdResult<Vec<_>>>()?,
         )?;
     }
+
+    // check if fees are correctly given.
     check_fee(deps.as_ref(), &info.funds)?;
 
     // add referral count if referral is set

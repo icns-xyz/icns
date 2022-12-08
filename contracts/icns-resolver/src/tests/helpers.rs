@@ -229,12 +229,11 @@ pub fn mint_and_set_record(
             addr: signer_bech32_address.to_string(),
         }
     });
-    let _bech32_prefix = bech32_prefix_decoded.unwrap().0;
+    let bech32_prefix = bech32_prefix_decoded.unwrap().0;
 
     let msg = create_adr36_message(
         name.to_string(),
-        // bech32_prefix.clone(),
-        "cosmos".to_string(),
+        bech32_prefix.clone(),
         addr.to_string(),
         signer_bech32_address.to_string(),
         multitest_chain_id.to_string(),
@@ -253,8 +252,7 @@ pub fn mint_and_set_record(
             signature,
             signature_salt: 12313u128.into(),
         },
-        bech32_prefix: "cosmos".to_string(),
-        // bech32_prefix,
+        bech32_prefix,
     };
 
     app.execute_contract(Addr::unchecked(addr), resolver_contract_addr, &msg, &[])

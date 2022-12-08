@@ -2,12 +2,12 @@
 
 use crate::{
     msg::AdminResponse,
-    msg::{AddressResponse, AddressesResponse, QueryMsg}, tests::helpers::{signer2, ToBinary}, crypto::cosmos_pubkey_to_bech32_address,
+    msg::{AddressResponse, AddressesResponse, QueryMsg, NamesResponse, IcnsNamesResponse, AddressByIcnsResponse}, tests::helpers::{signer2, ToBinary, mint_and_set_record}, crypto::cosmos_pubkey_to_bech32_address,
 };
 
 use cosmwasm_std::StdError;
 
-use super::helpers::{default_setting, instantiate_name_nft, instantiate_resolver_with_name_nft};
+use super::helpers::{default_setting, instantiate_name_nft, instantiate_resolver_with_name_nft, signer1};
 
 #[test]
 fn query_admins() {
@@ -41,13 +41,13 @@ fn query_addresses() {
     let admins = vec![admin1, admin2];
     let registrar = String::from("default-registrar");
 
-    let (_name_nft_contract, resolver_contract_addr, app) = default_setting(admins, registrar);
-
+    let (name_nft_contract, resolver_contract_addr, mut app) = default_setting(admins, registrar.clone());
+    
     // query addresses
     let AddressesResponse { addresses } = app
         .wrap()
         .query_wasm_smart(
-            resolver_contract_addr,
+            resolver_contract_addr.clone(),
             &QueryMsg::Addresses {
                 name: "alice".to_string(),
             },
@@ -67,29 +67,41 @@ fn query_addresses() {
             )
         ]
     );
-    let _addr2 = cosmos_pubkey_to_bech32_address(signer2().to_binary(), "osmo".to_string());
-    
-    
-    // mint_and_set_record(
-    //     &mut app,
-    //     "bob",
-    //     addr2.clone(),
-    //     &signer2(),
-    //     registrar.clone(),
-    //     name_nft_contract.clone(),
-    //     resolver_contract_addr.clone(),
-    // );
 
-    // let AddressesResponse { addresses } = app
-    //     .wrap()
-    //     .query_wasm_smart(
-    //         resolver_contract_addr.clone(),
-    //         &QueryMsg::Addresses {
-    //             name: "bob".to_string(),
-    //         },
-    //     )
-    //     .unwrap();
-    // println!("addresses: {:?}", addresses);
+    let addr2 = cosmos_pubkey_to_bech32_address(signer2().to_binary(), "cosmos".to_string());
+    
+    
+    // try setting another record to ensure query works upon two or more records
+    mint_and_set_record(
+        &mut app,
+        "bob",
+        addr2.clone(),
+        &signer2(),
+        registrar.clone(),
+        name_nft_contract.clone(),
+        resolver_contract_addr.clone(),
+    );
+
+    let AddressesResponse { addresses } = app
+        .wrap()
+        .query_wasm_smart(
+            resolver_contract_addr.clone(),
+            &QueryMsg::Addresses {
+                name: "bob".to_string(),
+            },
+        )
+        .unwrap();
+
+    assert_eq!(
+        addresses,
+        vec![
+
+            (
+                "cosmos".to_string(),
+                addr2
+            )
+        ]
+    )
 }
 
 #[test]
@@ -99,7 +111,7 @@ fn query_address() {
     let admins = vec![admin1, admin2];
     let registrar = String::from("default-registrar");
 
-    let (_name_nft_contract, resolver_contract_addr, app) = default_setting(admins, registrar);
+    let (name_nft_contract, resolver_contract_addr, mut app) = default_setting(admins, registrar.clone());
 
     // query address
     let AddressResponse { address } = app
@@ -137,7 +149,7 @@ fn query_address() {
     let err = app
         .wrap()
         .query_wasm_smart::<AddressResponse>(
-            resolver_contract_addr,
+            resolver_contract_addr.clone(),
             &QueryMsg::Address {
                 name: "tony".to_string(),
                 bech32_prefix: "random".to_string(),
@@ -152,43 +164,271 @@ fn query_address() {
         }
     );
 
-    // now add another user
-    // let mint = app
-    //     .execute_contract(
-    //         Addr::unchecked(registrar),
-    //         name_nft_contract,
-    //         &NameExecuteMsg::CW721Base(CW721BaseExecuteMsg::<Extension, Empty>::Mint(MintMsg {
-    //             token_id: "alice".to_string(),
-    //             owner: "alice".to_string(),
-    //             token_uri: None,
-    //             extension: None,
-    //         })),
-    //         &[],
-    //     )
-    //     .is_err();
-    // assert_eq!(mint, false);
+    // now add another user to ensure query works upon two or more user
+    let addr2 = cosmos_pubkey_to_bech32_address(signer2().to_binary(), "cosmos".to_string());
+    
+    // try setting another record to ensure query works upon two or more records
+    mint_and_set_record(
+        &mut app,
+        "bob",
+        addr2.clone(),
+        &signer2(),
+        registrar.clone(),
+        name_nft_contract.clone(),
+        resolver_contract_addr.clone(),
+    );
 
-    // app.execute_contract(
-    //     Addr::unchecked(admins[0].clone()),
-    //     resolver_contract_addr.clone(),
-    //     &default_record_msg(),
-    //     &[],
-    // ).unwrap();
+    let AddressResponse { address } = app
+        .wrap()
+        .query_wasm_smart(
+            resolver_contract_addr.clone(),
+            &QueryMsg::Address {
+                name: "bob".to_string(),
+                bech32_prefix: "cosmos".to_string(),
+            },
+        )
+        .unwrap();
 
-    // // query address
-    // let GetAddressResponse {address} = app
-    //     .wrap()
-    //     .query_wasm_smart(
-    //         resolver_contract_addr.clone(),
-    //         &QueryMsg::GetAddress {
-    //             name: "alice".to_string(),
-    //             bech32_prefix: "osmo".to_string(),
-    //         },
-    //     )
-    //     .unwrap();
+    assert_eq!(
+        address,
+        addr2.to_string()
+    );
 
-    // assert_eq!(
-    //     address,
-    //     "osmo1t8qckan2yrygq7kl9apwhzfalwzgc242lk02ch".to_string()
-    // );
+    // try getting unavailable address
+    let err = app
+        .wrap()
+        .query_wasm_smart::<AddressResponse>(
+            resolver_contract_addr.clone(),
+            &QueryMsg::Address {
+                name: "bob".to_string(),
+                bech32_prefix: "juno".to_string(),
+            },
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        err,
+        StdError::GenericErr {
+            msg: "Querier contract error: alloc::string::String not found".to_string()
+        }
+    );
+}
+
+#[test]
+fn query_names() {
+    let admin1 = String::from("admin1");
+    let admin2 = String::from("admin2");
+    let admins = vec![admin1, admin2];
+    let registrar = String::from("default-registrar");
+
+    let (name_nft_contract, resolver_contract_addr, mut app) = default_setting(admins, registrar.clone());
+
+    let addr1 = cosmos_pubkey_to_bech32_address(signer1().to_binary(), "cosmos".to_string());
+    let addr2 = cosmos_pubkey_to_bech32_address(signer2().to_binary(), "cosmos".to_string());
+    
+    // try setting another record to ensure query works upon two or more records
+    mint_and_set_record(
+        &mut app,
+        "bob",
+        addr2.clone(),
+        &signer2(),
+        registrar.clone(),
+        name_nft_contract.clone(),
+        resolver_contract_addr.clone(),
+    );
+    mint_and_set_record(
+        &mut app,
+        "charlie",
+        addr2.clone(),
+        &signer2(),
+        registrar.clone(),
+        name_nft_contract.clone(),
+        resolver_contract_addr.clone(),
+    );
+
+    // query addresses
+    let NamesResponse { names, primary_name } = app
+        .wrap()
+        .query_wasm_smart(
+            resolver_contract_addr.clone(),
+            &QueryMsg::Names { address: addr1 },
+        )
+        .unwrap();
+
+    assert_eq!(
+        names,
+        vec![
+            "alice".to_string(),
+        ]
+    );
+    // primary name should be set as the latest record that has been set for the bech32 address
+    assert_eq!(
+        primary_name,
+        "alice".to_string()
+    );
+    // query addresses
+    let NamesResponse { names, primary_name } = app
+        .wrap()
+        .query_wasm_smart(
+            resolver_contract_addr.clone(),
+            &QueryMsg::Names { address: addr2 },
+        )
+        .unwrap();
+
+
+    assert_eq!(
+        names,
+        vec![
+            "bob".to_string(),
+            "charlie".to_string()
+        ]
+    );
+    // primary name should be set as the latest record that has been set for the bech32 address
+    assert_eq!(
+        primary_name,
+        "charlie".to_string()
+    );
+}
+
+#[test]
+fn query_icns_names() {
+    let admin1 = String::from("admin1");
+    let admin2 = String::from("admin2");
+    let admins = vec![admin1, admin2];
+    let registrar = String::from("default-registrar");
+
+    let (name_nft_contract, resolver_contract_addr, mut app) = default_setting(admins, registrar.clone());
+
+    let addr1 = cosmos_pubkey_to_bech32_address(signer1().to_binary(), "cosmos".to_string());
+    let addr2 = cosmos_pubkey_to_bech32_address(signer2().to_binary(), "osmo".to_string());
+    
+    // try setting another record to ensure query works upon two or more records
+    mint_and_set_record(
+        &mut app,
+        "bob",
+        addr2.clone(),
+        &signer2(),
+        registrar.clone(),
+        name_nft_contract.clone(),
+        resolver_contract_addr.clone(),
+    );
+    mint_and_set_record(
+        &mut app,
+        "charlie",
+        addr2.clone(),
+        &signer2(),
+        registrar.clone(),
+        name_nft_contract.clone(),
+        resolver_contract_addr.clone(),
+    );
+
+    // query addresses for alice
+    let IcnsNamesResponse { names, primary_name } = app
+        .wrap()
+        .query_wasm_smart(
+            resolver_contract_addr.clone(),
+            &QueryMsg::IcnsNames { address: addr1 },
+        )
+        .unwrap();
+    assert_eq!(
+        names,
+        vec![
+            "alice.cosmos".to_string(),
+        ]
+    );
+    assert_eq!(
+        primary_name,
+        "alice.cosmos".to_string()
+    );
+
+    // query addresses for bob
+    let IcnsNamesResponse { names, primary_name } = app
+        .wrap()
+        .query_wasm_smart(
+            resolver_contract_addr.clone(),
+            &QueryMsg::IcnsNames { address: addr2 },
+        )
+        .unwrap();
+    assert_eq!(
+        names,
+        vec![
+            "bob.osmo".to_string(),
+            "charlie.osmo".to_string()
+        ]
+    );
+    assert_eq!(
+        primary_name,
+        "charlie.osmo".to_string()
+    );
+}
+
+#[test]
+fn query_address_by_icns() {
+    let admin1 = String::from("admin1");
+    let admin2 = String::from("admin2");
+    let admins = vec![admin1, admin2];
+    let registrar = String::from("default-registrar");
+
+    let (name_nft_contract, resolver_contract_addr, mut app) = default_setting(admins, registrar.clone());
+
+    let addr1 = cosmos_pubkey_to_bech32_address(signer1().to_binary(), "cosmos".to_string());
+    let addr2 = cosmos_pubkey_to_bech32_address(signer2().to_binary(), "osmo".to_string());
+    
+    // try setting another record to ensure query works upon two or more records
+    mint_and_set_record(
+        &mut app,
+        "bob",
+        addr2.clone(),
+        &signer2(),
+        registrar.clone(),
+        name_nft_contract.clone(),
+        resolver_contract_addr.clone(),
+    );
+    mint_and_set_record(
+        &mut app,
+        "charlie",
+        addr2.clone(),
+        &signer2(),
+        registrar.clone(),
+        name_nft_contract.clone(),
+        resolver_contract_addr.clone(),
+    );
+
+    // query addresses for alice
+    let AddressByIcnsResponse { bech32_address } = app
+        .wrap()
+        .query_wasm_smart(
+            resolver_contract_addr.clone(),
+            &QueryMsg::AddressByIcns { icns: "alice.cosmos".to_string() },
+        )
+        .unwrap();
+    assert_eq!(
+        bech32_address,
+        addr1.to_string()
+    );
+
+    // query addresses for bob
+    let AddressByIcnsResponse { bech32_address } = app
+        .wrap()
+        .query_wasm_smart(
+            resolver_contract_addr.clone(),
+            &QueryMsg::AddressByIcns { icns: "bob.osmo".to_string() },
+        )
+        .unwrap();
+    assert_eq!(
+        bech32_address,
+        addr2.to_string()
+    );
+
+    let AddressByIcnsResponse { bech32_address } = app
+        .wrap()
+        .query_wasm_smart(
+            resolver_contract_addr.clone(),
+            &QueryMsg::AddressByIcns { icns: "bob.osmo".to_string() },
+        )
+        .unwrap();
+    assert_eq!(
+        bech32_address,
+        addr2.to_string()
+    );
 }
