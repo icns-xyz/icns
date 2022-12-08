@@ -492,10 +492,10 @@ var IcnsRegistrarQueryClient = /** @class */ (function () {
                     })];
             });
         }); };
-        this.nameNFTAddress = function () { return __awaiter(_this, void 0, void 0, function () {
+        this.nameNftAddress = function () { return __awaiter(_this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, this.client.queryContractSmart(this.contractAddress, {
-                        name_n_f_t_address: {}
+                        name_nft_address: {}
                     })];
             });
         }); };
@@ -534,7 +534,7 @@ var IcnsRegistrarQueryClient = /** @class */ (function () {
         this.contractAddress = contractAddress;
         this.verifierPubKeys = this.verifierPubKeys.bind(this);
         this.verificationThreshold = this.verificationThreshold.bind(this);
-        this.nameNFTAddress = this.nameNFTAddress.bind(this);
+        this.nameNftAddress = this.nameNftAddress.bind(this);
         this.referralCount = this.referralCount.bind(this);
         this.fee = this.fee.bind(this);
         this.nameByTwitterId = this.nameByTwitterId.bind(this);
@@ -597,14 +597,14 @@ var IcnsRegistrarClient = /** @class */ (function (_super) {
                 });
             });
         };
-        _this.setNameNFTAddress = function (_a, fee, memo, funds) {
+        _this.setNameNftAddress = function (_a, fee, memo, funds) {
             var nameNftAddress = _a.nameNftAddress;
             if (fee === void 0) { fee = "auto"; }
             return __awaiter(_this, void 0, void 0, function () {
                 return __generator(this, function (_b) {
                     switch (_b.label) {
                         case 0: return [4 /*yield*/, this.client.execute(this.sender, this.contractAddress, {
-                                set_name_n_f_t_address: {
+                                set_name_nft_address: {
                                     name_nft_address: nameNftAddress
                                 }
                             }, fee, memo, funds)];
@@ -652,7 +652,7 @@ var IcnsRegistrarClient = /** @class */ (function (_super) {
         _this.claim = _this.claim.bind(_this);
         _this.updateVerifierPubkeys = _this.updateVerifierPubkeys.bind(_this);
         _this.setVerificationThreshold = _this.setVerificationThreshold.bind(_this);
-        _this.setNameNFTAddress = _this.setNameNFTAddress.bind(_this);
+        _this.setNameNftAddress = _this.setNameNftAddress.bind(_this);
         _this.setMintingFee = _this.setMintingFee.bind(_this);
         _this.withdrawFunds = _this.withdrawFunds.bind(_this);
         return _this;

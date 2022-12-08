@@ -5,12 +5,12 @@
 */
 import { CosmWasmClient, SigningCosmWasmClient, ExecuteResult } from "@cosmjs/cosmwasm-stargate";
 import { StdFee } from "@cosmjs/amino";
-import { Decimal, Binary, Coin, Verification, FeeResponse, NameByTwitterIdResponse, NameNFTAddressResponse, ReferralCountResponse, VerificationThresholdResponse, VerifierPubKeysResponse } from "./IcnsRegistrar.types";
+import { Decimal, Binary, Coin, Verification, FeeResponse, NameByTwitterIdResponse, NameNftAddressResponse, ReferralCountResponse, VerificationThresholdResponse, VerifierPubKeysResponse } from "./IcnsRegistrar.types";
 export interface IcnsRegistrarReadOnlyInterface {
     contractAddress: string;
     verifierPubKeys: () => Promise<VerifierPubKeysResponse>;
     verificationThreshold: () => Promise<VerificationThresholdResponse>;
-    nameNFTAddress: () => Promise<NameNFTAddressResponse>;
+    nameNftAddress: () => Promise<NameNftAddressResponse>;
     referralCount: ({ name }: {
         name: string;
     }) => Promise<ReferralCountResponse>;
@@ -25,7 +25,7 @@ export declare class IcnsRegistrarQueryClient implements IcnsRegistrarReadOnlyIn
     constructor(client: CosmWasmClient, contractAddress: string);
     verifierPubKeys: () => Promise<VerifierPubKeysResponse>;
     verificationThreshold: () => Promise<VerificationThresholdResponse>;
-    nameNFTAddress: () => Promise<NameNFTAddressResponse>;
+    nameNftAddress: () => Promise<NameNftAddressResponse>;
     referralCount: ({ name }: {
         name: string;
     }) => Promise<ReferralCountResponse>;
@@ -50,7 +50,7 @@ export interface IcnsRegistrarInterface extends IcnsRegistrarReadOnlyInterface {
     setVerificationThreshold: ({ threshold }: {
         threshold: Decimal;
     }, fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
-    setNameNFTAddress: ({ nameNftAddress }: {
+    setNameNftAddress: ({ nameNftAddress }: {
         nameNftAddress: string;
     }, fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
     setMintingFee: ({ mintingFee }: {
@@ -79,7 +79,7 @@ export declare class IcnsRegistrarClient extends IcnsRegistrarQueryClient implem
     setVerificationThreshold: ({ threshold }: {
         threshold: Decimal;
     }, fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
-    setNameNFTAddress: ({ nameNftAddress }: {
+    setNameNftAddress: ({ nameNftAddress }: {
         nameNftAddress: string;
     }, fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
     setMintingFee: ({ mintingFee }: {

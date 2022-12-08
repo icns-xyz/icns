@@ -16,7 +16,7 @@ use crate::checks::{
 use crate::error::ContractError;
 use crate::msg::{
     ExecuteMsg, FeeResponse, InstantiateMsg, MigrateMsg, NameByTwitterIdResponse,
-    NameNFTAddressResponse, QueryMsg, ReferralCountResponse, Verification,
+    NameNftAddressResponse, QueryMsg, ReferralCountResponse, Verification,
     VerificationThresholdResponse, VerifierPubKeysResponse, VerifyingMsg,
 };
 
@@ -92,7 +92,7 @@ pub fn execute(
         ExecuteMsg::UpdateVerifierPubkeys { add, remove } => {
             execute_update_verifier_pubkeys(deps, info, add, remove)
         }
-        ExecuteMsg::SetNameNFTAddress { name_nft_address } => {
+        ExecuteMsg::SetNameNftAddress { name_nft_address } => {
             execute_set_name_nft_address(deps, info, name_nft_address)
         }
         ExecuteMsg::SetMintingFee { minting_fee: fee } => execute_set_fee(deps, info, fee),
@@ -348,7 +348,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, StdError> {
                 .load(deps.storage)?
                 .verification_threshold_percentage,
         }),
-        QueryMsg::NameNFTAddress {} => to_binary(&NameNFTAddressResponse {
+        QueryMsg::NameNftAddress {} => to_binary(&NameNftAddressResponse {
             name_nft_address: CONFIG.load(deps.storage)?.name_nft.to_string(),
         }),
         QueryMsg::ReferralCount { name } => to_binary(&query_referral_count(deps, name)?),

@@ -34,7 +34,7 @@ export type ExecuteMsg = {
         threshold: Decimal;
     };
 } | {
-    set_name_n_f_t_address: {
+    set_name_nft_address: {
         name_nft_address: string;
     };
 } | {
@@ -56,7 +56,7 @@ export type QueryMsg = {
 } | {
     verification_threshold: {};
 } | {
-    name_n_f_t_address: {};
+    name_nft_address: {};
 } | {
     referral_count: {
         name: string;
@@ -76,7 +76,7 @@ export interface FeeResponse {
 export interface NameByTwitterIdResponse {
     name: string;
 }
-export interface NameNFTAddressResponse {
+export interface NameNftAddressResponse {
     name_nft_address: string;
 }
 export interface ReferralCountResponse {

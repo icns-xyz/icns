@@ -6,12 +6,12 @@
 
 import { CosmWasmClient, SigningCosmWasmClient, ExecuteResult } from "@cosmjs/cosmwasm-stargate";
 import { StdFee } from "@cosmjs/amino";
-import { Uint128, Decimal, Binary, InstantiateMsg, Coin, ExecuteMsg, Verification, QueryMsg, MigrateMsg, FeeResponse, NameByTwitterIdResponse, NameNFTAddressResponse, ReferralCountResponse, VerificationThresholdResponse, VerifierPubKeysResponse } from "./IcnsRegistrar.types";
+import { Uint128, Decimal, Binary, InstantiateMsg, Coin, ExecuteMsg, Verification, QueryMsg, MigrateMsg, FeeResponse, NameByTwitterIdResponse, NameNftAddressResponse, ReferralCountResponse, VerificationThresholdResponse, VerifierPubKeysResponse } from "./IcnsRegistrar.types";
 export interface IcnsRegistrarReadOnlyInterface {
   contractAddress: string;
   verifierPubKeys: () => Promise<VerifierPubKeysResponse>;
   verificationThreshold: () => Promise<VerificationThresholdResponse>;
-  nameNFTAddress: () => Promise<NameNFTAddressResponse>;
+  nameNftAddress: () => Promise<NameNftAddressResponse>;
   referralCount: ({
     name
   }: {
@@ -33,7 +33,7 @@ export class IcnsRegistrarQueryClient implements IcnsRegistrarReadOnlyInterface 
     this.contractAddress = contractAddress;
     this.verifierPubKeys = this.verifierPubKeys.bind(this);
     this.verificationThreshold = this.verificationThreshold.bind(this);
-    this.nameNFTAddress = this.nameNFTAddress.bind(this);
+    this.nameNftAddress = this.nameNftAddress.bind(this);
     this.referralCount = this.referralCount.bind(this);
     this.fee = this.fee.bind(this);
     this.nameByTwitterId = this.nameByTwitterId.bind(this);
@@ -49,9 +49,9 @@ export class IcnsRegistrarQueryClient implements IcnsRegistrarReadOnlyInterface 
       verification_threshold: {}
     });
   };
-  nameNFTAddress = async (): Promise<NameNFTAddressResponse> => {
+  nameNftAddress = async (): Promise<NameNftAddressResponse> => {
     return this.client.queryContractSmart(this.contractAddress, {
-      name_n_f_t_address: {}
+      name_nft_address: {}
     });
   };
   referralCount = async ({
@@ -108,7 +108,7 @@ export interface IcnsRegistrarInterface extends IcnsRegistrarReadOnlyInterface {
   }: {
     threshold: Decimal;
   }, fee?: number | StdFee | "auto", memo?: string, funds?: Coin[]) => Promise<ExecuteResult>;
-  setNameNFTAddress: ({
+  setNameNftAddress: ({
     nameNftAddress
   }: {
     nameNftAddress: string;
@@ -139,7 +139,7 @@ export class IcnsRegistrarClient extends IcnsRegistrarQueryClient implements Icn
     this.claim = this.claim.bind(this);
     this.updateVerifierPubkeys = this.updateVerifierPubkeys.bind(this);
     this.setVerificationThreshold = this.setVerificationThreshold.bind(this);
-    this.setNameNFTAddress = this.setNameNFTAddress.bind(this);
+    this.setNameNftAddress = this.setNameNftAddress.bind(this);
     this.setMintingFee = this.setMintingFee.bind(this);
     this.withdrawFunds = this.withdrawFunds.bind(this);
   }
@@ -189,13 +189,13 @@ export class IcnsRegistrarClient extends IcnsRegistrarQueryClient implements Icn
       }
     }, fee, memo, funds);
   };
-  setNameNFTAddress = async ({
+  setNameNftAddress = async ({
     nameNftAddress
   }: {
     nameNftAddress: string;
   }, fee: number | StdFee | "auto" = "auto", memo?: string, funds?: Coin[]): Promise<ExecuteResult> => {
     return await this.client.execute(this.sender, this.contractAddress, {
-      set_name_n_f_t_address: {
+      set_name_nft_address: {
         name_nft_address: nameNftAddress
       }
     }, fee, memo, funds);

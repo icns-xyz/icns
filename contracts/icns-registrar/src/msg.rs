@@ -46,7 +46,7 @@ pub enum ExecuteMsg {
     },
 
     /// Set name NFT address to be minted once passing verfication
-    SetNameNFTAddress {
+    SetNameNftAddress {
         /// valid contract address of the name nft contract
         name_nft_address: String,
     },
@@ -74,8 +74,8 @@ pub enum QueryMsg {
     #[returns(VerificationThresholdResponse)]
     VerificationThreshold {},
 
-    #[returns(NameNFTAddressResponse)]
-    NameNFTAddress {},
+    #[returns(NameNftAddressResponse)]
+    NameNftAddress {},
 
     #[returns(ReferralCountResponse)]
     ReferralCount { name: String },
@@ -100,7 +100,7 @@ pub struct VerificationThresholdResponse {
 }
 
 #[cw_serde]
-pub struct NameNFTAddressResponse {
+pub struct NameNftAddressResponse {
     pub name_nft_address: String,
 }
 

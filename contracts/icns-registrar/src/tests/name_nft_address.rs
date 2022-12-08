@@ -4,7 +4,7 @@ use cosmwasm_std::{Addr, Decimal};
 use cw_multi_test::{BasicApp, Executor};
 
 use crate::{
-    msg::{ExecuteMsg, InstantiateMsg, NameNFTAddressResponse, QueryMsg},
+    msg::{ExecuteMsg, InstantiateMsg, NameNftAddressResponse, QueryMsg},
     ContractError,
 };
 
@@ -49,11 +49,11 @@ fn only_admin_can_set_name_nft_address() {
         )
         .unwrap();
 
-    let NameNFTAddressResponse { name_nft_address } = app
+    let NameNftAddressResponse { name_nft_address } = app
         .wrap()
         .query_wasm_smart(
             registrar_contract_addr.clone(),
-            &QueryMsg::NameNFTAddress {},
+            &QueryMsg::NameNftAddress {},
         )
         .unwrap();
 
@@ -79,7 +79,7 @@ fn only_admin_can_set_name_nft_address() {
         .execute_contract(
             Addr::unchecked("random_guy"),
             registrar_contract_addr.clone(),
-            &ExecuteMsg::SetNameNFTAddress {
+            &ExecuteMsg::SetNameNftAddress {
                 name_nft_address: name_nft_contract_addr_2.to_string(),
             },
             &[],
@@ -95,16 +95,16 @@ fn only_admin_can_set_name_nft_address() {
     app.execute_contract(
         Addr::unchecked(admins[1].clone()),
         registrar_contract_addr.clone(),
-        &ExecuteMsg::SetNameNFTAddress {
+        &ExecuteMsg::SetNameNftAddress {
             name_nft_address: name_nft_contract_addr_2.to_string(),
         },
         &[],
     )
     .unwrap();
 
-    let NameNFTAddressResponse { name_nft_address } = app
+    let NameNftAddressResponse { name_nft_address } = app
         .wrap()
-        .query_wasm_smart(registrar_contract_addr, &QueryMsg::NameNFTAddress {})
+        .query_wasm_smart(registrar_contract_addr, &QueryMsg::NameNftAddress {})
         .unwrap();
 
     assert_eq!(name_nft_address, name_nft_contract_addr_2);
