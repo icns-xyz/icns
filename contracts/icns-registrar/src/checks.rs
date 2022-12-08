@@ -4,14 +4,9 @@ use cosmwasm_std::{
 };
 
 use crate::{msg::VerifyingMsg, state::CONFIG, state::UNIQUE_TWITTER_ID, ContractError};
-// use ecdsa::signature::Signature;
-// use ecdsa::signature::Verifier;
 use icns_name_nft::msg::{AdminResponse, QueryMsg as NameNFTQueryMsg};
 use itertools::Itertools;
 use sha2::Digest;
-// use k256::{ecdsa::VerifyingKey, Secp256k1};
-
-// type Secp256k1Signature = ecdsa::Signature<Secp256k1>;
 
 pub fn is_admin(deps: Deps, address: &Addr) -> Result<bool, ContractError> {
     let AdminResponse { admins } = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
@@ -172,6 +167,16 @@ pub fn check_valid_threshold(percent: &Decimal) -> Result<(), ContractError> {
     } else {
         Ok(())
     }
+}
+
+pub fn check_pubkey_length(pubkey: &[u8]) -> Result<(), ContractError> {
+    let key_size: usize = 32;
+
+    // +1 for sec1 tag
+    if pubkey.len() != key_size + 1 {
+        return Err(ContractError::InvalidPublicKeyLength {});
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -439,5 +444,21 @@ mod test {
         let err =
             check_verification_pass_threshold(deps.as_ref(), msg, &sign_all(&[], msg)).unwrap_err();
         assert_eq!(err, ContractError::NoVerifier {});
+    }
+
+    #[test]
+    fn test_sanity_check_pubkey() {
+        let private_key = SigningKey::random();
+
+        // generated pubkey should pass
+        check_pubkey_length(&private_key.public_key().to_bytes()).unwrap();
+
+        // invalid pubkey length should fail
+        let err = check_pubkey_length(
+            &vec![private_key.public_key().to_bytes().to_vec(), vec![0u8]].concat(),
+        )
+        .unwrap_err();
+
+        assert_eq!(err, ContractError::InvalidPublicKeyLength {});
     }
 }

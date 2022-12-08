@@ -32,7 +32,7 @@ pub enum ContractError {
     VerifierDoesNotExist {},
 
     #[error("Invalid SEC-1 encoded public key")]
-    InvalidPublicKeyFormat {},
+    InvalidPublicKeyLength {},
 
     #[error("Invalid ASN.1 DER formatted signature")]
     InvalidSignatureFormat {},

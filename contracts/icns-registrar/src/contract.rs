@@ -10,7 +10,7 @@ use icns_name_nft::MintMsg;
 use itertools::Itertools;
 
 use crate::checks::{
-    check_admin, check_fee, check_valid_threshold, check_verfying_msg,
+    check_admin, check_fee, check_pubkey_length, check_valid_threshold, check_verfying_msg,
     check_verification_pass_threshold, is_admin,
 };
 use crate::error::ContractError;
@@ -40,9 +40,9 @@ pub fn instantiate(
     let name_nft_addr = deps.api.addr_validate(&msg.name_nft_addr)?;
 
     // check each verififying key if there is invalid key
-    // msg.verifier_pubkeys
-    //     .iter()
-    //     .try_for_each(|pubkey| check_verifying_key(pubkey).map(|_| ()))?;
+    msg.verifier_pubkeys
+        .iter()
+        .try_for_each(|pubkey| check_pubkey_length(pubkey).map(|_| ()))?;
 
     // check if threshold is valid (0.0-1.0)
     check_valid_threshold(&msg.verification_threshold)?;
@@ -191,11 +191,11 @@ fn execute_update_verifier_pubkeys(
                 .into_iter()
                 .filter(|v| !remove.contains(v))
                 .unique()
-                // .map(|verifier_pubkey| {
-                //     check_verifying_key(verifier_pubkey.as_slice())?;
-                //     Ok(verifier_pubkey)
-                // })
-                .collect(),
+                .map(|verifier_pubkey| {
+                    check_pubkey_length(verifier_pubkey.as_slice())?;
+                    Ok(verifier_pubkey)
+                })
+                .collect::<Result<_, ContractError>>()?,
             ..config
         })
     })?;
@@ -241,6 +241,9 @@ pub fn execute_claim(
 
     // if not admin, need to pass check verification pass threshold before being able to claim name
     if !is_admin {
+        // Client creates `verfifying_msg` and send to verifiers to get verifications
+        // with thier signatures. Then accumulates and send those signatures to this
+        // contract via `Claim` message.
         check_verification_pass_threshold(
             deps.as_ref(),
             &verifying_msg_str,
@@ -268,10 +271,15 @@ pub fn execute_claim(
     }
 
     let verifying_msg: VerifyingMsg = from_slice(verifying_msg_str.as_bytes())?;
+
+    // Checks for duplicated `unique_twitter_id` is in `check_verfying_msg`
     UNIQUE_TWITTER_ID.save(deps.storage, verifying_msg.unique_twitter_id, &name)?;
 
     // mint name nft
     let config = CONFIG.load(deps.storage)?;
+
+    // set minter of `icns-name-nft` to this contract
+    // so that only this contract can mint name nft
     let mint_msg = WasmMsg::Execute {
         contract_addr: config.name_nft.to_string(),
         msg: to_binary(&icns_name_nft::ExecuteMsg::Mint(MintMsg {
@@ -303,7 +311,7 @@ pub fn execute_add_verifier(
 
     check_admin(deps.as_ref(), &info.sender)?;
     let adding_verifier = verifier_pubkey;
-    // check_verifying_key(&adding_verifier)?;
+    check_pubkey_length(&adding_verifier)?;
 
     CONFIG.update(deps.storage, |config| -> StdResult<_> {
         Ok(Config {
@@ -323,7 +331,7 @@ pub fn execute_remove_verifier(
 ) -> Result<Response, ContractError> {
     check_admin(deps.as_ref(), &info.sender)?;
     let removing_verifier = verifier_pubkey.to_vec();
-    // check_verifying_key(&removing_verifier)?;
+    check_pubkey_length(&removing_verifier)?;
 
     CONFIG.update(deps.storage, |config| -> StdResult<_> {
         Ok(Config {

@@ -190,7 +190,6 @@ fn update_verifier_must_keep_verifier_state_unique() {
 }
 
 #[test]
-#[ignore = "previous pubkey verification method depends on rust-crypto's crate which all depends on rand, need to find another way to verify pubkey"]
 fn adding_invalid_pubkeys_is_not_allowed() {
     // setup contracts
     let mut app = BasicApp::default();
@@ -243,6 +242,6 @@ fn adding_invalid_pubkeys_is_not_allowed() {
 
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
-        &ContractError::InvalidPublicKeyFormat {}
+        &ContractError::InvalidPublicKeyLength {}
     );
 }
