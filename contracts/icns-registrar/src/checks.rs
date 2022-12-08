@@ -169,6 +169,16 @@ pub fn check_valid_threshold(percent: &Decimal) -> Result<(), ContractError> {
     }
 }
 
+pub fn check_pubkey_length(pubkey: &[u8]) -> Result<(), ContractError> {
+    let key_size: usize = 32;
+
+    // +1 for sec1 tag
+    if pubkey.len() != key_size + 1 {
+        return Err(ContractError::InvalidPublicKeyLength {});
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -434,5 +444,21 @@ mod test {
         let err =
             check_verification_pass_threshold(deps.as_ref(), msg, &sign_all(&[], msg)).unwrap_err();
         assert_eq!(err, ContractError::NoVerifier {});
+    }
+
+    #[test]
+    fn test_sanity_check_pubkey() {
+        let private_key = SigningKey::random();
+
+        // generated pubkey should pass
+        check_pubkey_length(&private_key.public_key().to_bytes()).unwrap();
+
+        // invalid pubkey length should fail
+        let err = check_pubkey_length(
+            &vec![private_key.public_key().to_bytes().to_vec(), vec![0u8]].concat(),
+        )
+        .unwrap_err();
+
+        assert_eq!(err, ContractError::InvalidPublicKeyLength {});
     }
 }

@@ -10,7 +10,7 @@ use icns_name_nft::MintMsg;
 use itertools::Itertools;
 
 use crate::checks::{
-    check_admin, check_fee, check_valid_threshold, check_verfying_msg,
+    check_admin, check_fee, check_pubkey_length, check_valid_threshold, check_verfying_msg,
     check_verification_pass_threshold, is_admin,
 };
 use crate::error::ContractError;
@@ -39,11 +39,10 @@ pub fn instantiate(
     // validate name nft address
     let name_nft_addr = deps.api.addr_validate(&msg.name_nft_addr)?;
 
-    // NL: Should this be disabled?
     // check each verififying key if there is invalid key
-    // msg.verifier_pubkeys
-    //     .iter()
-    //     .try_for_each(|pubkey| check_verifying_key(pubkey).map(|_| ()))?;
+    msg.verifier_pubkeys
+        .iter()
+        .try_for_each(|pubkey| check_pubkey_length(pubkey).map(|_| ()))?;
 
     // check if threshold is valid (0.0-1.0)
     check_valid_threshold(&msg.verification_threshold)?;
@@ -192,11 +191,11 @@ fn execute_update_verifier_pubkeys(
                 .into_iter()
                 .filter(|v| !remove.contains(v))
                 .unique()
-                // .map(|verifier_pubkey| {
-                //     check_verifying_key(verifier_pubkey.as_slice())?;
-                //     Ok(verifier_pubkey)
-                // })
-                .collect(),
+                .map(|verifier_pubkey| {
+                    check_pubkey_length(verifier_pubkey.as_slice())?;
+                    Ok(verifier_pubkey)
+                })
+                .collect::<Result<_, ContractError>>()?,
             ..config
         })
     })?;
@@ -308,7 +307,7 @@ pub fn execute_add_verifier(
 
     check_admin(deps.as_ref(), &info.sender)?;
     let adding_verifier = verifier_pubkey;
-    // check_verifying_key(&adding_verifier)?;
+    check_pubkey_length(&adding_verifier)?;
 
     CONFIG.update(deps.storage, |config| -> StdResult<_> {
         Ok(Config {
@@ -328,7 +327,7 @@ pub fn execute_remove_verifier(
 ) -> Result<Response, ContractError> {
     check_admin(deps.as_ref(), &info.sender)?;
     let removing_verifier = verifier_pubkey.to_vec();
-    // check_verifying_key(&removing_verifier)?;
+    check_pubkey_length(&removing_verifier)?;
 
     CONFIG.update(deps.storage, |config| -> StdResult<_> {
         Ok(Config {
