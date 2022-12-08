@@ -4,7 +4,7 @@ use cosmwasm_std::{Binary, Uint128};
 use crate::state::Config;
 #[cw_serde]
 pub struct InstantiateMsg {
-    pub name_address: String,
+    pub name_address: String, // NL: Document what this is. It seems to be the nft contract. Maybe also rename it to something more intuitive?
 }
 
 #[cw_serde]
@@ -34,7 +34,7 @@ pub struct Adr36Info {
 }
 
 #[cw_serde]
-#[serde(rename = "name")]
+#[serde(rename = "name")] // NL: Why the rename? isn't "name" a confusing key?
 pub enum AddressHash {
     Cosmos,
     Ethereum,
