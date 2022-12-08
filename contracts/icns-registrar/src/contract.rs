@@ -236,11 +236,11 @@ pub fn execute_claim(
     verifications: Vec<Verification>,
     referral: Option<String>,
 ) -> Result<Response, ContractError> {
-    check_verfying_msg(deps.as_ref(), &env, &info, &name, &verifying_msg_str)?;
     let is_admin = is_admin(deps.as_ref(), &info.sender)?;
-
+    
     // if not admin, need to pass check verification pass threshold before being able to claim name
     if !is_admin {
+        check_verfying_msg(deps.as_ref(), &env, &info, &name, &verifying_msg_str)?;
         // Client creates `verfifying_msg` and send to verifiers to get verifications
         // with thier signatures. Then accumulates and send those signatures to this
         // contract via `Claim` message.

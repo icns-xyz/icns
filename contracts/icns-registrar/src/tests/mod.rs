@@ -6,7 +6,7 @@ mod claim;
 
 mod verifiers;
 
-mod threshold;
+mod set_threshold;
 
 mod name_nft_address;
 

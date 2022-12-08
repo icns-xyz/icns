@@ -1,14 +1,16 @@
 use cosmrs::{bip32, crypto::secp256k1::SigningKey, tendermint::signature::Secp256k1Signature};
-use cosmwasm_std::{Addr, Binary, Decimal, Empty};
+use cosmwasm_std::{Addr, Binary, Decimal, Empty, Coin};
 use cw_multi_test::{BasicApp, Contract, ContractWrapper, Executor};
+use icns_name_nft::msg::ICNSNameExecuteMsg;
 use serde::de::DeserializeOwned;
 use std::fmt::Debug;
 
 use crate::{
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
-    tests::helpers::fixtures::verifier2,
     ContractError,
 };
+
+use self::fixtures::{verifier1, verifier2, verifier3, verifier4};
 
 pub fn name_nft_contract() -> Box<dyn Contract<Empty>> {
     let contract = ContractWrapper::new(
@@ -26,6 +28,63 @@ pub fn registrar_contract() -> Box<dyn Contract<Empty>> {
         crate::contract::query,
     );
     Box::new(contract)
+}
+
+pub fn default_contracts_setup(
+    app: &mut BasicApp,
+    name_nft_code_id: u64,
+    registrar_code_id: u64,
+    admins: Vec<String>,
+    fee: Option<Coin>
+) -> (Addr, Addr) {
+    // setup name nft contract
+    let name_nft_contract_addr = app
+        .instantiate_contract(
+            name_nft_code_id,
+            Addr::unchecked(admins[0].clone()),
+            &icns_name_nft::InstantiateMsg {
+                admins: admins.clone(),
+                transferrable: false,
+            },
+            &[],
+            "name",
+            None,
+        )
+        .unwrap();
+
+    let registrar_contract_addr = app
+        .instantiate_contract(
+            registrar_code_id,
+            Addr::unchecked(admins[0].clone()),
+            &InstantiateMsg {
+                name_nft_addr: name_nft_contract_addr.to_string(),
+                verifier_pubkeys: vec![verifier1(), verifier2(), verifier3(), verifier4()]
+                    .iter()
+                    .map(|v| v.to_binary())
+                    .collect(),
+                verification_threshold: Decimal::percent(50),
+                fee,
+            },
+            &[],
+            "registar",
+            None,
+        )
+        .unwrap();
+
+    // now set registrar as name nft minter
+    app.execute_contract(
+        Addr::unchecked(admins[0].clone()),
+        name_nft_contract_addr.clone(),
+        &icns_name_nft::msg::ExecuteMsg::Extension {
+            msg: ICNSNameExecuteMsg::SetMinter {
+                minter_address: registrar_contract_addr.to_string(),
+            },
+        },
+        &[],
+    )
+        .unwrap();
+
+    (name_nft_contract_addr, registrar_contract_addr)
 }
 
 pub fn test_only_admin<T>(execute_msg: ExecuteMsg, query_msg: QueryMsg, initial: T, updated: T)
