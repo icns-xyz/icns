@@ -91,6 +91,7 @@ pub mod entry {
                 let is_transferable = is_transferrable(deps.as_ref())?;
 
                 if is_admin || is_transferable {
+                    println!("===here");
                     name_nft.execute(deps, env, info, msg).map_err(Into::into)
                 } else {
                     Err(ContractError::TransferNotAllowed {})
