@@ -10,8 +10,8 @@ use icns_name_nft::MintMsg;
 use itertools::Itertools;
 
 use crate::checks::{
-    check_admin, check_fee, check_pubkey_length, check_valid_threshold, check_verfying_msg,
-    check_verification_pass_threshold, is_admin,
+    check_admin, check_existing_icns_name, check_fee, check_pubkey_length, check_valid_threshold,
+    check_verfying_msg, check_verification_pass_threshold, is_admin,
 };
 use crate::error::ContractError;
 use crate::msg::{
@@ -257,6 +257,15 @@ pub fn execute_claim(
                 })
                 .collect::<StdResult<Vec<_>>>()?,
         )?;
+    }
+
+    // if referral is set, check referral is an existing icns name
+    if let Some(referral) = referral.as_ref() {
+        check_existing_icns_name(deps.as_ref(), referral).map_err(|_| {
+            ContractError::InvalidReferral {
+                referral: referral.clone(),
+            }
+        })?;
     }
 
     // check if fees are correctly given.

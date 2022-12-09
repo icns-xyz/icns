@@ -627,14 +627,15 @@ fn claim_name_with_referral() {
         r#"{{"name":"{bob_name}","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}","unique_twitter_id":"{unique_twitter_id}"}}"#,
     );
 
+    // no referral for setting up valid referral
     app.execute_contract(
         bob.clone(),
-        registrar_contract_addr,
+        registrar_contract_addr.clone(),
         &ExecuteMsg::Claim {
             name: bob_name.to_string(),
             verifying_msg: verifying_msg.clone(),
             verifications: verify_all(&verifying_msg, vec![verifier4(), verifier3()]),
-            referral: Some("referral".to_string()),
+            referral: None,
         },
         &[],
     )
@@ -643,8 +644,55 @@ fn claim_name_with_referral() {
     assert_eq!(owner(&app, bob_name.to_string()).unwrap(), bob);
     assert_eq!(
         metadata(&app, bob_name.to_string()).unwrap(),
+        Metadata { referral: None }
+    );
+
+    let bobby_name = "bobby";
+    // execute claim with passing verification
+    let verifying_msg = format!(
+        r#"{{"name":"{bobby_name}","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}","unique_twitter_id":"2222"}}"#,
+    );
+
+    // referral as non-existing icns name
+    let err = app
+        .execute_contract(
+            bob.clone(),
+            registrar_contract_addr.clone(),
+            &ExecuteMsg::Claim {
+                name: bobby_name.to_string(),
+                verifying_msg: verifying_msg.clone(),
+                verifications: verify_all(&verifying_msg, vec![verifier4(), verifier3()]),
+                referral: Some("wrong_bobby".to_string()),
+            },
+            &[],
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        err.downcast_ref::<ContractError>().unwrap(),
+        &ContractError::InvalidReferral {
+            referral: "wrong_bobby".to_string()
+        }
+    );
+
+    // referral as existing icns name
+    app.execute_contract(
+        bob.clone(),
+        registrar_contract_addr,
+        &ExecuteMsg::Claim {
+            name: bobby_name.to_string(),
+            verifying_msg: verifying_msg.clone(),
+            verifications: verify_all(&verifying_msg, vec![verifier4(), verifier3()]),
+            referral: Some(bob_name.to_string()),
+        },
+        &[],
+    )
+    .unwrap();
+    assert_eq!(owner(&app, bobby_name.to_string()).unwrap(), bob);
+    assert_eq!(
+        metadata(&app, bobby_name.to_string()).unwrap(),
         Metadata {
-            referral: Some("referral".to_string())
+            referral: Some(bob_name.to_string())
         }
     );
 }
