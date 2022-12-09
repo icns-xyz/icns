@@ -4,7 +4,7 @@ use cosmwasm_std::{
 };
 
 use crate::{msg::VerifyingMsg, state::CONFIG, state::UNIQUE_TWITTER_ID, ContractError};
-use icns_name_nft::msg::{AdminResponse, QueryMsg as NameNFTQueryMsg};
+use icns_name_nft::msg::{AdminResponse, NftInfoResponse, QueryMsg as NameNFTQueryMsg};
 use itertools::Itertools;
 use sha2::Digest;
 
@@ -30,6 +30,17 @@ pub fn check_admin(deps: Deps, sender: &Addr) -> Result<(), ContractError> {
     if !admins.contains(&sender.to_string()) {
         return Err(ContractError::Unauthorized {});
     }
+
+    Ok(())
+}
+
+pub fn check_existing_icns_name(deps: Deps, name: &str) -> Result<(), ContractError> {
+    let NftInfoResponse { .. } = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+        contract_addr: CONFIG.load(deps.storage)?.name_nft.to_string(),
+        msg: to_binary(&NameNFTQueryMsg::NftInfo {
+            token_id: name.to_string(),
+        })?,
+    }))?;
 
     Ok(())
 }

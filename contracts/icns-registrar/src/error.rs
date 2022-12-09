@@ -65,4 +65,7 @@ pub enum ContractError {
 
     #[error("Invalid fee: required exactly {fee_required}")]
     InvalidFee { fee_required: Coin },
+
+    #[error("Invalid referral: `{referral}` must be an ICNS name")]
+    InvalidReferral { referral: String },
 }
