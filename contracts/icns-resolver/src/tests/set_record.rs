@@ -464,7 +464,7 @@ fn same_pubkey_invalid_bech_32() {
 }
 
 #[test]
-fn set_record_with_different_signer_and_signature_owner() {
+fn set_record_with_different_signer_and_signature_owner_wrong_signature() {
     let admin1 = String::from("admin1");
     let admin2 = String::from("admin2");
     let admins = vec![admin1, admin2];
@@ -493,14 +493,13 @@ fn set_record_with_different_signer_and_signature_owner() {
         name_nft_contract,
         &CW721BaseExecuteMsg::<Metadata, Empty>::Mint(MintMsg {
             token_id: "carol".to_string(),
-            owner: addr.to_string(),
+            owner: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string(),
             token_uri: None,
             extension: Metadata { referral: None },
         }),
         &[],
     )
     .unwrap();
-
 
     let msg = ExecuteMsg::SetRecord {
         name: "carol".to_string(),
@@ -513,13 +512,55 @@ fn set_record_with_different_signer_and_signature_owner() {
         },
         bech32_prefix: "juno".to_string(),
     };
-    app.execute_contract(
-        Addr::unchecked("osmo1pzkvm8jp8qpulme2gg959esp3270swzuef3cmk".to_string()),
+
+    let err = app.execute_contract(
+        Addr::unchecked("osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string()),
         resolver_contract_addr.clone(),
         &msg,
         &[],
     )
     .unwrap_err();
+
+    assert_eq!(
+        err.downcast_ref::<ContractError>().unwrap(),
+        &ContractError::SignatureMisMatch {  }
+    );
+}
+
+#[test]
+fn set_record_with_different_signer_and_signature_owner() {
+    let admin1 = String::from("admin1");
+    let admin2 = String::from("admin2");
+    let admins = vec![admin1, admin2];
+    let registrar = String::from("default-registrar");
+
+    let (name_nft_contract, resolver_contract_addr, mut app) =
+        default_setting(admins, registrar.clone());
+
+    // create osmo address
+    let pub_key_bytes =
+        hex_decode("0322b7d0ab1ec915bf3902bd4d3a1dde5d0add15865f951d7ac3fb206e9e898f2d")
+        .unwrap();
+    let pub_key_binary = Binary::from(pub_key_bytes);
+    let addr = cosmos_pubkey_to_bech32_address(pub_key_binary.clone(), "juno".to_string());
+
+    assert_eq!(
+        addr,
+        "juno1c8qw55n7vl6j0yvct7gmyg3hlmx026ek8r55g9",
+    );
+
+    app.execute_contract(
+        Addr::unchecked(registrar),
+        name_nft_contract,
+        &CW721BaseExecuteMsg::<Metadata, Empty>::Mint(MintMsg {
+            token_id: "carol".to_string(),
+            owner: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string(),
+            token_uri: None,
+            extension: Metadata { referral: None },
+        }),
+        &[],
+    )
+    .unwrap();
 
     let original_signature_vec = hex!("65b953369240beddbd0c3df5d7fe0e2519312daacd912828a93ed44d801d492b0720003d23fe4b7958dfa6126c5213d61f4f693bbc00aeabe71253d81960a779");
     let signature = Binary::from(original_signature_vec);
@@ -537,7 +578,7 @@ fn set_record_with_different_signer_and_signature_owner() {
         bech32_prefix: "juno".to_string(),
     };
     app.execute_contract(
-        Addr::unchecked(addr),
+        Addr::unchecked("osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697"),
         resolver_contract_addr.clone(),
         &msg,
         &[],
