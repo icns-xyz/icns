@@ -89,9 +89,11 @@ pub fn execute_set_record(
         // first check sender and the bech32 address in msg match
         // if it does, no need to verify adr36
         // in order to check if they match, we first need to decode the bech32 address
-        let (signer_bech32_prefix_decoded, signer_bech32_address_decoded) = bech32::decode(adr36_info.signer_bech32_address.clone())
-            .map_err(|_| ContractError::Bech32DecodingErr {
-                addr: bech32_prefix.clone(),
+        let (signer_bech32_prefix_decoded, signer_bech32_address_decoded) =
+            bech32::decode(adr36_info.signer_bech32_address.clone()).map_err(|_| {
+                ContractError::Bech32DecodingErr {
+                    addr: bech32_prefix.clone(),
+                }
             })?;
         let sender_bech32_address_decoded = bech32::decode(info.sender.clone())
             .map_err(|_| ContractError::Bech32DecodingErr {
@@ -366,7 +368,7 @@ fn query_icns_names(deps: Deps, address: String) -> StdResult<IcnsNamesResponse>
             msg: "Invalid bech32 address".to_string(),
         })?
         .0;
-    
+
     let primary_name_with_prefix = format!("{}.{}", primary_name, bech32_prefix);
 
     Ok(IcnsNamesResponse {

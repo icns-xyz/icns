@@ -2,7 +2,7 @@
 
 use crate::{
     msg::{NameByTwitterIdResponse, QueryMsg},
-    tests::helpers::{fixtures::*, ToBinary, default_contracts_setup},
+    tests::helpers::{default_contracts_setup, fixtures::*, ToBinary},
 };
 use cosmrs::crypto::secp256k1::SigningKey;
 use cosmwasm_std::{Addr, Binary, Coin, Decimal, StdError, StdResult};
@@ -25,13 +25,8 @@ fn claim_name() {
     let admins = vec!["admin1".to_string(), "admin2".to_string()];
 
     // setup name nft contract
-    let (name_nft_contract_addr, registrar_contract_addr) = default_contracts_setup(
-        &mut app,
-        name_nft_code_id,
-        registrar_code_id,
-        admins.clone(),
-        None
-    );
+    let (name_nft_contract_addr, registrar_contract_addr) =
+        default_contracts_setup(&mut app, name_nft_code_id, registrar_code_id, admins, None);
 
     let owner = |app: &BasicApp, name: String| -> StdResult<_> {
         let OwnerOfResponse { owner, .. } = app.wrap().query_wasm_smart(
@@ -296,12 +291,12 @@ fn claim_name() {
 
 #[test]
 fn admin_bypass_verifications() {
-     // setup contracts
-     let mut app = BasicApp::default();
-     let name_nft_code_id = app.store_code(name_nft_contract());
-     let registrar_code_id = app.store_code(registrar_contract());
-     let admins = vec!["admin1".to_string(), "admin2".to_string()];
- 
+    // setup contracts
+    let mut app = BasicApp::default();
+    let name_nft_code_id = app.store_code(name_nft_contract());
+    let registrar_code_id = app.store_code(registrar_contract());
+    let admins = vec!["admin1".to_string(), "admin2".to_string()];
+
     // setup name nft contract
     let (_name_nft_contract_addr, registrar_contract_addr) = default_contracts_setup(
         &mut app,
@@ -322,7 +317,7 @@ fn admin_bypass_verifications() {
 
     // try claiming with non admin with no verifications, this should error
     app.execute_contract(
-        bob.clone(),
+        bob,
         registrar_contract_addr.clone(),
         &ExecuteMsg::Claim {
             name: bob_name.to_string(),
@@ -337,10 +332,10 @@ fn admin_bypass_verifications() {
     // now try claiming with admin with no verifications, this should work
     app.execute_contract(
         Addr::unchecked(admins[0].clone()),
-        registrar_contract_addr.clone(),
+        registrar_contract_addr,
         &ExecuteMsg::Claim {
             name: bob_name.to_string(),
-            verifying_msg: verifying_msg.clone(),
+            verifying_msg,
             verifications: Vec::new(),
             referral: None,
         },
@@ -376,8 +371,8 @@ fn claim_name_with_fee() {
         &mut app,
         name_nft_code_id,
         registrar_code_id,
-        admins.clone(),
-        Some(fee.clone())
+        admins,
+        Some(fee.clone()),
     );
 
     let owner = |app: &BasicApp, name: String| -> StdResult<_> {
@@ -634,7 +629,7 @@ fn claim_name_with_referral() {
 
     app.execute_contract(
         bob.clone(),
-        registrar_contract_addr.clone(),
+        registrar_contract_addr,
         &ExecuteMsg::Claim {
             name: bob_name.to_string(),
             verifying_msg: verifying_msg.clone(),
@@ -663,13 +658,8 @@ fn try_claiming_with_unpassed_threshold() {
     let admins = vec!["admin1".to_string(), "admin2".to_string()];
 
     // setup name nft contract
-    let (_name_nft_contract_addr, registrar_contract_addr) = default_contracts_setup(
-        &mut app,
-        name_nft_code_id,
-        registrar_code_id,
-        admins.clone(),
-        None
-    );
+    let (_name_nft_contract_addr, registrar_contract_addr) =
+        default_contracts_setup(&mut app, name_nft_code_id, registrar_code_id, admins, None);
 
     // set up verifiers
     let verify_all = |verifying_msg: &str, verifiers: Vec<SigningKey>| -> Vec<Verification> {
@@ -690,18 +680,19 @@ fn try_claiming_with_unpassed_threshold() {
         r#"{{"name":"{bob_name}","claimer":"{bob}","contract_address":"{registrar_contract_addr}","chain_id":"{multitest_chain_id}","unique_twitter_id":"{unique_twitter_id}"}}"#,
     );
 
-    let err = app.execute_contract(
-        bob.clone(),
-        registrar_contract_addr.clone(),
-        &ExecuteMsg::Claim {
-            name: bob_name.to_string(),
-            verifying_msg: verifying_msg.clone(),
-            verifications: verify_all(&verifying_msg, vec![verifier3()]),
-            referral: None,
-        },
-        &[],
-    )
-    .unwrap_err();
+    let err = app
+        .execute_contract(
+            bob,
+            registrar_contract_addr,
+            &ExecuteMsg::Claim {
+                name: bob_name.to_string(),
+                verifying_msg: verifying_msg.clone(),
+                verifications: verify_all(&verifying_msg, vec![verifier3()]),
+                referral: None,
+            },
+            &[],
+        )
+        .unwrap_err();
 
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),

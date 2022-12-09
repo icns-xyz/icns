@@ -237,7 +237,7 @@ pub fn execute_claim(
     referral: Option<String>,
 ) -> Result<Response, ContractError> {
     let is_admin = is_admin(deps.as_ref(), &info.sender)?;
-    
+
     // if not admin, need to pass check verification pass threshold before being able to claim name
     if !is_admin {
         check_verfying_msg(deps.as_ref(), &env, &info, &name, &verifying_msg_str)?;

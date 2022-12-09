@@ -1,5 +1,5 @@
 use cosmrs::{bip32, crypto::secp256k1::SigningKey, tendermint::signature::Secp256k1Signature};
-use cosmwasm_std::{Addr, Binary, Decimal, Empty, Coin};
+use cosmwasm_std::{Addr, Binary, Coin, Decimal, Empty};
 use cw_multi_test::{BasicApp, Contract, ContractWrapper, Executor};
 use icns_name_nft::msg::ICNSNameExecuteMsg;
 use serde::de::DeserializeOwned;
@@ -35,7 +35,7 @@ pub fn default_contracts_setup(
     name_nft_code_id: u64,
     registrar_code_id: u64,
     admins: Vec<String>,
-    fee: Option<Coin>
+    fee: Option<Coin>,
 ) -> (Addr, Addr) {
     // setup name nft contract
     let name_nft_contract_addr = app
@@ -82,7 +82,7 @@ pub fn default_contracts_setup(
         },
         &[],
     )
-        .unwrap();
+    .unwrap();
 
     (name_nft_contract_addr, registrar_contract_addr)
 }

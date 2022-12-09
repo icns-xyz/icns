@@ -170,7 +170,7 @@ mod non_transferrable {
 
         // registrar mint test name
         app.execute_contract(
-            registrar.clone(),
+            registrar,
             contract_addr.clone(),
             &ExecuteMsg::Mint(MintMsg {
                 token_id: admin.to_string(),
@@ -183,13 +183,13 @@ mod non_transferrable {
         .unwrap();
 
         app.execute_contract(
-                admins[0].clone(),
-                contract_addr.clone(),
-                &ExecuteMsg::TransferNft {
-                    recipient: admin.to_string(),
-                    token_id: admin.to_string(),
-                },
-                &[],
+            admins[0].clone(),
+            contract_addr.clone(),
+            &ExecuteMsg::TransferNft {
+                recipient: admin.to_string(),
+                token_id: admin.to_string(),
+            },
+            &[],
         )
         .unwrap();
 
@@ -208,13 +208,13 @@ mod non_transferrable {
 
         app.execute_contract(
             admins[0].clone(),
-            contract_addr.clone(),
+            contract_addr,
             &ExecuteMsg::SendNft {
                 contract: reciever_contract_addr.to_string(),
                 token_id: admin.to_string(),
                 msg: to_binary(&()).unwrap(),
             },
-        &[],
+            &[],
         )
         .unwrap();
     }
