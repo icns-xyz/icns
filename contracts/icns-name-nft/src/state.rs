@@ -4,7 +4,10 @@ use cw_storage_plus::Item;
 
 #[cw_serde]
 pub struct Config {
+    // list of admins
     pub admins: Vec<Addr>,
+    // transferrable flag. If true nfts minted can be transferred to other accounts.
+    // If false, transferred are not allowed.
     pub transferrable: bool,
 }
 

@@ -74,21 +74,30 @@ pub enum ExecuteMsg {
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
+    /// VerifierPubKeys returns all the public keys of the verifiers
     #[returns(VerifierPubKeysResponse)]
     VerifierPubKeys {},
 
+    /// VerificationThreshold returns the threshold percentage of verification
+    /// signature required out of all verifiers
     #[returns(VerificationThresholdResponse)]
     VerificationThreshold {},
 
+    /// NameNftAddress returns the address of the name NFT contract
     #[returns(NameNftAddressResponse)]
     NameNftAddress {},
 
+    /// ReferralCount returns the number of referral for a specific user(name)
     #[returns(ReferralCountResponse)]
     ReferralCount { name: String },
 
+    /// Fee returns the current fee required for minting new name
     #[returns(FeeResponse)]
     Fee {},
 
+    /// NameByTwitterId returns the name of the user by twitter id.
+    /// Note that the name returned does not indicate the "current" name of the user in Twitter,
+    /// but the name that the user has used when claiming icns.
     #[returns(NameByTwitterIdResponse)]
     NameByTwitterId { twitter_id: String },
 }

@@ -108,125 +108,7 @@ pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, 
     Ok(Response::default())
 }
 
-fn execute_withdraw_funds(
-    deps: DepsMut,
-    info: MessageInfo,
-    amount: Vec<Coin>,
-    to_address: String,
-) -> Result<Response, ContractError> {
-    check_admin(deps.as_ref(), &info.sender)?;
-    deps.api.addr_validate(&to_address)?;
-    let attrs = vec![
-        attr("method", "withraw_funds"),
-        attr("to_address", &to_address),
-        attr(
-            "amount",
-            amount
-                .iter()
-                .map(|amount| amount.to_string())
-                .collect::<Vec<_>>()
-                .join(","),
-        ),
-    ];
-
-    Ok(Response::new()
-        .add_attributes(attrs)
-        .add_message(BankMsg::Send { to_address, amount }))
-}
-
-fn execute_set_fee(
-    deps: DepsMut,
-    info: MessageInfo,
-    fee: Option<Coin>,
-) -> Result<Response, ContractError> {
-    check_admin(deps.as_ref(), &info.sender)?;
-
-    let attrs = vec![
-        attr("method", "set_fee"),
-        attr(
-            "fee",
-            fee.as_ref()
-                .map(|fee| fee.to_string())
-                .unwrap_or_else(|| "no fee".to_string()),
-        ),
-    ];
-
-    CONFIG.update(deps.storage, |config| -> StdResult<_> {
-        Ok(Config { fee, ..config })
-    })?;
-
-    Ok(Response::new().add_attributes(attrs))
-}
-
-fn execute_set_name_nft_address(
-    deps: DepsMut,
-    info: MessageInfo,
-    name_nft_address: String,
-) -> Result<Response, ContractError> {
-    check_admin(deps.as_ref(), &info.sender)?;
-    CONFIG.update(deps.storage, |config| -> Result<_, ContractError> {
-        Ok(Config {
-            name_nft: deps.api.addr_validate(&name_nft_address)?,
-            ..config
-        })
-    })?;
-
-    Ok(Response::new()
-        .add_attribute("method", "set_name_nft_address")
-        .add_attribute("name_nft_address", name_nft_address))
-}
-
-fn execute_update_verifier_pubkeys(
-    deps: DepsMut,
-    info: MessageInfo,
-    add: Vec<Binary>,
-    remove: Vec<Binary>,
-) -> Result<Response, ContractError> {
-    check_admin(deps.as_ref(), &info.sender)?;
-
-    CONFIG.update(deps.storage, |config| -> Result<_, ContractError> {
-        Ok(Config {
-            verifier_pubkeys: vec![config.verifier_pubkeys, add]
-                .concat()
-                .into_iter()
-                .filter(|v| !remove.contains(v))
-                .unique()
-                .map(|verifier_pubkey| {
-                    check_pubkey_length(verifier_pubkey.as_slice())?;
-                    Ok(verifier_pubkey)
-                })
-                .collect::<Result<_, ContractError>>()?,
-            ..config
-        })
-    })?;
-
-    Ok(Response::new().add_attribute("method", "update_verifier_pubkeys"))
-}
-
-fn execute_set_verification_threshold(
-    deps: DepsMut,
-    info: MessageInfo,
-    verification_threshold: Decimal,
-) -> Result<Response, ContractError> {
-    check_admin(deps.as_ref(), &info.sender)?;
-
-    let attrs = vec![
-        attr("method", "set_verification_threshold"),
-        attr("verfication_threshold", verification_threshold.to_string()),
-    ];
-
-    check_valid_threshold(&verification_threshold)?;
-
-    CONFIG.update(deps.storage, |config| -> StdResult<_> {
-        Ok(Config {
-            verification_threshold_percentage: verification_threshold,
-            ..config
-        })
-    })?;
-
-    Ok(Response::new().add_attributes(attrs))
-}
-
+// executes the claiming process for the icns name and nft.
 pub fn execute_claim(
     deps: DepsMut,
     env: Env,
@@ -244,6 +126,8 @@ pub fn execute_claim(
         // Client creates `verfifying_msg` and send to verifiers to get verifications
         // with thier signatures. Then accumulates and send those signatures to this
         // contract via `Claim` message.
+        // given verifications(signatures), check if the given verifications are valid and they pass the threshold set in config.
+        // only the verifiers in the config can sign the verfifying_msg.
         check_verification_pass_threshold(
             deps.as_ref(),
             &verifying_msg_str,
@@ -279,9 +163,9 @@ pub fn execute_claim(
         })?;
     }
 
+    
+    // save unique_twitter_id to storage to prevent duplicate claim for single user.
     let verifying_msg: VerifyingMsg = from_slice(verifying_msg_str.as_bytes())?;
-
-    // Checks for duplicated `unique_twitter_id` is in `check_verfying_msg`
     UNIQUE_TWITTER_ID.save(deps.storage, verifying_msg.unique_twitter_id, &name)?;
 
     // mint name nft
@@ -304,6 +188,135 @@ pub fn execute_claim(
         .add_attribute("method", "claim")
         .add_attribute("name", name)
         .add_message(mint_msg))
+}
+
+
+fn execute_set_verification_threshold(
+    deps: DepsMut,
+    info: MessageInfo,
+    verification_threshold: Decimal,
+) -> Result<Response, ContractError> {
+    // check if sender is admin. Only admin can set verification threshold
+    check_admin(deps.as_ref(), &info.sender)?;
+
+    let attrs = vec![
+        attr("method", "set_verification_threshold"),
+        attr("verfication_threshold", verification_threshold.to_string()),
+    ];
+
+    // sanity check on the given threshold
+    check_valid_threshold(&verification_threshold)?;
+
+    CONFIG.update(deps.storage, |config| -> StdResult<_> {
+        Ok(Config {
+            verification_threshold_percentage: verification_threshold,
+            ..config
+        })
+    })?;
+
+    Ok(Response::new().add_attributes(attrs))
+}
+
+// execute_update_verifier_pubkeys updates the list of verifier pubkeys.
+fn execute_update_verifier_pubkeys(
+    deps: DepsMut,
+    info: MessageInfo,
+    add: Vec<Binary>,
+    remove: Vec<Binary>,
+) -> Result<Response, ContractError> {
+    check_admin(deps.as_ref(), &info.sender)?;
+
+    CONFIG.update(deps.storage, |config| -> Result<_, ContractError> {
+        Ok(Config {
+            verifier_pubkeys: vec![config.verifier_pubkeys, add]
+                .concat()
+                .into_iter()
+                .filter(|v| !remove.contains(v))
+                .unique()
+                .map(|verifier_pubkey| {
+                    check_pubkey_length(verifier_pubkey.as_slice())?;
+                    Ok(verifier_pubkey)
+                })
+                .collect::<Result<_, ContractError>>()?,
+            ..config
+        })
+    })?;
+
+    Ok(Response::new().add_attribute("method", "update_verifier_pubkeys"))
+}
+
+// execute_withdraw_funds withdraws accumulated funds from fees.
+fn execute_withdraw_funds(
+    deps: DepsMut,
+    info: MessageInfo,
+    amount: Vec<Coin>,
+    to_address: String,
+) -> Result<Response, ContractError> {
+    // check if the sender is admin. If not, return error.
+    check_admin(deps.as_ref(), &info.sender)?;
+    deps.api.addr_validate(&to_address)?;
+    let attrs = vec![
+        attr("method", "withraw_funds"),
+        attr("to_address", &to_address),
+        attr(
+            "amount",
+            amount
+                .iter()
+                .map(|amount| amount.to_string())
+                .collect::<Vec<_>>()
+                .join(","),
+        ),
+    ];
+
+    Ok(Response::new()
+        .add_attributes(attrs)
+        .add_message(BankMsg::Send { to_address, amount }))
+}
+
+// execute_set_fee sets the fee for claiming a name.
+// This can either be a fixed amount or None.
+fn execute_set_fee(
+    deps: DepsMut,
+    info: MessageInfo,
+    fee: Option<Coin>,
+) -> Result<Response, ContractError> {
+    check_admin(deps.as_ref(), &info.sender)?;
+
+    let attrs = vec![
+        attr("method", "set_fee"),
+        attr(
+            "fee",
+            fee.as_ref()
+                .map(|fee| fee.to_string())
+                .unwrap_or_else(|| "no fee".to_string()),
+        ),
+    ];
+
+    CONFIG.update(deps.storage, |config| -> StdResult<_> {
+        Ok(Config { fee, ..config })
+    })?;
+
+    Ok(Response::new().add_attributes(attrs))
+}
+
+// execute_set_name_nft_address sets the address of the name nft contract.
+// This is used to mint name nft when a name is claimed.
+fn execute_set_name_nft_address(
+    deps: DepsMut,
+    info: MessageInfo,
+    name_nft_address: String,
+) -> Result<Response, ContractError> {
+    check_admin(deps.as_ref(), &info.sender)?;
+    CONFIG.update(deps.storage, |config| -> Result<_, ContractError> {
+        Ok(Config {
+            name_nft: deps.api.addr_validate(&name_nft_address)?,
+            ..config
+        })
+    })?;
+
+    Ok(Response::new()
+        .add_attribute("method", "set_name_nft_address")
+        .add_attribute("name_nft_address", name_nft_address))
 }
 
 // execute_add_verifier adds an verifier to the list of verifiers
@@ -332,6 +345,7 @@ pub fn execute_add_verifier(
     Ok(Response::new().add_attributes(attrs))
 }
 
+// execute_remove_verifier removes an verifier from the list of verifiers
 pub fn execute_remove_verifier(
     deps: DepsMut,
     _env: Env,

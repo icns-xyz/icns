@@ -20,6 +20,7 @@ pub struct InstantiateMsg {
 
 pub type ExecuteMsg = cw721_base::ExecuteMsg<Metadata, ICNSNameExecuteMsg>;
 
+/// Metadata is optional, and contains a String of the referral name.
 #[cw_serde]
 pub struct Metadata {
     pub referral: Option<String>,
@@ -27,9 +28,14 @@ pub struct Metadata {
 
 #[cw_serde]
 pub enum ICNSNameExecuteMsg {
+    /// SetTransferrable sets the transferrable to either true or false.
     SetTransferrable { transferrable: bool },
+    /// RemoveAdmin removes admin from the list of admins.
     RemoveAdmin { admin_address: String },
+    /// AddAdmin adds admin to the list of admins. 
     AddAdmin { admin_address: String },
+    /// SetMinter sets the minter address to the given address.
+    /// Minter would be set to the registrar address by default.
     SetMinter { minter_address: String },
 }
 

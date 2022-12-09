@@ -19,6 +19,7 @@ pub struct Config {
 }
 
 impl Config {
+    // check_pass_threshold checks if the passed verification is above the threshold set in config
     pub fn check_pass_threshold(
         &self,
         passed_verification: impl Into<Decimal>,

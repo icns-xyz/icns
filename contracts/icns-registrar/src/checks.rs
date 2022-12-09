@@ -8,6 +8,9 @@ use icns_name_nft::msg::{AdminResponse, NftInfoResponse, QueryMsg as NameNFTQuer
 use itertools::Itertools;
 use sha2::Digest;
 
+// is_admin checks if the sender is an admin.
+// returns true if the sender is an admin, otherwise returns false.
+// admin information is queried from the name nft contract.
 pub fn is_admin(deps: Deps, address: &Addr) -> Result<bool, ContractError> {
     let AdminResponse { admins } = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
         contract_addr: CONFIG.load(deps.storage)?.name_nft.to_string(),
@@ -21,6 +24,8 @@ pub fn is_admin(deps: Deps, address: &Addr) -> Result<bool, ContractError> {
     Ok(true)
 }
 
+// check_admin checks if the sender is an admin.
+// returns error if the sender is not an admin.
 pub fn check_admin(deps: Deps, sender: &Addr) -> Result<(), ContractError> {
     let AdminResponse { admins } = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
         contract_addr: CONFIG.load(deps.storage)?.name_nft.to_string(),
@@ -34,6 +39,8 @@ pub fn check_admin(deps: Deps, sender: &Addr) -> Result<(), ContractError> {
     Ok(())
 }
 
+// check_existing_icns_name checks if the name is already registered.
+// returns error if the name is not already registered.
 pub fn check_existing_icns_name(deps: Deps, name: &str) -> Result<(), ContractError> {
     let NftInfoResponse { .. } = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
         contract_addr: CONFIG.load(deps.storage)?.name_nft.to_string(),
@@ -45,6 +52,9 @@ pub fn check_existing_icns_name(deps: Deps, name: &str) -> Result<(), ContractEr
     Ok(())
 }
 
+// check_fee checks if the fee is correct.
+// Returns error if given funds do not match the fee set in the configuration.
+// Note that this method would not error if config.fee is None.
 pub fn check_fee(deps: Deps, funds: &[Coin]) -> Result<(), ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
@@ -57,6 +67,13 @@ pub fn check_fee(deps: Deps, funds: &[Coin]) -> Result<(), ContractError> {
     Ok(())
 }
 
+// check_verfying_msg checks if the given verifying message is valid.
+// To pass the check, the following conditions must be met:
+// 1. given name must match the name in the verifying message
+// 2. given claimer in verifying msg must match info.sender
+// 3. given contract address in verifying msg must match the current contract address
+// 4. given chain id in verifying msg must match the current chain id
+// 5. given unique twitter id in verifying msg must not have registered yet
 pub fn check_verfying_msg(
     deps: Deps,
     env: &Env,
@@ -114,6 +131,8 @@ pub fn check_verfying_msg(
     Ok(())
 }
 
+// check_verification_pass_threshold checks if the given verifications pass the threshold.
+// Errors when the given verifications are not valid, or did not pass the threshold set in the configuration.
 pub fn check_verification_pass_threshold(
     deps: Deps,
     msg: &str,
@@ -148,7 +167,7 @@ pub fn check_verification_pass_threshold(
         return Err(ContractError::DuplicatedVerification { signature });
     }
 
-    // verify all signatures
+    // verify all signatures using secp256k1
     verifications
         .iter()
         .unique()
@@ -172,6 +191,8 @@ pub fn check_verification_pass_threshold(
     Ok(())
 }
 
+// check_valid_threshold checks if the given threshold is valid.
+// returns error when given percent is not between 0 and 100.
 pub fn check_valid_threshold(percent: &Decimal) -> Result<(), ContractError> {
     if *percent > Decimal::percent(100) || *percent < Decimal::percent(0) {
         Err(ContractError::InvalidThreshold {})
@@ -180,6 +201,7 @@ pub fn check_valid_threshold(percent: &Decimal) -> Result<(), ContractError> {
     }
 }
 
+// check_pubkey_length checks if the given public key is valid.
 pub fn check_pubkey_length(pubkey: &[u8]) -> Result<(), ContractError> {
     let key_size: usize = 32;
 

@@ -82,7 +82,8 @@ pub mod entry {
         let name_nft = ICNSNameNFTContract::default();
 
         match msg {
-            // TransferNft and SendNft are supported only if transferrable is set to true
+            // TransferNft and SendNft are supported only if transferrable is set to true,
+            // or when the msg sender is an admin.
             msg @ CW721BaseExecuteMsg::TransferNft { .. }
             | msg @ CW721BaseExecuteMsg::SendNft { .. } => {
                 let is_admin = check_is_admin(deps.as_ref(), &info.sender)?;
