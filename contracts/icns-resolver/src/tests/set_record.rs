@@ -475,15 +475,11 @@ fn set_record_with_different_signer_and_signature_owner_wrong_signature() {
 
     // create osmo address
     let pub_key_bytes =
-        hex_decode("0322b7d0ab1ec915bf3902bd4d3a1dde5d0add15865f951d7ac3fb206e9e898f2d")
-        .unwrap();
+        hex_decode("0322b7d0ab1ec915bf3902bd4d3a1dde5d0add15865f951d7ac3fb206e9e898f2d").unwrap();
     let pub_key_binary = Binary::from(pub_key_bytes);
     let addr = cosmos_pubkey_to_bech32_address(pub_key_binary.clone(), "juno".to_string());
 
-    assert_eq!(
-        addr,
-        "juno1c8qw55n7vl6j0yvct7gmyg3hlmx026ek8r55g9",
-    );
+    assert_eq!(addr, "juno1c8qw55n7vl6j0yvct7gmyg3hlmx026ek8r55g9",);
 
     let wrong_original_signature_vec = hex!("65b953369240beddbd0c3df5d7fe0e2519312daacd912828a93ed44d801d492b0720003d23fe4b7958dfa6126c5213d61f4f693bbc00aeabe71253d81960a778");
     let wrong_signature = Binary::from(wrong_original_signature_vec);
@@ -504,26 +500,27 @@ fn set_record_with_different_signer_and_signature_owner_wrong_signature() {
     let msg = ExecuteMsg::SetRecord {
         name: "carol".to_string(),
         adr36_info: Adr36Info {
-            signer_bech32_address: addr.clone().to_string(),
+            signer_bech32_address: addr,
             address_hash: msg::AddressHash::Cosmos,
-            pub_key: pub_key_binary.clone(),
+            pub_key: pub_key_binary,
             signature: wrong_signature,
             signature_salt: 633234u128.into(),
         },
         bech32_prefix: "juno".to_string(),
     };
 
-    let err = app.execute_contract(
-        Addr::unchecked("osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string()),
-        resolver_contract_addr.clone(),
-        &msg,
-        &[],
-    )
-    .unwrap_err();
+    let err = app
+        .execute_contract(
+            Addr::unchecked("osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string()),
+            resolver_contract_addr,
+            &msg,
+            &[],
+        )
+        .unwrap_err();
 
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
-        &ContractError::SignatureMisMatch {  }
+        &ContractError::SignatureMisMatch {}
     );
 }
 
@@ -539,15 +536,11 @@ fn set_record_with_different_signer_and_signature_owner() {
 
     // create osmo address
     let pub_key_bytes =
-        hex_decode("0322b7d0ab1ec915bf3902bd4d3a1dde5d0add15865f951d7ac3fb206e9e898f2d")
-        .unwrap();
+        hex_decode("0322b7d0ab1ec915bf3902bd4d3a1dde5d0add15865f951d7ac3fb206e9e898f2d").unwrap();
     let pub_key_binary = Binary::from(pub_key_bytes);
     let addr = cosmos_pubkey_to_bech32_address(pub_key_binary.clone(), "juno".to_string());
 
-    assert_eq!(
-        addr,
-        "juno1c8qw55n7vl6j0yvct7gmyg3hlmx026ek8r55g9",
-    );
+    assert_eq!(addr, "juno1c8qw55n7vl6j0yvct7gmyg3hlmx026ek8r55g9",);
 
     app.execute_contract(
         Addr::unchecked(registrar),
@@ -569,7 +562,7 @@ fn set_record_with_different_signer_and_signature_owner() {
     let msg = ExecuteMsg::SetRecord {
         name: "carol".to_string(),
         adr36_info: Adr36Info {
-            signer_bech32_address: addr.clone().to_string(),
+            signer_bech32_address: addr,
             address_hash: msg::AddressHash::Cosmos,
             pub_key: pub_key_binary,
             signature,
@@ -579,7 +572,7 @@ fn set_record_with_different_signer_and_signature_owner() {
     };
     app.execute_contract(
         Addr::unchecked("osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697"),
-        resolver_contract_addr.clone(),
+        resolver_contract_addr,
         &msg,
         &[],
     )

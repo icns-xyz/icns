@@ -520,11 +520,10 @@ fn claim_name_with_fee() {
     assert_eq!(owner(&app, bob_name.to_string()).unwrap(), bob);
 }
 
-
 #[test]
 fn claim_name_without_fee() {
     let bob = Addr::unchecked("bobaddr");
-    let alice = Addr::unchecked("aliceaddr");
+    let _alice = Addr::unchecked("aliceaddr");
     // setup contracts
     let mut app = AppBuilder::default().build(|router, _, storage| {
         router
@@ -555,13 +554,8 @@ fn claim_name_without_fee() {
     let admins = vec!["admin1".to_string(), "admin2".to_string()];
 
     // setup name nft contract
-    let (_name_nft_contract_addr, registrar_contract_addr) = default_contracts_setup(
-        &mut app,
-        name_nft_code_id,
-        registrar_code_id,
-        admins.clone(),
-        None
-    );
+    let (_name_nft_contract_addr, registrar_contract_addr) =
+        default_contracts_setup(&mut app, name_nft_code_id, registrar_code_id, admins, None);
 
     let bob_name = "bob";
     let multitest_chain_id = "cosmos-testnet-14002";
@@ -571,17 +565,17 @@ fn claim_name_without_fee() {
     );
 
     app.execute_contract(
-            bob.clone(),
-            registrar_contract_addr.clone(),
-            &ExecuteMsg::Claim {
-                name: bob_name.to_string(),
-                verifying_msg: verifying_msg.clone(),
-                verifications: verify_all(&verifying_msg, vec![verifier4(), verifier3()]),
-                referral: None,
-            },
-            &[],
-        )
-        .unwrap();
+        bob.clone(),
+        registrar_contract_addr.clone(),
+        &ExecuteMsg::Claim {
+            name: bob_name.to_string(),
+            verifying_msg: verifying_msg.clone(),
+            verifications: verify_all(&verifying_msg, vec![verifier4(), verifier3()]),
+            referral: None,
+        },
+        &[],
+    )
+    .unwrap();
 
     let alice_name = "alice";
     let unique_twitter_id = "1234567891";
@@ -591,17 +585,17 @@ fn claim_name_without_fee() {
 
     // try sending fund when fee is not set, it should not error
     app.execute_contract(
-        bob.clone(),
-            registrar_contract_addr.clone(),
-            &ExecuteMsg::Claim {
-                name: alice_name.to_string(),
-                verifying_msg: verifying_msg.clone(),
-                verifications: verify_all(&verifying_msg, vec![verifier4(), verifier3()]),
-                referral: None,
-            },
-            &[Coin::new(100, "uion")],
-        )
-        .unwrap();
+        bob,
+        registrar_contract_addr,
+        &ExecuteMsg::Claim {
+            name: alice_name.to_string(),
+            verifying_msg: verifying_msg.clone(),
+            verifications: verify_all(&verifying_msg, vec![verifier4(), verifier3()]),
+            referral: None,
+        },
+        &[Coin::new(100, "uion")],
+    )
+    .unwrap();
 }
 
 #[test]

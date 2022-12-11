@@ -32,7 +32,7 @@ pub enum ICNSNameExecuteMsg {
     SetTransferrable { transferrable: bool },
     /// RemoveAdmin removes admin from the list of admins.
     RemoveAdmin { admin_address: String },
-    /// AddAdmin adds admin to the list of admins. 
+    /// AddAdmin adds admin to the list of admins.
     AddAdmin { admin_address: String },
     /// SetMinter sets the minter address to the given address.
     /// Minter would be set to the registrar address by default.

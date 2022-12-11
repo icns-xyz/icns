@@ -163,7 +163,6 @@ pub fn execute_claim(
         })?;
     }
 
-    
     // save unique_twitter_id to storage to prevent duplicate claim for single user.
     let verifying_msg: VerifyingMsg = from_slice(verifying_msg_str.as_bytes())?;
     UNIQUE_TWITTER_ID.save(deps.storage, verifying_msg.unique_twitter_id, &name)?;
@@ -189,7 +188,6 @@ pub fn execute_claim(
         .add_attribute("name", name)
         .add_message(mint_msg))
 }
-
 
 fn execute_set_verification_threshold(
     deps: DepsMut,

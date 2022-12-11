@@ -32,7 +32,9 @@ pub fn records<'a>() -> IndexedMap<'a, (&'a str, &'a str), String, RecordIndexes
     };
     IndexedMap::new("records", indexes)
 }
+
 // map of bech32 address -> user name
 pub const PRIMARY_NAME: Map<String, String> = Map::new("primary_name");
 
+// map of signature bytes -> boolean. This is used to prevent replay attacks.
 pub const SIGNATURE: Map<&[u8], bool> = Map::new("signature");
