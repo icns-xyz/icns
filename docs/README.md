@@ -1,4 +1,8 @@
 # Structural Overview of ICNS
+
+<img width="1056" alt="Screen Shot 2022-12-11 at 10 31 21 PM" src="https://user-images.githubusercontent.com/45252226/206906578-61e36917-c35d-46d5-9f97-42c083f3557a.png">
+
+
 ## Users Registring a new ICNS
 
 As a user registering a new ICNS, the user would be verifying their Twitter handle and then provide the address they would like to use for each bech32 prefix(ex. osmo -> osmo1.....,  juno -> juno1....). 
