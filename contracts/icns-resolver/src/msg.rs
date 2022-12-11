@@ -42,12 +42,17 @@ pub enum AddressHash {
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
+    /// Get Config of the Resolver contract.
+    /// This includes the Name-nft contract address.
     #[returns(Config)]
     Config {},
 
+    /// Returns list of tuple consisted of (bech32_prefix, bech32_address) for the given ICNS name.
     #[returns(AddressesResponse)]
     Addresses { name: String },
 
+    /// Returns the bech32 address set for the given name and bech32 prefix.
+    /// Returns when address does not exist.
     #[returns(AddressResponse)]
     Address { name: String, bech32_prefix: String },
 
@@ -56,7 +61,6 @@ pub enum QueryMsg {
     #[returns(NamesResponse)]
     Names { address: String },
 
-    /// Get names bound to an address
     /// Returns list of full icns name (e.g alice.osmo, alice.juno) given bech32 address
     #[returns(IcnsNamesResponse)]
     IcnsNames { address: String },
@@ -66,9 +70,11 @@ pub enum QueryMsg {
     #[returns(PrimaryNameResponse)]
     PrimaryName { address: String },
 
+    /// Returns list of admin queried from the name-nft contract.
     #[returns(AdminResponse)]
     Admin {},
 
+    /// Returns bech32 addresses for the given full ICNS name.
     #[returns(AddressByIcnsResponse)]
     AddressByIcns { icns: String },
 }
@@ -97,7 +103,7 @@ pub struct AdminResponse {
 
 #[cw_serde]
 pub struct AddressesResponse {
-    // tuple of (bech32 prefix, address)
+    // vector of tuple of (bech32 prefix, address)
     pub addresses: Vec<(String, String)>,
 }
 

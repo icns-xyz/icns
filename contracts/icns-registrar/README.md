@@ -1,4 +1,4 @@
-# icns-registrar
+# Registrar
 
 The main responsibility of the Registrar contract is to work as a contract to orchestrate the oracle verifiers watching the Twitter API for unique Twitter handles of the user. The goal of the Registrar contract is to prevent a single centeralized entity being able to calim a user name for ICNS. This is achieved by keeping a constant for the quorum to be met upon verifiers, and the name being able to be claimed **only if** the quorum has been met for a single name.
 
