@@ -18,4 +18,4 @@ Further documentations for each contract can be found in each repo's README:
 - Resolver: https://github.com/icns-xyz/icns/tree/main/contracts/icns-resolver
 - Name-Nft: https://github.com/icns-xyz/icns/tree/main/contracts/icns-name-nft
 
-For further information about the structural overview please visit https://github.com/icns-xyz/icns/tree/main/docs
+For further information about the structural overview or the details needed for further integration of ICNS, please visit https://github.com/icns-xyz/icns/tree/main/docs
