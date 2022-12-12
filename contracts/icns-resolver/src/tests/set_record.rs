@@ -2,7 +2,7 @@
 
 use crate::{
     crypto::{cosmos_pubkey_to_bech32_address, create_adr36_message, eth_pubkey_to_bech32_address},
-    msg::{self, Adr36Info, ExecuteMsg, NamesResponse},
+    msg::{self, Adr36Info, ExecuteMsg, NamesResponse, Bech32Address},
     msg::{AddressesResponse, QueryMsg},
     tests::helpers::{mint_and_set_record, signer1, ToBinary},
     ContractError,
@@ -51,14 +51,14 @@ fn set_get_single_record() {
     assert_eq!(
         addresses,
         vec![
-            (
-                "cosmos".to_string(),
-                "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string()
-            ),
-            (
-                "juno".to_string(),
-                "juno1d2kh2xaen7c0zv3h7qnmghhwhsmmassqffq35s".to_string()
-            )
+            Bech32Address {
+                bech32_prefix: "cosmos".to_string(),
+                address: "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string()
+            },
+            Bech32Address {
+                bech32_prefix: "juno".to_string(),
+                address: "juno1d2kh2xaen7c0zv3h7qnmghhwhsmmassqffq35s".to_string()
+            },
         ]
     );
     assert_eq!(
@@ -128,7 +128,12 @@ fn set_get_multiple_name_on_one_address() {
     let addresses = addresses(&app, "alice".to_string()).unwrap();
     assert_eq!(
         addresses,
-        vec![("cosmos".to_string(), signer_bech32_address.to_owned()),]
+        vec![
+            Bech32Address{
+                bech32_prefix: "cosmos".to_string(),
+                address: signer_bech32_address.to_owned()
+            }
+        ]
     );
 
     assert_eq!(

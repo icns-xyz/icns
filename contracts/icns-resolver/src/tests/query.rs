@@ -5,7 +5,7 @@ use crate::{
     msg::AdminResponse,
     msg::{
         AddressByIcnsResponse, AddressResponse, AddressesResponse, IcnsNamesResponse,
-        NamesResponse, QueryMsg,
+        NamesResponse, QueryMsg, Bech32Address,
     },
     tests::helpers::{mint_and_set_record, signer2, ToBinary},
 };
@@ -65,14 +65,14 @@ fn query_addresses() {
     assert_eq!(
         addresses,
         vec![
-            (
-                "cosmos".to_string(),
-                "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string()
-            ),
-            (
-                "juno".to_string(),
-                "juno1d2kh2xaen7c0zv3h7qnmghhwhsmmassqffq35s".to_string()
-            )
+            Bech32Address {
+                bech32_prefix: "cosmos".to_string(),
+                address: "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string()
+            },
+            Bech32Address {
+                bech32_prefix: "juno".to_string(),
+                address: "juno1d2kh2xaen7c0zv3h7qnmghhwhsmmassqffq35s".to_string()
+            },
         ]
     );
 
@@ -99,7 +99,15 @@ fn query_addresses() {
         )
         .unwrap();
 
-    assert_eq!(addresses, vec![("cosmos".to_string(), addr2)])
+    assert_eq!(
+        addresses,
+        vec![
+            Bech32Address {
+                bech32_prefix: "cosmos".to_string(),
+                address: addr2
+            },
+        ]
+    )
 }
 
 #[test]

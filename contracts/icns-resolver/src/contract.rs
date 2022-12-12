@@ -15,7 +15,7 @@ use crate::crypto::{
 };
 use crate::error::ContractError;
 use crate::msg::{
-    AddressByIcnsResponse, AddressHash, AddressResponse, AddressesResponse, Adr36Info, ExecuteMsg,
+    AddressByIcnsResponse, AddressHash, AddressResponse, AddressesResponse, Adr36Info, Bech32Address ,ExecuteMsg,
     IcnsNamesResponse, InstantiateMsg, MigrateMsg, NamesResponse, PrimaryNameResponse, QueryMsg,
 };
 use crate::state::{records, Config, CONFIG, PRIMARY_NAME, SIGNATURE};
@@ -418,11 +418,27 @@ fn query_primary_name(deps: Deps, address: String) -> StdResult<PrimaryNameRespo
 }
 
 fn query_addresses(deps: Deps, _env: Env, name: String) -> StdResult<AddressesResponse> {
-    Ok(AddressesResponse {
-        addresses: records()
+    // create array of Bech32Address
+    let mut bech32_addresses = vec![];
+
+    let records = records()
             .prefix(&name)
             .range(deps.storage, None, None, Ascending)
-            .collect::<StdResult<Vec<_>>>()?,
+            .collect::<StdResult<Vec<_>>>()?;
+
+
+    // for each record, create a Bech32Address and push it to the array
+    for record in records {
+        let (bech32_prefix, address) = record;
+        let address = Bech32Address {
+            address,
+            bech32_prefix,
+        };
+        bech32_addresses.push(address);
+    }
+
+    Ok(AddressesResponse {
+        addresses: bech32_addresses,
     })
 }
 

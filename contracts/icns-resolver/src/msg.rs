@@ -1,3 +1,5 @@
+use std::ops::Add;
+
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Binary, Uint128};
 
@@ -104,7 +106,13 @@ pub struct AdminResponse {
 #[cw_serde]
 pub struct AddressesResponse {
     // vector of tuple of (bech32 prefix, address)
-    pub addresses: Vec<(String, String)>,
+    pub addresses: Vec<Bech32Address>,
+}
+
+#[cw_serde]
+pub struct Bech32Address {
+    pub bech32_prefix: String,
+    pub address: String,
 }
 
 #[cw_serde]

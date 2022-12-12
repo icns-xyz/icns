@@ -2,7 +2,7 @@
 
 use crate::{
     crypto::cosmos_pubkey_to_bech32_address,
-    msg::ExecuteMsg,
+    msg::{ExecuteMsg, Bech32Address},
     tests::helpers::{
         addresses, instantiate_name_nft, instantiate_resolver_with_name_nft, mint_and_set_record,
         primary_name, signer2,
@@ -60,7 +60,7 @@ fn remove_with_single_name_for_address() {
     // should have nothing as addresses
     assert_eq!(
         addresses(&app, "isabel".to_string(), resolver_contract_addr).unwrap(),
-        Vec::<(String, String)>::new()
+        Vec::<Bech32Address>::new()
     );
 }
 
@@ -148,7 +148,7 @@ fn remove_primary_and_non_primary_address() {
 
     assert_eq!(
         addresses(&app, "isabel2".to_string(), resolver_contract_addr.clone()).unwrap(),
-        Vec::<(String, String)>::new()
+        Vec::<Bech32Address>::new()
     );
 
     // when there it is the last record for this address, removing record with primary name is allowed

@@ -3,7 +3,7 @@ use crate::{
     contract::instantiate,
     contract::query,
     crypto::{cosmos_pubkey_to_bech32_address, create_adr36_message},
-    msg::{self, ExecuteMsg},
+    msg::{self, ExecuteMsg, Bech32Address},
     msg::{AddressesResponse, Adr36Info, InstantiateMsg, PrimaryNameResponse, QueryMsg},
     ContractError,
 };
@@ -297,7 +297,7 @@ pub fn addresses(
     app: &BasicApp,
     name: String,
     resolver_contract_addr: Addr,
-) -> StdResult<Vec<(String, String)>> {
+) -> StdResult<Vec<Bech32Address>> {
     let AddressesResponse { addresses } = app
         .wrap()
         .query_wasm_smart(resolver_contract_addr, &QueryMsg::Addresses { name })?;
