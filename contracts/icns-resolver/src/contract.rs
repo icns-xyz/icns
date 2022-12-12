@@ -345,7 +345,11 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 fn query_names(deps: Deps, address: String) -> StdResult<NamesResponse> {
-    let primary_name = PRIMARY_NAME.load(deps.storage, address.clone())?;
+    let mut primary_name = PRIMARY_NAME.may_load(deps.storage, address.clone())?;
+    if primary_name.is_none() {
+        primary_name = Some("".to_string());
+    }
+
     Ok(NamesResponse {
         names: records()
             .idx
@@ -363,12 +367,12 @@ fn query_names(deps: Deps, address: String) -> StdResult<NamesResponse> {
                     .collect::<StdResult<String>>()
             })
             .collect::<StdResult<_>>()?,
-        primary_name,
+        primary_name: primary_name.unwrap(),
     })
 }
 
 fn query_icns_names(deps: Deps, address: String) -> StdResult<IcnsNamesResponse> {
-    let primary_name = PRIMARY_NAME.load(deps.storage, address.clone())?;
+    let primary_name = PRIMARY_NAME.may_load(deps.storage, address.clone())?;
 
     let bech32_prefix = bech32::decode(address.clone())
         .map_err(|_| cosmwasm_std::StdError::GenericErr {
@@ -376,7 +380,11 @@ fn query_icns_names(deps: Deps, address: String) -> StdResult<IcnsNamesResponse>
         })?
         .0;
 
-    let primary_name_with_prefix = format!("{}.{}", primary_name, bech32_prefix);
+    let primary_name_with_prefix = if primary_name.is_none() {
+        "".to_string()
+    } else {
+        format!("{}.{}", primary_name.unwrap(), bech32_prefix)
+    };
 
     Ok(IcnsNamesResponse {
         names: records()
@@ -405,9 +413,7 @@ fn query_primary_name(deps: Deps, address: String) -> StdResult<PrimaryNameRespo
     let primary_name = PRIMARY_NAME.may_load(deps.storage, address)?;
     match primary_name {
         Some(name) => Ok(PrimaryNameResponse { name }),
-        None => Err(cosmwasm_std::StdError::NotFound {
-            kind: "PrimaryName".to_string(),
-        }),
+        None => Ok(PrimaryNameResponse { name: "".to_string() }),
     }
 }
 
@@ -426,9 +432,11 @@ fn query_address(
     name: String,
     bech32_prefix: String,
 ) -> StdResult<AddressResponse> {
-    Ok(AddressResponse {
-        address: records().load(deps.storage, (&name, &bech32_prefix))?,
-    })
+    let address = records().may_load(deps.storage, (&name, &bech32_prefix))?;
+    match address {
+        Some(address) => Ok(AddressResponse { address }),
+        None => Ok(AddressResponse { address: "".to_string() }),
+    }
 }
 
 fn query_admin(deps: Deps) -> StdResult<AdminResponse> {
@@ -453,9 +461,13 @@ fn query_address_by_icns(deps: Deps, icns: String) -> StdResult<AddressByIcnsRes
     let name = split[0];
     let bech32_prefix = split[1];
 
-    Ok(AddressByIcnsResponse {
-        bech32_address: records().load(deps.storage, (name, bech32_prefix))?,
-    })
+    let bech32_address = records().may_load(deps.storage, (name, bech32_prefix))?;
+    match bech32_address {
+        Some(bech32_address) => Ok(AddressByIcnsResponse { bech32_address }),
+        None => Ok(AddressByIcnsResponse {
+            bech32_address: "".to_string(),
+        }),
+    }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

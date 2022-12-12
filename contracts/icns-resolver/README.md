@@ -41,7 +41,7 @@ Salt: <UNIQUE_SIGNATURE_SALT>
 
 Note that Owner does not have to match the ICNS name that the user is setting record for.
 
-The ADR36 verification would not take place when the signer of the message and the pub key in `ADR36Info` matches.
+The ADR36 verification would not take place when the signer of the message and the pub key in `ADR36Info` matches. But instead, to verify that this was intentional, the message requires the signature field and the signature_salt field to be empty.
 
 The most recent address that has been set would be automatically set as the primary name that is to be reversed resolved.
 
@@ -59,11 +59,11 @@ The most recent address that has been set would be automatically set as the prim
 - `Address`: returns the bech32 address set for the given name and bech32 prefix. Returns error when address does not exist.
     - e.g) Given "alice" and "osmo" returns "osmo1xxx"
 
-- `Names`: returns names bound to an address. Only returns name itself, not full icns name. (e.g "alice", "bob")
-    - e.g) Given "osmo1xxxx" returns ["alice", "bob"]
+- `Names`: returns names bound to an address and the primary name of given bech32 address. Only returns name itself, not full icns name. (e.g "alice", "bob")
+    - e.g) Given "osmo1xxxx" returns ["alice", "bob"] and primary name: alice
 
-- `IcnsNames`: returns list of full icns name given bech32 address
-    - e.g) given "osmo1xxxx" returns ["alice.osmo", "bob.osmo"]
+- `IcnsNames`: returns list of full icns name given bech32 address, along with primary ICNS name 
+    - e.g) given "osmo1xxxx" returns ["alice.osmo", "bob.osmo"], primary name: alice.osmo
 - `PrimaryName`: returns the primary name of the address
     - e.g) given "osmo1xxxx" returns "alice.osmo"
 - `Admin`: returns the admin of the Name-nft contract

@@ -145,7 +145,7 @@ fn query_address() {
         "juno1d2kh2xaen7c0zv3h7qnmghhwhsmmassqffq35s".to_string()
     );
 
-    let err = app
+    let AddressResponse { address } = app
         .wrap()
         .query_wasm_smart::<AddressResponse>(
             resolver_contract_addr.clone(),
@@ -154,13 +154,11 @@ fn query_address() {
                 bech32_prefix: "random".to_string(),
             },
         )
-        .unwrap_err();
+        .unwrap();
 
     assert_eq!(
-        err,
-        StdError::GenericErr {
-            msg: "Querier contract error: alloc::string::String not found".to_string()
-        }
+        address,
+        "".to_string()
     );
 
     // now add another user to ensure query works upon two or more user
@@ -191,7 +189,7 @@ fn query_address() {
     assert_eq!(address, addr2);
 
     // try getting unavailable address
-    let err = app
+    let AddressResponse { address } = app
         .wrap()
         .query_wasm_smart::<AddressResponse>(
             resolver_contract_addr,
@@ -200,13 +198,11 @@ fn query_address() {
                 bech32_prefix: "juno".to_string(),
             },
         )
-        .unwrap_err();
+        .unwrap();
 
     assert_eq!(
-        err,
-        StdError::GenericErr {
-            msg: "Querier contract error: alloc::string::String not found".to_string()
-        }
+        address,
+        "".to_string()
     );
 }
 

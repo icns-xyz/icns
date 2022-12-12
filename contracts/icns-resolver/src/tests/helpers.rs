@@ -9,7 +9,6 @@ use crate::{
 };
 use cosmrs::{bip32, crypto::secp256k1::SigningKey, tendermint::signature::Secp256k1Signature};
 use cosmwasm_std::{Binary, Empty, StdResult, Uint128};
-use hex_literal::hex;
 use subtle_encoding::bech32;
 
 use cosmwasm_std::Addr;
@@ -38,9 +37,7 @@ pub fn name_nft_contract() -> Box<dyn Contract<Empty>> {
 
 pub fn default_osmo_set_record_msg() -> ExecuteMsg {
     {
-        let original_signature_vec = hex!("624fcd052ed8333fe643140ab5fde6fa308dd02c95cb61dd490ab53afa622db12a79ba2826b7da85d56c53bd4e53947b069cc3fb6fb091ca938f8d1952dfdf50");
         let pub_key = signer1().to_binary();
-        // let signature = Binary::from(original_signature_vec);
         let signature = Binary::default();
 
         ExecuteMsg::SetRecord {
@@ -59,11 +56,8 @@ pub fn default_osmo_set_record_msg() -> ExecuteMsg {
 
 pub fn default_juno_set_record_msg() -> ExecuteMsg {
     {
-        let original_signature_vec = hex!("1d2048b59cc0fa1799bdc11695fb31d141429ef80c7223afb9eb6581ca7a4e1d38c8e9b70852110efbc41d59b3b0d40a9b0257dd3c34da0243cca60eea35edb1");
         let pub_key = signer1().to_binary();
-        // let signature = Binary::from(original_signature_vec);
         let signature = Binary::default();
-
 
         ExecuteMsg::SetRecord {
             name: "alice".to_string(),

@@ -53,10 +53,8 @@ fn remove_with_single_name_for_address() {
 
     // now check primary name and addresses
     assert_eq!(
-        primary_name(&app, addr1, resolver_contract_addr.clone()).unwrap_err(),
-        StdError::GenericErr {
-            msg: "Querier contract error: PrimaryName not found".to_string()
-        }
+        primary_name(&app, addr1, resolver_contract_addr.clone()).unwrap(),
+        "".to_string()
     );
 
     // should have nothing as addresses
