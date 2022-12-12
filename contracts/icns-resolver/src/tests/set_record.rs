@@ -266,7 +266,7 @@ fn eth_address_set_record() {
         instantiate_resolver_with_name_nft(&mut app, name_nft_contract.clone());
 
     let pub_key_bytes =
-        hex_decode("0422b7d0ab1ec915bf3902bd4d3a1dde5d0add15865f951d7ac3fb206e9e898f2d2cd59418a2a27b98eb1e39fc33c55faeed8e550dbf9226a594203c0c2430b0d7")
+        hex_decode("04ec18c82501c5088119251679b538e9cf8eae502956cc862c7778aa148365e886fb4a05d4685b9c9e16032bd41db1c41e16f6ffe5115462725737b2e995697b3e")
         .unwrap();
     let pub_key_binary = Binary::from(pub_key_bytes);
 
@@ -278,7 +278,7 @@ fn eth_address_set_record() {
 
     let addr = cosmos_pubkey_to_bech32_address(sender_pub_key_binary, "osmo".to_string());
 
-    let original_signature_bytes = hex!("d67d5dc9f33f2a680c635bdae898c1c6a9ee39cd946ae9e2df827dd25eb50d6f6d7adc2926741d9adc84780f5a06bae226c30cd110af91f4092b45e3e521445c");
+    let original_signature_bytes = hex!("87365a0f80671d16bb136094135e57473a59b8dbc2e514b9f03f67453db17a881b53b16e4eadfef092998d188afe79cfd63dd6be1a77be5058c2801094b7932f");
     let signature = Binary::from(original_signature_bytes);
 
     app.execute_contract(
@@ -299,7 +299,7 @@ fn eth_address_set_record() {
         name: "alice".to_string(),
         bech32_prefix: "evmos".to_string(),
         adr36_info: Adr36Info {
-            signer_bech32_address: "evmos16wx7ye3ce060tjvmmpu8lm0ak5xr7gm238xyss".to_string(),
+            signer_bech32_address: "evmos1puzp8aevdnjngsuwv6qk3855syanpf4tmvmd0e".to_string(),
             address_hash: msg::AddressHash::Ethereum,
             pub_key: pub_key_binary,
             signature,

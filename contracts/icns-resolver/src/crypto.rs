@@ -1,4 +1,4 @@
-use crate::state::SIGNATURE;
+use crate::{state::SIGNATURE, msg::AddressHash};
 use base64::encode as base64_encode;
 use ripemd::{Digest as RipemdDigest, Ripemd160};
 use sha2::Sha256;
@@ -36,7 +36,14 @@ pub fn adr36_verification(
     );
 
     let message_bytes = message.as_bytes();
-    let message_hash = Sha256::digest(message_bytes);
+
+    let message_hash = if adr36_info.address_hash == AddressHash::Cosmos {
+        Sha256::digest(message_bytes)
+    } else if adr36_info.address_hash == AddressHash::Ethereum {
+        Keccak256::digest(message_bytes)
+    } else {
+        return Err(ContractError::HashMethodNotSupported {});
+    };
 
     // verify signature using secp256k1
     let verified_result = deps
@@ -46,7 +53,7 @@ pub fn adr36_verification(
     if !verified_result {
         return Err(ContractError::SignatureMisMatch {});
     }
-
+    
     Ok(Response::default())
 }
 
