@@ -1,4 +1,5 @@
 # ICNS
+![Github cover](https://user-images.githubusercontent.com/45252226/206968591-757afc2f-654d-4caa-a91e-96b3077c8bc3.png)
 
 ## A Multichain Native Nameservice
 ICNS is a nameservice designed from the ground up with the unique needs of a multichain IBC ecosystem in mind. While every Cosmos chain is distinct, it is simply terrible UX for them to have independent, fragmented name services. Indeed, just as unique addresses are not required to interact with different apps on Ethereum, neither should they be required to interact with different chains in Cosmos. Interchain Nameservice (ICNS) aims to make this a reality by providing a fair, readily adoptable naming protocol for any chain connected with IBC.
