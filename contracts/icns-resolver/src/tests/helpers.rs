@@ -8,7 +8,7 @@ use crate::{
     ContractError,
 };
 use cosmrs::{bip32, crypto::secp256k1::SigningKey, tendermint::signature::Secp256k1Signature};
-use cosmwasm_std::{Binary, Empty, StdResult};
+use cosmwasm_std::{Binary, Empty, StdResult, Uint128};
 use hex_literal::hex;
 use subtle_encoding::bech32;
 
@@ -40,7 +40,8 @@ pub fn default_osmo_set_record_msg() -> ExecuteMsg {
     {
         let original_signature_vec = hex!("624fcd052ed8333fe643140ab5fde6fa308dd02c95cb61dd490ab53afa622db12a79ba2826b7da85d56c53bd4e53947b069cc3fb6fb091ca938f8d1952dfdf50");
         let pub_key = signer1().to_binary();
-        let signature = Binary::from(original_signature_vec);
+        // let signature = Binary::from(original_signature_vec);
+        let signature = Binary::default();
 
         ExecuteMsg::SetRecord {
             name: "alice".to_string(),
@@ -49,7 +50,7 @@ pub fn default_osmo_set_record_msg() -> ExecuteMsg {
                 address_hash: msg::AddressHash::Cosmos,
                 pub_key,
                 signature,
-                signature_salt: 12313u128.into(),
+                signature_salt: Uint128::new(0),
             },
             bech32_prefix: "cosmos".to_string(),
         }
@@ -60,7 +61,9 @@ pub fn default_juno_set_record_msg() -> ExecuteMsg {
     {
         let original_signature_vec = hex!("1d2048b59cc0fa1799bdc11695fb31d141429ef80c7223afb9eb6581ca7a4e1d38c8e9b70852110efbc41d59b3b0d40a9b0257dd3c34da0243cca60eea35edb1");
         let pub_key = signer1().to_binary();
-        let signature = Binary::from(original_signature_vec);
+        // let signature = Binary::from(original_signature_vec);
+        let signature = Binary::default();
+
 
         ExecuteMsg::SetRecord {
             name: "alice".to_string(),
@@ -243,16 +246,41 @@ pub fn mint_and_set_record(
 
     let signature = signing_key.sign(msg.as_bytes()).unwrap().to_binary();
 
-    let msg = ExecuteMsg::SetRecord {
-        name: name.to_string(),
-        adr36_info: Adr36Info {
-            signer_bech32_address,
-            address_hash: msg::AddressHash::Cosmos,
-            pub_key: signing_key.to_binary(),
-            signature,
-            signature_salt: 12313u128.into(),
-        },
-        bech32_prefix,
+    let signer_bech32_address_decoded =
+        bech32::decode(signer_bech32_address.clone()).map_err(|_| {
+            ContractError::Bech32DecodingErr {
+                addr: bech32_prefix.clone(),
+            }
+        }).unwrap().1;
+    let sender_bech32_address_decoded = bech32::decode(Addr::unchecked(addr.clone()))
+        .map_err(|_| ContractError::Bech32DecodingErr {
+            addr: addr.to_string(),
+        }).unwrap().1;
+
+    let msg = if signer_bech32_address_decoded != sender_bech32_address_decoded {
+        ExecuteMsg::SetRecord {
+            name: name.to_string(),
+            adr36_info: Adr36Info {
+                signer_bech32_address,
+                address_hash: msg::AddressHash::Cosmos,
+                pub_key: signing_key.to_binary(),
+                signature,
+                signature_salt: 12313u128.into(),
+            },
+            bech32_prefix,
+        }
+    } else {
+        ExecuteMsg::SetRecord {
+            name: name.to_string(),
+            adr36_info: Adr36Info {
+                signer_bech32_address,
+                address_hash: msg::AddressHash::Cosmos,
+                pub_key: signing_key.to_binary(),
+                signature: Binary::default(),
+                signature_salt: Uint128::new(0),
+            },
+            bech32_prefix,
+        }
     };
 
     app.execute_contract(Addr::unchecked(addr), resolver_contract_addr, &msg, &[])

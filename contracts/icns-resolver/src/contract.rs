@@ -4,7 +4,7 @@ use cosmwasm_std::Order::Ascending;
 
 use cosmwasm_std::{
     to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryRequest, Response, StdError,
-    StdResult, WasmQuery,
+    StdResult, WasmQuery, Uint128,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::KeyDeserialize;
@@ -83,7 +83,7 @@ pub fn execute_set_record(
     if !is_admin && !is_owner_nft {
         return Err(ContractError::Unauthorized {});
     }
-
+    
     // if the sender is admin, skip adr 36 verification
     if !is_admin {
         // first check sender and the bech32 address in msg match
@@ -155,6 +155,13 @@ pub fn execute_set_record(
                 chain_id,
                 contract_address,
             )?;
+        } else {
+            // upon skipping adr36 verification because sender and message signer is same,
+            // require signature_salt and signature to be empty to differentiate and verify
+            // this was intentional.
+            if adr36_info.signature.len() != 0 && adr36_info.signature_salt != Uint128::new(0) {
+                return Err(ContractError::SignatureShouldBeEmpty {});
+            }
         }
     }
 
