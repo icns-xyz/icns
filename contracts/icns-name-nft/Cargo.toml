@@ -1,10 +1,10 @@
 [package]
 authors = ["mattverse <mattpark1028@gmail.com>", "Supanat Potiwarakorn <boss@osmosis.team>"]
 description = "CosmWasm contract that represents ownership of ICNS name"
-edition = {workspace = true}
+edition = "2021"
 name = "icns-name-nft"
 # repository = {workspace = true}
-version = {workspace = true}
+version = "0.1.0"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
