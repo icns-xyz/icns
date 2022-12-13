@@ -29,7 +29,6 @@ pub mod entry {
     use crate::query::{admin, is_admin, transferrable};
     use crate::state::{Config, CONFIG};
 
-    #[cfg(not(feature = "library"))]
     use cosmwasm_std::entry_point;
     use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
     use cw721::ContractInfoResponse;
@@ -37,7 +36,7 @@ pub mod entry {
     const NAME: &str = "icns-name";
     const SYMBOL: &str = "icns";
 
-    #[cfg_attr(not(feature = "library"), entry_point)]
+    #[entry_point]
     pub fn instantiate(
         deps: DepsMut,
         _env: Env,
