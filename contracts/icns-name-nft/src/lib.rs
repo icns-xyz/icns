@@ -71,7 +71,7 @@ pub mod entry {
             .add_attribute("contract_version", CONTRACT_VERSION))
     }
 
-    #[cfg_attr(not(feature = "library"), entry_point)]
+    #[entry_point]
     pub fn execute(
         deps: DepsMut,
         env: Env,
@@ -141,7 +141,7 @@ pub mod entry {
         }
     }
 
-    #[cfg_attr(not(feature = "library"), entry_point)]
+    #[entry_point]
     pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         let name_nft = ICNSNameNFTContract::default();
 
@@ -154,7 +154,7 @@ pub mod entry {
         }
     }
 
-    #[cfg_attr(not(feature = "library"), entry_point)]
+    #[entry_point]
     pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
         // No state migrations performed, just returned a Response
         Ok(Response::default())
