@@ -160,7 +160,7 @@ pub fn execute_set_record(
             // upon skipping adr36 verification because sender and message signer is same,
             // require signature_salt and signature to be empty to differentiate and verify
             // this was intentional.
-            if adr36_info.signature.len() != 0 && adr36_info.signature_salt != Uint128::new(0) {
+            if adr36_info.signature.len() != 0 || adr36_info.signature_salt != Uint128::new(0) {
                 return Err(ContractError::SignatureShouldBeEmpty {});
             }
         }
