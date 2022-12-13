@@ -177,7 +177,7 @@ pub fn execute_set_record(
     PRIMARY_NAME.save(deps.storage, adr36_info.signer_bech32_address, &name)?;
 
     // save signature to prevent replay attack only when signatures were not empty
-    if adr36_info.signature.len() != 0 && adr36_info.signature_salt != Uint128::new(0) {
+    if adr36_info.signature.len() != 0 {
         SIGNATURE.save(deps.storage, adr36_info.signature.as_slice(), &true)?;
     }
 
