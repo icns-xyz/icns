@@ -31,7 +31,7 @@ pub enum ContractError {
     InvalidPubKey { pub_key: String },
 
     #[error("adr36 info signature and salt should be empty")]
-    SignatureShouldBeEmpty { },
+    SignatureShouldBeEmpty {},
 
     #[error("Bech32 prefix mismatch between prefix: {prefix:?} and addr: {addr:?}")]
     Bech32PrefixMismatch { prefix: String, addr: String },

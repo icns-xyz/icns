@@ -56,7 +56,7 @@ The most recent address that has been set would be automatically set as the prim
 
     - e.g) Given "alice" returns [("osmo", "osmo1xxx"), ("juno", "juno1xxx")])
     
-- `Address`: returns the bech32 address set for the given name and bech32 prefix. Returns error when address does not exist.
+- `Address`: returns the bech32 address set for the given name and bech32 prefix.
     - e.g) Given "alice" and "osmo" returns "osmo1xxx"
 
 - `Names`: returns names bound to an address and the primary name of given bech32 address. Only returns name itself, not full icns name. (e.g "alice", "bob")

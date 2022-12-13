@@ -1,4 +1,4 @@
-use crate::{state::SIGNATURE, msg::AddressHash};
+use crate::{msg::AddressHash, state::SIGNATURE};
 use base64::encode as base64_encode;
 use ripemd::{Digest as RipemdDigest, Ripemd160};
 use sha2::Sha256;
@@ -53,7 +53,7 @@ pub fn adr36_verification(
     if !verified_result {
         return Err(ContractError::SignatureMisMatch {});
     }
-    
+
     Ok(Response::default())
 }
 

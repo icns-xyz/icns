@@ -2,7 +2,7 @@
 
 use crate::{
     crypto::{cosmos_pubkey_to_bech32_address, create_adr36_message, eth_pubkey_to_bech32_address},
-    msg::{self, Adr36Info, ExecuteMsg, NamesResponse, Bech32Address},
+    msg::{self, Adr36Info, Bech32Address, ExecuteMsg, NamesResponse},
     msg::{AddressesResponse, QueryMsg},
     tests::helpers::{mint_and_set_record, signer1, ToBinary},
     ContractError,
@@ -128,12 +128,10 @@ fn set_get_multiple_name_on_one_address() {
     let addresses = addresses(&app, "alice".to_string()).unwrap();
     assert_eq!(
         addresses,
-        vec![
-            Bech32Address{
-                bech32_prefix: "cosmos".to_string(),
-                address: signer_bech32_address.to_owned()
-            }
-        ]
+        vec![Bech32Address {
+            bech32_prefix: "cosmos".to_string(),
+            address: signer_bech32_address.to_owned()
+        }]
     );
 
     assert_eq!(
@@ -213,8 +211,8 @@ fn bech32_verification() {
         adr36_info: Adr36Info {
             signer_bech32_address: "osmo1d2kh2xaen7c0zv3h7qnmghhwhsmmassqhqs697".to_string(),
             address_hash: msg::AddressHash::Cosmos,
-            pub_key: pub_key.clone(),
-            signature: signature.clone(),
+            pub_key: pub_key,
+            signature: signature,
             signature_salt: 1323124u128.into(),
         },
         bech32_prefix: "juno".to_string(),
@@ -222,8 +220,8 @@ fn bech32_verification() {
 
     let err = app
         .execute_contract(
-            Addr::unchecked(addr1.clone()),
-            resolver_contract_addr.clone(),
+            Addr::unchecked(addr1),
+            resolver_contract_addr,
             &record_msg,
             &[],
         )
@@ -322,7 +320,7 @@ fn adr36_verification_bypass() {
     // use invalid pub key and signature
     let pub_key_bytes = hex!("aaaa");
     let signature_bytes = hex!("bbbb");
-    let pub_key = Binary::from(pub_key_bytes.clone());
+    let pub_key = Binary::from(pub_key_bytes);
     let signature = Binary::from(signature_bytes);
 
     app.execute_contract(
@@ -361,7 +359,7 @@ fn adr36_verification_bypass() {
     )
     .unwrap_err();
 
-    let pub_key = Binary::from(pub_key_bytes.clone());
+    let pub_key = Binary::from(pub_key_bytes);
     let record_msg = ExecuteMsg::SetRecord {
         name: "alice".to_string(),
         bech32_prefix: "cosmos".to_string(),

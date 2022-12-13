@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate::{
-    msg::{AddressesResponse, QueryMsg, Bech32Address},
+    msg::{AddressesResponse, Bech32Address, QueryMsg},
     tests::helpers::default_osmo_set_record_msg,
     ContractError,
 };
@@ -63,12 +63,10 @@ fn only_admin_can_set_record() {
     let addresses = addresses(&app, "alice".to_string()).unwrap();
     assert_eq!(
         addresses,
-        vec![
-            Bech32Address {
-                bech32_prefix: "cosmos".to_string(),
-                address: "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string()
-            },    
-        ]
+        vec![Bech32Address {
+            bech32_prefix: "cosmos".to_string(),
+            address: "cosmos1cyyzpxplxdzkeea7kwsydadg87357qnalx9dqz".to_string()
+        },]
     )
 }
 

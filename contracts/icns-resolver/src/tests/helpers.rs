@@ -3,7 +3,7 @@ use crate::{
     contract::instantiate,
     contract::query,
     crypto::{cosmos_pubkey_to_bech32_address, create_adr36_message},
-    msg::{self, ExecuteMsg, Bech32Address},
+    msg::{self, Bech32Address, ExecuteMsg},
     msg::{AddressesResponse, Adr36Info, InstantiateMsg, PrimaryNameResponse, QueryMsg},
     ContractError,
 };
@@ -240,16 +240,18 @@ pub fn mint_and_set_record(
 
     let signature = signing_key.sign(msg.as_bytes()).unwrap().to_binary();
 
-    let signer_bech32_address_decoded =
-        bech32::decode(signer_bech32_address.clone()).map_err(|_| {
-            ContractError::Bech32DecodingErr {
-                addr: bech32_prefix.clone(),
-            }
-        }).unwrap().1;
+    let signer_bech32_address_decoded = bech32::decode(signer_bech32_address.clone())
+        .map_err(|_| ContractError::Bech32DecodingErr {
+            addr: bech32_prefix.clone(),
+        })
+        .unwrap()
+        .1;
     let sender_bech32_address_decoded = bech32::decode(Addr::unchecked(addr.clone()))
         .map_err(|_| ContractError::Bech32DecodingErr {
             addr: addr.to_string(),
-        }).unwrap().1;
+        })
+        .unwrap()
+        .1;
 
     let msg = if signer_bech32_address_decoded != sender_bech32_address_decoded {
         ExecuteMsg::SetRecord {

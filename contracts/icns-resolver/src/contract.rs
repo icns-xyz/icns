@@ -4,7 +4,7 @@ use cosmwasm_std::Order::Ascending;
 
 use cosmwasm_std::{
     to_binary, Binary, Deps, DepsMut, Env, MessageInfo, QueryRequest, Response, StdError,
-    StdResult, WasmQuery, Uint128,
+    StdResult, Uint128, WasmQuery,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::KeyDeserialize;
@@ -15,8 +15,9 @@ use crate::crypto::{
 };
 use crate::error::ContractError;
 use crate::msg::{
-    AddressByIcnsResponse, AddressHash, AddressResponse, AddressesResponse, Adr36Info, Bech32Address ,ExecuteMsg,
-    IcnsNamesResponse, InstantiateMsg, MigrateMsg, NamesResponse, PrimaryNameResponse, QueryMsg,
+    AddressByIcnsResponse, AddressHash, AddressResponse, AddressesResponse, Adr36Info,
+    Bech32Address, ExecuteMsg, IcnsNamesResponse, InstantiateMsg, MigrateMsg, NamesResponse,
+    PrimaryNameResponse, QueryMsg,
 };
 use crate::state::{records, Config, CONFIG, PRIMARY_NAME, SIGNATURE};
 use cw721::OwnerOfResponse;
@@ -83,7 +84,7 @@ pub fn execute_set_record(
     if !is_admin && !is_owner_nft {
         return Err(ContractError::Unauthorized {});
     }
-    
+
     // if the sender is admin, skip adr 36 verification
     if !is_admin {
         // first check sender and the bech32 address in msg match
@@ -415,7 +416,9 @@ fn query_primary_name(deps: Deps, address: String) -> StdResult<PrimaryNameRespo
     let primary_name = PRIMARY_NAME.may_load(deps.storage, address)?;
     match primary_name {
         Some(name) => Ok(PrimaryNameResponse { name }),
-        None => Ok(PrimaryNameResponse { name: "".to_string() }),
+        None => Ok(PrimaryNameResponse {
+            name: "".to_string(),
+        }),
     }
 }
 
@@ -424,10 +427,9 @@ fn query_addresses(deps: Deps, _env: Env, name: String) -> StdResult<AddressesRe
     let mut bech32_addresses = vec![];
 
     let records = records()
-            .prefix(&name)
-            .range(deps.storage, None, None, Ascending)
-            .collect::<StdResult<Vec<_>>>()?;
-
+        .prefix(&name)
+        .range(deps.storage, None, None, Ascending)
+        .collect::<StdResult<Vec<_>>>()?;
 
     // for each record, create a Bech32Address and push it to the array
     for record in records {
@@ -453,7 +455,9 @@ fn query_address(
     let address = records().may_load(deps.storage, (&name, &bech32_prefix))?;
     match address {
         Some(address) => Ok(AddressResponse { address }),
-        None => Ok(AddressResponse { address: "".to_string() }),
+        None => Ok(AddressResponse {
+            address: "".to_string(),
+        }),
     }
 }
 

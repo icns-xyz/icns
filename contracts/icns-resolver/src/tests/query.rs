@@ -4,13 +4,11 @@ use crate::{
     crypto::cosmos_pubkey_to_bech32_address,
     msg::AdminResponse,
     msg::{
-        AddressByIcnsResponse, AddressResponse, AddressesResponse, IcnsNamesResponse,
-        NamesResponse, QueryMsg, Bech32Address,
+        AddressByIcnsResponse, AddressResponse, AddressesResponse, Bech32Address,
+        IcnsNamesResponse, NamesResponse, QueryMsg,
     },
     tests::helpers::{mint_and_set_record, signer2, ToBinary},
 };
-
-use cosmwasm_std::StdError;
 
 use super::helpers::{
     default_setting, instantiate_name_nft, instantiate_resolver_with_name_nft, signer1,
@@ -101,12 +99,10 @@ fn query_addresses() {
 
     assert_eq!(
         addresses,
-        vec![
-            Bech32Address {
-                bech32_prefix: "cosmos".to_string(),
-                address: addr2
-            },
-        ]
+        vec![Bech32Address {
+            bech32_prefix: "cosmos".to_string(),
+            address: addr2
+        },]
     )
 }
 
@@ -164,10 +160,7 @@ fn query_address() {
         )
         .unwrap();
 
-    assert_eq!(
-        address,
-        "".to_string()
-    );
+    assert_eq!(address, "".to_string());
 
     // now add another user to ensure query works upon two or more user
     let addr2 = cosmos_pubkey_to_bech32_address(signer2().to_binary(), "cosmos".to_string());
@@ -208,10 +201,7 @@ fn query_address() {
         )
         .unwrap();
 
-    assert_eq!(
-        address,
-        "".to_string()
-    );
+    assert_eq!(address, "".to_string());
 }
 
 #[test]

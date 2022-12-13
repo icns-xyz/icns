@@ -2,7 +2,7 @@
 
 use crate::{
     crypto::cosmos_pubkey_to_bech32_address,
-    msg::{ExecuteMsg, Bech32Address},
+    msg::{Bech32Address, ExecuteMsg},
     tests::helpers::{
         addresses, instantiate_name_nft, instantiate_resolver_with_name_nft, mint_and_set_record,
         primary_name, signer2,
@@ -10,7 +10,7 @@ use crate::{
     ContractError,
 };
 
-use cosmwasm_std::{Addr, StdError};
+use cosmwasm_std::Addr;
 
 use cw_multi_test::Executor;
 

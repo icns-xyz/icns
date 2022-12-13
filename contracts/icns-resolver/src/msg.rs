@@ -1,5 +1,3 @@
-use std::ops::Add;
-
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Binary, Uint128};
 
