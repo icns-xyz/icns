@@ -1,16 +1,10 @@
 [package]
-authors = ["mattverse <mattpark1028@gmail.com>", "Supanat Potiwarakorn <boss@osmosis.team>"]
-edition = "2021"
-name = "icns-registrar"
-version = "0.1.0"
-
-exclude = [
-  # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
-  "contract.wasm",
-  "hash.txt",
-]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+name        = "icns-registrar"
+description = ""
+version     = { workspace = true }
+authors     = { workspace = true }
+edition     = { workspace = true }
+repository  = { workspace = true }
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -21,33 +15,22 @@ backtraces = ["cosmwasm-std/backtraces"]
 # use library feature to disable all instantiate/execute/query exports
 library = []
 
-[package.metadata.scripts]
-optimize = """docker run --rm -v "$(pwd)":/code \
-  --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
-  --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-  cosmwasm/rust-optimizer:0.12.10
-"""
-
 [dependencies]
-
-cosmwasm-schema = "1.1.2"
-cosmwasm-std = "1.1.2"
-cw-storage-plus = "0.13.2"
-cw-utils = "1.0.0"
-cw2 = "0.13.2"
-# ecdsa = {version = "0.14.8", features = ["sign", "verify"]}
-icns-name-nft = {path = "../icns-name-nft", features = ["library"]}
-itertools = "0.10.5"
-# k256 = "0.11.6"
-schemars = "0.8.8"
-serde = {version = "1.0.137", default-features = false, features = ["derive"]}
-sha2 = "0.10.6"
-# signature = "1.6.4"
-thiserror = {version = "1.0.31"}
+cosmwasm-schema = { workspace = true }
+cosmwasm-std    = { workspace = true }
+cw-storage-plus = { workspace = true }
+cw-utils        = { workspace = true }
+cw2             = { workspace = true }
+icns-name-nft   = { path = "../icns-name-nft", features = ["library"] }
+itertools       = { workspace = true }
+schemars        = { workspace = true }
+serde           = { workspace = true }
+sha2            = { workspace = true }
+thiserror       = { workspace = true }
 
 [dev-dependencies]
-anyhow = "1.0.66"
-cosmrs = {version = "0.10.0", default-features = false, features = ["bip32"]}
-cw-multi-test = {workspace = true}
-cw721 = {workspace = true}
-cw721-base = {workspace = true}
+anyhow        = { workspace = true }
+cosmrs        = { workspace = true }
+cw721         = { workspace = true }
+cw721-base    = { workspace = true }
+cw-multi-test = { workspace = true }
