@@ -36,7 +36,7 @@ jobs:
       - name: Build contracts
         uses: actions-rs/cargo@v1
         with:
-          command: check
+          command: build
           args: --locked --lib --release --target wasm32-unknown-unknown
         env:
           RUST_BACKTRACE: 1
