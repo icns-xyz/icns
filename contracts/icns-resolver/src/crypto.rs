@@ -62,7 +62,7 @@ pub fn cosmos_pubkey_to_bech32_address(pub_key: Binary, bech32_prefix: String) -
     let sha256 = Sha256::digest(decoded_pub_key);
     let result = Ripemd160::digest(sha256);
 
-    bech32_encode(&bech32_prefix, result.deref())
+    bech32_encode(bech32_prefix, result.deref())
 }
 
 pub fn eth_pubkey_to_bech32_address(pub_key: Binary, bech32_prefix: String) -> String {
@@ -71,7 +71,7 @@ pub fn eth_pubkey_to_bech32_address(pub_key: Binary, bech32_prefix: String) -> S
 
     let hashed = Keccak256::digest(xy).as_slice()[12..].to_vec();
 
-    bech32_encode(&bech32_prefix, hashed)
+    bech32_encode(bech32_prefix, hashed)
 }
 
 pub fn create_adr36_message(
