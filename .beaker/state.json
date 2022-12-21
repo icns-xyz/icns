@@ -1,1 +1,31 @@
-{}
+{
+    "mainnet": {
+        "icns-name-nft": {
+            "code_id": 7,
+            "addresses": {
+                "default": "osmo1mypljhatv0prfr9cjzzvamxdf2ctg34xkt50sudxads9zhqnyneqjuvy26"
+            },
+            "proposal": {
+                "store_code": 381
+            }
+        },
+        "icns-resolver": {
+            "code_id": 8,
+            "addresses": {
+                "default": "osmo1xk0s8xgktn9x5vwcgtjdxqzadg88fgn33p8u9cnpdxwemvxscvast52cdd"
+            },
+            "proposal": {
+                "store_code": 382
+            }
+        },
+        "icns-registrar": {
+            "code_id": 9,
+            "addresses": {
+                "default": "osmo1llh07xn7pcst3jqm0xpsucf90lzugfskkkhk8a3u2yznqmse4l5smydwpw"
+            },
+            "proposal": {
+                "store_code": 383
+            }
+        }
+    }
+}
