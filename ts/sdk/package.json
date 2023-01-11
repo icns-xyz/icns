@@ -1,7 +1,7 @@
 {
   "name": "icns-sdk",
   "version": " 0.0.1",
-  "description": "",
+  "description": "Typescript SDK for interacting with ICNS",
   "cdn": "dist/index.umd.js",
   "main": "dist/index.js",
   "types": "types/index.d.ts",
