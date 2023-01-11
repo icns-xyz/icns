@@ -6,7 +6,7 @@
 
 import { CosmWasmClient, SigningCosmWasmClient, ExecuteResult } from "@cosmjs/cosmwasm-stargate";
 import { Coin, StdFee } from "@cosmjs/amino";
-import { InstantiateMsg, ExecuteMsg, Name, Binary, Uint128, Adr36Info, QueryMsg, MigrateMsg, AddressResponse, AddressByIcnsResponse, AddressesResponse, AdminResponse, Addr, Config, IcnsNamesResponse, NamesResponse, PrimaryNameResponse } from "./IcnsResolver.types";
+import { InstantiateMsg, ExecuteMsg, AddressHash, Binary, Uint128, Adr36Info, QueryMsg, MigrateMsg, AddressResponse, AddressByIcnsResponse, AddressesResponse, Bech32Address, AdminResponse, Addr, Config, IcnsNamesResponse, NamesResponse, PrimaryNameResponse } from "./IcnsResolver.types";
 export interface IcnsResolverReadOnlyInterface {
   contractAddress: string;
   config: () => Promise<Config>;

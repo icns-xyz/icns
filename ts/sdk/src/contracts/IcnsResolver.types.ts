@@ -24,11 +24,11 @@ export type ExecuteMsg = {
     name: string;
   };
 };
-export type Name = "cosmos" | "ethereum";
+export type AddressHash = "cosmos" | "ethereum";
 export type Binary = string;
 export type Uint128 = string;
 export interface Adr36Info {
-  address_hash: Name;
+  address_hash: AddressHash;
   pub_key: Binary;
   signature: Binary;
   signature_salt: Uint128;
@@ -72,7 +72,11 @@ export interface AddressByIcnsResponse {
   bech32_address: string;
 }
 export interface AddressesResponse {
-  addresses: [string, string][];
+  addresses: Bech32Address[];
+}
+export interface Bech32Address {
+  address: string;
+  bech32_prefix: string;
 }
 export interface AdminResponse {
   admins: string[];

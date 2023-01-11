@@ -1,7 +1,7 @@
 {
   "name": "icns-sdk",
   "version": " 0.0.1",
-  "description": "",
+  "description": "Typescript SDK for interacting with ICNS",
   "cdn": "dist/index.umd.js",
   "main": "dist/index.js",
   "types": "types/index.d.ts",
@@ -49,7 +49,7 @@
     "lint": "eslint \"*/**/*.{ts,js,json}\"",
     "lint:fix": "eslint \"*/**/*.{ts,js,json}\" --fix",
     "build": "rollup --config ./rollup.config.js",
-    "prepublishOnly": "npm run doc && npm run lint && npm run test && npm run build",
+    "prepublishOnly": "npm run doc && npm run test && npm run build",
     "codegen": "node ./scripts/codegen"
   },
   "keywords": [],
