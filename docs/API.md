@@ -38,7 +38,7 @@ API Endpoints
     *   Gets the address associated with the given an ICNS name
     
     ```plain
-    {endpoint}/cosmwasm/v1/contract/{resolver_contract_address}/smart/{base64Encoding({ "icns_names": { "address": "{bech32Address}" }})} 
+    {endpoint}/cosmwasm/v1/contract/{resolver_contract_address}/smart/{base64Encoding({ "address": { "name": "{icns_name}", "bech32_prefix": "{bech32_prefix}" }})} 
     ```
     
     *   Note: you can register multiple addresses to a name. check for `name` and `primary_name`
