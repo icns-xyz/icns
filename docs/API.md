@@ -70,7 +70,7 @@ API Endpoints
     *   Returns a list of admins queried from the Name NFT contract.
     
     ```plain
-    {endpoint}/cosmwasm/v1/contract/{resolver_contract_address)/smart/{base64Encoding({ "admin": { }})}
+    {endpoint}/cosmwasm/v1/contract/{resolver_contract_address}/smart/{base64Encoding({ "admin": { }})}
     ```
     
 *   Query - address\_by\_icns
