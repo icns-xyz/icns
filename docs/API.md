@@ -178,7 +178,7 @@ Examples
 
   
 
-**Get a ICNS name of a bech32 address**
+**Get all ICNS names associated with a bech32 address**
 
 ```plain
 {endpoint}/cosmwasm/v1/contract/{resolver_contract_address}/smart/{base64Encoding({ "address-by-icns": { "icns": {twitter_username}.{bech32_prefix} }})}
