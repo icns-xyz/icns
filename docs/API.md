@@ -167,7 +167,7 @@ Examples
 {endpoint}/cosmwasm/v1/contract/{resolver_contract_address}/smart/{base64Encoding({ "address-by-icns": { "icns": {twitter_username}.{bech32_prefix} }})}
 ```
 
-*   Example: [https://lcd.testnet.osmosis.zone/cosmwasm/wasm/v1/contract/osmo1qjs29tsavxuk39dugs7lny7cc28a57hqa9u9q0ysr2qat96aghrqzgp60x/smart/eyJpY25zX25hbWVzIjogeyJhZGRyZXNzIjogIm9zbW8xdnY2aHJ1cXV6cHR5NHhwa3M5em5rdzhneXM1eDRuc25nNGtlcnkifX0K](https://lcd.testnet.osmosis.zone/cosmwasm/wasm/v1/contract/osmo1qjs29tsavxuk39dugs7lny7cc28a57hqa9u9q0ysr2qat96aghrqzgp60x/smart/eyJpY25zX25hbWVzIjogeyJhZGRyZXNzIjogIm9zbW8xdnY2aHJ1cXV6cHR5NHhwa3M5em5rdzhneXM1eDRuc25nNGtlcnkifX0K)
+*   Example: [https://lcd.osmosis.zone/cosmwasm/wasm/v1/contract/osmo1qjs29tsavxuk39dugs7lny7cc28a57hqa9u9q0ysr2qat96aghrqzgp60x/smart/eyJpY25zX25hbWVzIjogeyJhZGRyZXNzIjogIm9zbW8xdnY2aHJ1cXV6cHR5NHhwa3M5em5rdzhneXM1eDRuc25nNGtlcnkifX0K](https://lcd.osmosis.zone//cosmwasm/wasm/v1/contract/osmo1qjs29tsavxuk39dugs7lny7cc28a57hqa9u9q0ysr2qat96aghrqzgp60x/smart/eyJpY25zX25hbWVzIjogeyJhZGRyZXNzIjogIm9zbW8xdnY2aHJ1cXV6cHR5NHhwa3M5em5rdzhneXM1eDRuc25nNGtlcnkifX0K)
 *   Response
 
 ```plain
