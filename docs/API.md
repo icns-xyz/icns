@@ -11,7 +11,7 @@ Contract Address
 *   Name NFT
     *   Mainnet:  `osmo1xk0s8xgktn9x5vwcgtjdxqzadg88fgn33p8u9cnpdxwemvxscvast52cdd`
 *   Resolver
-    *   Mainnet: TBD
+    *   Mainnet:  `osmo1mypljhatv0prfr9cjzzvamxdf2ctg34xkt50sudxads9zhqnyneqjuvy26`
 *   Registrar
     *   Mainnet:  `osmo1llh07xn7pcst3jqm0xpsucf90lzugfskkkhk8a3u2yznqmse4l5smydwpw`
 
