@@ -24,7 +24,7 @@ API Endpoints
     *   Gets the config of the resolver contract, including the Name-NFT contract address.
     
     ```plain
-    {endpoint}/cosmwasm/v1/contract/{resolver_contract_address)/smart/{base64Encoding({ "config": { }})}
+    {endpoint}/cosmwasm/v1/contract/{resolver_contract_address}/smart/{base64Encoding({ "config": { }})}
     ```
     
 *   Query - addresses\_response
