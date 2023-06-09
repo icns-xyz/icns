@@ -77,7 +77,7 @@ API Endpoints
     *   Returns the bech32 addresses for the associated full (including the bech32 prefix) ICNS name.
     
     ```plain
-    {endpoint}/cosmwasm/v1/contract/{resolver_contract_address}/smart/{base64Encoding({ "address-by-icns": { "icns": {twitter_username}.{bech32_prefix} }})}
+    {endpoint}/cosmwasm/v1/contract/{resolver_contract_address}/smart/{base64Encoding({ "address_by_icns": { "icns": "{twitter_username}.{bech32_prefix}" }})}
     ```
     
 *   Execute Message - set\_record
