@@ -189,7 +189,7 @@ Examples
 
 ```plain
 {
-  "data": {"address":"osmo1vv6hruquzpty4xpks9znkw8gys5x4nsng4kery"}
+  "data": {"names": ["NosNode_", "NosNode_Intern"], "primary_name": "NosNode_"}
 }
 
 ```
