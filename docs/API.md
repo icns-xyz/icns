@@ -56,7 +56,7 @@ API Endpoints
     *   Returns a list of all ICNS names and bech32 prefixes associated with the given address
     
     ```plain
-    {endpoint}/cosmwasm/v1/contract/{resolver_contract_address)/smart/{base64Encoding({ "icns_names": { "{bech32Address}" }})}
+    {endpoint}/cosmwasm/v1/contract/{resolver_contract_address}/smart/{base64Encoding({ "icns_names": { "address": "{bech32Address}" }})}
     ```
     
 *   Query - primary\_name
