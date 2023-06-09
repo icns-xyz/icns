@@ -13,7 +13,7 @@ Contract Address
 *   Resolver
     *   Mainnet: TBD
 *   Registrar
-    *   Mainnet: TBD
+    *   Mainnet:  `osmo1llh07xn7pcst3jqm0xpsucf90lzugfskkkhk8a3u2yznqmse4l5smydwpw`
 
 API Endpoints
 -------------
