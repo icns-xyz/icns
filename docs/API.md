@@ -63,7 +63,7 @@ API Endpoints
     *   Returns the primary ICNS associated with the given address
     
     ```plain
-    {endpoint}/cosmwasm/v1/contract/{resolver_contract_address)/smart/{base64Encoding({ "primary_name": { "{bech32Address}" }})}
+    {endpoint}/cosmwasm/v1/contract/{resolver_contract_address}/smart/{base64Encoding({ "primary_name": { "address": "{bech32Address}" }})}
     ```
     
 *   Query - admin
