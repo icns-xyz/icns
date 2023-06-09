@@ -9,7 +9,7 @@ Contract Address
 ----------------
 
 *   Name NFT
-    *   Mainnet: TBD
+    *   Mainnet:  `osmo1xk0s8xgktn9x5vwcgtjdxqzadg88fgn33p8u9cnpdxwemvxscvast52cdd`
 *   Resolver
     *   Mainnet: TBD
 *   Registrar
