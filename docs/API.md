@@ -47,7 +47,7 @@ API Endpoints
     *   Returns a list of names associated with the given address
     
     ```plain
-    {endpoint}/cosmwasm/v1/contract/{resolver_contract_address)/smart/{base64Encoding({ "names": { "{bech32Address}" }})}
+    {endpoint}/cosmwasm/v1/contract/{resolver_contract_address}/smart/{base64Encoding({ "names": { "address": "{bech32Address}" }})}
     ```
     
     *   NOTE: this query only returns name itself, not full icns name
