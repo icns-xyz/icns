@@ -172,7 +172,7 @@ Examples
 
 ```plain
 {
-  "data": {"names":["TonyYun9.osmo"],"primary_name":"TonyYun9.osmo"}
+  "data": {"bech32_address":"osmo10jm8fvdyqlj78w0j5nawc76wsn4pqmdxj4q5zl"}
 }
 ```
 
